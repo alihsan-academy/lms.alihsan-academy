@@ -1,67 +1,125 @@
-import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
+
+function getAdminClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl) {
+    return {
+      errorResponse: NextResponse.json(
+        { error: 'NEXT_PUBLIC_SUPABASE_URL not configured' },
+        { status: 500 }
+      ),
+      supabaseAdmin: null,
+    }
+  }
+
+  if (!serviceRoleKey) {
+    return {
+      errorResponse: NextResponse.json(
+        { error: 'SUPABASE_SERVICE_ROLE_KEY not configured' },
+        { status: 500 }
+      ),
+      supabaseAdmin: null,
+    }
+  }
+
+  const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  })
+
+  return { supabaseAdmin, errorResponse: null }
+}
 
 export async function POST(request: Request) {
   try {
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (!serviceRoleKey) {
-      return NextResponse.json(
-        { error: 'Service Role Key is missing. Cannot create user.' },
-        { status: 500 }
-      )
+    const { supabaseAdmin, errorResponse } = getAdminClient()
+    if (errorResponse || !supabaseAdmin) {
+      return errorResponse
     }
 
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      serviceRoleKey,
-      {
-        cookies: {
-          get(name: string) { return undefined },
-          set(name: string, value: string, options: any) {},
-          remove(name: string, options: any) {}
-        }
-      }
-    )
-
     const body = await request.json()
-    const { email, password, role, name, className } = body
+    const { email, password, role, name, className, teacherId } = body
 
-    // 1. Create the user in Auth
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    // 1. Create the user in Auth (or reuse existing account by email)
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true
     })
 
-    if (authError) throw authError
+    let userId = authData?.user?.id
 
-    const userId = authData.user.id
+    if (authError) {
+      if (authError.code === 'email_exists') {
+        const { data: usersData, error: usersError } = await supabaseAdmin.auth.admin.listUsers()
+        if (usersError) throw usersError
 
-    // 2. Update their role in the profiles table
-    const { error: profileError } = await supabase
+        const existingUser = usersData.users.find(
+          (u) => u.email?.toLowerCase() === String(email).toLowerCase()
+        )
+
+        if (!existingUser) {
+          throw new Error('User exists but could not be loaded from Supabase Auth')
+        }
+
+        userId = existingUser.id
+
+        // Keep login credentials in sync with what superadmin enters.
+        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+          password,
+          email_confirm: true,
+        })
+        if (updateError) throw updateError
+      } else {
+        throw authError
+      }
+    }
+
+    if (!userId) {
+      throw new Error('Failed to resolve user id for provisioning')
+    }
+
+    // 2. Create or update role in profiles table
+    const { error: profileError } = await supabaseAdmin
       .from('profiles')
-      .update({ role })
-      .eq('id', userId)
+      .upsert({ id: userId, role }, { onConflict: 'id' })
 
     if (profileError) throw profileError
 
     // 3. Create student/teacher profile
-    if (role === 'student' || role === 'teacher') {
-      const { error: detailedProfileError } = await supabase
+    if (role === 'student') {
+      const { error: detailedProfileError } = await supabaseAdmin
         .from('student_profiles')
         .insert({
           user_id: userId,
           name: name || email,
-          class_name: role === 'student' ? className : null
+          class_name: className || null,
+          teacher_id: teacherId || null,
+          joined_date: new Date().toISOString()
         })
 
       if (detailedProfileError && detailedProfileError.code !== '23505') { // Ignore duplicate keys
-        console.error("Detailed profile error:", detailedProfileError)
+        throw detailedProfileError
       }
     }
 
-    return NextResponse.json({ success: true, user: authData.user })
+    if (role === 'teacher') {
+      const { error: teacherProfileError } = await supabaseAdmin
+        .from('teacher_profiles')
+        .insert({ user_id: userId })
+
+      if (teacherProfileError && teacherProfileError.code !== '23505') {
+        throw teacherProfileError
+      }
+    }
+
+    const { data: userData } = await supabaseAdmin.auth.admin.getUserById(userId)
+    return NextResponse.json({ success: true, user: userData.user })
 
   } catch (error: any) {
     console.error("Admin user creation error:", error)
@@ -71,12 +129,9 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (!serviceRoleKey) {
-      return NextResponse.json(
-        { error: 'Service Role Key is missing. Cannot delete user.' },
-        { status: 500 }
-      )
+    const { supabaseAdmin, errorResponse } = getAdminClient()
+    if (errorResponse || !supabaseAdmin) {
+      return errorResponse
     }
 
     const url = new URL(request.url)
@@ -86,25 +141,83 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
     }
 
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      serviceRoleKey,
-      {
-        cookies: {
-          get(name: string) { return undefined },
-          set(name: string, value: string, options: any) {},
-          remove(name: string, options: any) {}
-        }
-      }
-    )
+    // 1. Delete from profiles table first (to satisfy any FK constraints if they exist)
+    await supabaseAdmin.from('profiles').delete().eq('id', userId)
+    await supabaseAdmin.from('student_profiles').delete().eq('user_id', userId)
+    await supabaseAdmin.from('teacher_profiles').delete().eq('user_id', userId)
 
-    const { error } = await supabase.auth.admin.deleteUser(userId)
+    // 2. Delete from Supabase Auth
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(userId)
     if (error) throw error
 
     return NextResponse.json({ success: true })
 
   } catch (error: any) {
     console.error("Admin user deletion error:", error)
+    return NextResponse.json({ error: error.message }, { status: 400 })
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const { supabaseAdmin, errorResponse } = getAdminClient()
+    if (errorResponse || !supabaseAdmin) {
+      return errorResponse
+    }
+
+    const body = await request.json()
+    const { userId, teacherId } = body
+
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
+    }
+
+    const { data: existingStudentProfile, error: existingStudentProfileError } = await supabaseAdmin
+      .from('student_profiles')
+      .select('teacher_id')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if (existingStudentProfileError) throw existingStudentProfileError
+
+    const previousTeacherId = existingStudentProfile?.teacher_id || null
+
+    const { data: updatedRows, error } = await supabaseAdmin
+      .from('student_profiles')
+      .update({ teacher_id: teacherId || null })
+      .eq('user_id', userId)
+      .select('user_id')
+
+    if (error) throw error
+
+    if (!updatedRows || updatedRows.length === 0) {
+      const { error: insertError } = await supabaseAdmin
+        .from('student_profiles')
+        .insert({
+          user_id: userId,
+          name: null,
+          class_name: null,
+          teacher_id: teacherId || null,
+          joined_date: new Date().toISOString(),
+        })
+
+      if (insertError && insertError.code !== '23505') throw insertError
+    }
+
+    if (previousTeacherId && teacherId && previousTeacherId !== teacherId) {
+      const { error: reassignClassesError } = await supabaseAdmin
+        .from('classes')
+        .update({ teacher_id: teacherId })
+        .eq('student_id', userId)
+        .eq('teacher_id', previousTeacherId)
+
+      if (reassignClassesError) throw reassignClassesError
+    }
+
+    return NextResponse.json({ success: true })
+
+  } catch (error: any) {
+    console.error("Admin user update error:", error)
     return NextResponse.json({ error: error.message }, { status: 400 })
   }
 }

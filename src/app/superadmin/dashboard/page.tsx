@@ -11,10 +11,10 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 
-type Tab = 'students' | 'teachers' | 'attendance' | 'manage'
+type Tab = 'statistics' | 'students' | 'teachers' | 'attendance' | 'manage'
 
 export default function SuperAdminDashboard() {
-  const [activeTab, setActiveTab] = useState<Tab>('students')
+  const [activeTab, setActiveTab] = useState<Tab>('statistics')
   const [isLoading, setIsLoading] = useState(true)
   const supabase = createClient()
 
@@ -22,12 +22,15 @@ export default function SuperAdminDashboard() {
   const [students, setStudents] = useState<any[]>([])
   const [teachers, setTeachers] = useState<any[]>([])
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([])
+  const [classes, setClasses] = useState<any[]>([])
   const [allUsers, setAllUsers] = useState<any[]>([])
   
   // UI state
   const [searchQuery, setSearchQuery] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [newUser, setNewUser] = useState({ email: '', password: '', role: 'student', name: '', className: '' })
+  const [newUser, setNewUser] = useState({ email: '', password: '', role: 'student', name: '', className: '', teacherId: '' })
+  const [editingStudentId, setEditingStudentId] = useState<string | null>(null)
+  const [selectedTeacherId, setSelectedTeacherId] = useState('')
 
   useEffect(() => {
     fetchData()
@@ -36,36 +39,29 @@ export default function SuperAdminDashboard() {
   async function fetchData() {
     setIsLoading(true)
     try {
-      // Fetch users
-      const { data: profiles } = await supabase.from('profiles').select('*').order('created_at', { ascending: false })
-      const { data: studentProfiles } = await supabase.from('student_profiles').select('*')
+      const response = await fetch('/api/admin/data')
+      const data = await response.json()
       
-      const combinedUsers = profiles?.map(p => {
-        const studentInfo = studentProfiles?.find(sp => sp.user_id === p.id)
+      if (!response.ok) throw new Error(data.error || "Failed to fetch data")
+
+      const profiles = data.profiles
+      const studentProfiles = data.studentProfiles
+      
+      const combinedUsers = profiles?.map((p: any) => {
+        const studentInfo = studentProfiles?.find((sp: any) => sp.user_id === p.id)
         return {
           ...p,
           name: studentInfo?.name || p.email,
-          class_name: studentInfo?.class_name || 'N/A'
+          class_name: studentInfo?.class_name || 'N/A',
+          teacher_id: studentInfo?.teacher_id || null
         }
       }) || []
       
       setAllUsers(combinedUsers)
-      setStudents(combinedUsers.filter(u => u.role === 'student'))
-      setTeachers(combinedUsers.filter(u => u.role === 'teacher'))
-
-      // Fetch attendance
-      const { data: attendance } = await supabase
-        .from('attendance')
-        .select(`
-          *,
-          classes (
-            title,
-            scheduled_at
-          )
-        `)
-        .order('marked_at', { ascending: false })
-      
-      setAttendanceRecords(attendance || [])
+      setStudents(combinedUsers.filter((u: any) => u.role === 'student'))
+      setTeachers(combinedUsers.filter((u: any) => u.role === 'teacher'))
+      setAttendanceRecords(data.attendance || [])
+      setClasses(data.classes || [])
 
     } catch (error) {
       console.error("Error fetching superadmin data:", error)
@@ -94,7 +90,7 @@ export default function SuperAdminDashboard() {
       if (!response.ok) throw new Error(result.error || "Failed to create user")
       
       toast.success("User created successfully!")
-      setNewUser({ email: '', password: '', role: 'student', name: '', className: '' })
+      setNewUser({ email: '', password: '', role: 'student', name: '', className: '', teacherId: '' })
       fetchData() // Refresh list
     } catch (error: any) {
       toast.error(error.message)
@@ -124,14 +120,37 @@ export default function SuperAdminDashboard() {
     }
   }
 
+  async function handleReassignTeacher(studentId: string, teacherId: string) {
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: studentId, teacherId: teacherId || null })
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || "Failed to reassign teacher")
+      
+      toast.success("Teacher reassigned successfully!")
+      setEditingStudentId(null)
+      setSelectedTeacherId('')
+      fetchData()
+      return true
+    } catch (error: any) {
+      toast.error(error.message)
+      return false
+    }
+  }
+
+  const safeLower = (value: unknown) => String(value ?? '').toLowerCase()
+
   const filteredStudents = students.filter(s => 
-    s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    s.email.toLowerCase().includes(searchQuery.toLowerCase())
+    safeLower(s.name).includes(safeLower(searchQuery)) || 
+    safeLower(s.email).includes(safeLower(searchQuery))
   )
 
   const filteredTeachers = teachers.filter(t => 
-    t.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    t.email.toLowerCase().includes(searchQuery.toLowerCase())
+    safeLower(t.name).includes(safeLower(searchQuery)) || 
+    safeLower(t.email).includes(safeLower(searchQuery))
   )
 
   if (isLoading) {
@@ -157,6 +176,7 @@ export default function SuperAdminDashboard() {
       {/* Desktop Navigation */}
       <div className="hidden md:block bg-white border-b border-green-100 px-8">
         <nav className="flex space-x-8 max-w-5xl mx-auto">
+          <button onClick={() => setActiveTab('statistics')} className={`py-4 px-2 border-b-2 font-medium transition-colors flex items-center gap-2 ${activeTab === 'statistics' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}><BarChart3 className="h-5 w-5" />Statistics</button>
           <button onClick={() => setActiveTab('students')} className={`py-4 px-2 border-b-2 font-medium transition-colors flex items-center gap-2 ${activeTab === 'students' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}><GraduationCap className="h-5 w-5" />Students</button>
           <button onClick={() => setActiveTab('teachers')} className={`py-4 px-2 border-b-2 font-medium transition-colors flex items-center gap-2 ${activeTab === 'teachers' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}><BookOpen className="h-5 w-5" />Teachers</button>
           <button onClick={() => setActiveTab('attendance')} className={`py-4 px-2 border-b-2 font-medium transition-colors flex items-center gap-2 ${activeTab === 'attendance' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}><CheckCircle className="h-5 w-5" />Attendance</button>
@@ -165,6 +185,212 @@ export default function SuperAdminDashboard() {
       </div>
 
       <main className="flex-1 w-full max-w-5xl mx-auto p-4 md:p-8">
+
+        {/* STATISTICS TAB */}
+        {activeTab === 'statistics' && (
+          <div className="space-y-8 animate-in fade-in duration-300">
+            {/* SECTION 1: Academy Overview */}
+            <section>
+              <h3 className="text-xl font-bold text-green-900 mb-4">Academy Overview</h3>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <Card className="bg-white border-green-100 shadow-sm">
+                  <CardHeader className="p-4 pb-2">
+                    <CardTitle className="text-sm font-medium text-gray-500">Total Students</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <div className="text-2xl font-bold text-green-800">{students.length}</div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white border-green-100 shadow-sm">
+                  <CardHeader className="p-4 pb-2">
+                    <CardTitle className="text-sm font-medium text-gray-500">Total Teachers</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <div className="text-2xl font-bold text-green-800">{teachers.length}</div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white border-green-100 shadow-sm">
+                  <CardHeader className="p-4 pb-2">
+                    <CardTitle className="text-sm font-medium text-gray-500">Scheduled Classes</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <div className="text-2xl font-bold text-green-800">{classes.length}</div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white border-green-100 shadow-sm">
+                  <CardHeader className="p-4 pb-2">
+                    <CardTitle className="text-sm font-medium text-gray-500">Completed Classes</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <div className="text-2xl font-bold text-green-800">{classes.filter(c => c.status === 'completed').length}</div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white border-green-100 shadow-sm">
+                  <CardHeader className="p-4 pb-2">
+                    <CardTitle className="text-sm font-medium text-gray-500">Attendance Records</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <div className="text-2xl font-bold text-green-800">{attendanceRecords.length}</div>
+                  </CardContent>
+                </Card>
+              </div>
+            </section>
+
+            {/* SECTION 2: Students Under Each Teacher */}
+            <section>
+              <h3 className="text-xl font-bold text-green-900 mb-4">Students Under Each Teacher</h3>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-green-50 border-b border-green-100">
+                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Teacher Info</th>
+                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Total Students</th>
+                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Assigned Students</th>
+                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Classes (Total/Done)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {teachers.map(t => {
+                        const teacherClasses = classes.filter(c => c.teacher_id === t.id);
+                        const studentIds = Array.from(new Set(teacherClasses.map(c => c.student_id)));
+                        const assignedStudents = studentIds.map(sid => students.find(s => s.id === sid)?.name).filter(Boolean);
+                        const completedClasses = teacherClasses.filter(c => c.status === 'completed').length;
+                        return (
+                          <tr key={t.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="p-4">
+                              <p className="font-bold text-gray-900">{t.name}</p>
+                              <p className="text-sm text-gray-500">{t.email}</p>
+                            </td>
+                            <td className="p-4 font-bold text-gray-700">{assignedStudents.length}</td>
+                            <td className="p-4 text-sm text-gray-600 max-w-xs truncate" title={assignedStudents.join(', ')}>
+                              {assignedStudents.length > 0 ? assignedStudents.join(', ') : 'None'}
+                            </td>
+                            <td className="p-4 text-sm font-medium text-gray-600">
+                              {teacherClasses.length} / {completedClasses}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                      {teachers.length === 0 && (
+                        <tr><td colSpan={4} className="p-8 text-center text-gray-500">No data available yet</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+            {/* SECTION 3: Each Student's Attendance */}
+            <section>
+              <h3 className="text-xl font-bold text-green-900 mb-4">Each Student's Attendance</h3>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-green-50 border-b border-green-100">
+                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Student Info</th>
+                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Teacher(s)</th>
+                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Scheduled</th>
+                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Attended</th>
+                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Progress</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {students.map(s => {
+                        const studentClasses = classes.filter(c => c.student_id === s.id);
+                        const studentAttendance = attendanceRecords.filter(a => a.student_id === s.id);
+                        const totalScheduled = studentClasses.length;
+                        const totalAttended = studentAttendance.length;
+                        const percentage = totalScheduled > 0 ? Math.round((totalAttended / totalScheduled) * 100) : 0;
+                        const teacherNames = Array.from(new Set(studentClasses.map(c => teachers.find(t => t.id === c.teacher_id)?.name))).filter(Boolean).join(', ');
+                        
+                        let color = 'bg-red-500';
+                        if (percentage >= 76) color = 'bg-green-500';
+                        else if (percentage >= 51) color = 'bg-yellow-500';
+
+                        return (
+                          <tr key={s.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="p-4">
+                              <p className="font-bold text-gray-900">{s.name}</p>
+                              <p className="text-sm text-gray-500">{s.email}</p>
+                            </td>
+                            <td className="p-4 text-sm text-gray-600">{teacherNames || 'None'}</td>
+                            <td className="p-4 font-medium text-gray-700">{totalScheduled}</td>
+                            <td className="p-4 font-medium text-gray-700">{totalAttended}</td>
+                            <td className="p-4">
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                  <div className={`h-full ${color}`} style={{ width: `${percentage}%` }} />
+                                </div>
+                                <span className="text-xs font-bold text-gray-600 w-8">{percentage}%</span>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                      {students.length === 0 && (
+                        <tr><td colSpan={5} className="p-8 text-center text-gray-500">No data available yet</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+            {/* SECTION 4: Each Teacher's Performance */}
+            <section>
+              <h3 className="text-xl font-bold text-green-900 mb-4">Each Teacher's Performance</h3>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-green-50 border-b border-green-100">
+                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Teacher Info</th>
+                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Classes Created</th>
+                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Classes Completed</th>
+                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Completion Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {teachers.map(t => {
+                        const teacherClasses = classes.filter(c => c.teacher_id === t.id);
+                        const completedClasses = teacherClasses.filter(c => c.status === 'completed').length;
+                        const completionRate = teacherClasses.length > 0 ? Math.round((completedClasses / teacherClasses.length) * 100) : 0;
+                        
+                        let color = 'bg-red-500';
+                        if (completionRate >= 76) color = 'bg-green-500';
+                        else if (completionRate >= 51) color = 'bg-yellow-500';
+
+                        return (
+                          <tr key={t.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="p-4">
+                              <p className="font-bold text-gray-900">{t.name}</p>
+                              <p className="text-sm text-gray-500">{t.email}</p>
+                            </td>
+                            <td className="p-4 font-medium text-gray-700">{teacherClasses.length}</td>
+                            <td className="p-4 font-medium text-gray-700">{completedClasses}</td>
+                            <td className="p-4">
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                  <div className={`h-full ${color}`} style={{ width: `${completionRate}%` }} />
+                                </div>
+                                <span className="text-xs font-bold text-gray-600 w-8">{completionRate}%</span>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                      {teachers.length === 0 && (
+                        <tr><td colSpan={4} className="p-8 text-center text-gray-500">No data available yet</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
         
         {/* STUDENTS TAB */}
         {activeTab === 'students' && (
@@ -190,6 +416,7 @@ export default function SuperAdminDashboard() {
                       <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Student Name</th>
                       <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Email</th>
                       <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Class</th>
+                      <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Assigned Teacher</th>
                       <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Joined Date</th>
                     </tr>
                   </thead>
@@ -201,12 +428,61 @@ export default function SuperAdminDashboard() {
                         <td className="p-4 font-medium text-gray-700">
                           <span className="bg-green-100 text-green-800 px-2.5 py-0.5 rounded text-xs font-bold uppercase">{s.class_name}</span>
                         </td>
+                        <td className="p-4 text-sm text-gray-700">
+                          {editingStudentId === s.id ? (
+                            <div className="flex items-center gap-2">
+                              <select
+                                className="bg-transparent border-b border-gray-200 outline-none hover:border-green-500 focus:border-green-500 text-sm py-1 w-full max-w-[220px]"
+                                value={selectedTeacherId}
+                                onChange={(e) => setSelectedTeacherId(e.target.value)}
+                              >
+                                <option value="" className="text-gray-400 italic">Unassigned</option>
+                                {teachers.map(t => (
+                                  <option key={t.id} value={t.id}>{t.name} ({t.email})</option>
+                                ))}
+                              </select>
+                              <Button
+                                size="sm"
+                                className="bg-green-600 hover:bg-green-700 text-white font-bold text-xs"
+                                onClick={() => handleReassignTeacher(s.id, selectedTeacherId)}
+                              >
+                                Save
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setEditingStudentId(null)
+                                  setSelectedTeacherId('')
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-gray-700 min-w-[140px]">
+                                {teachers.find(t => t.id === s.teacher_id)?.email || 'Unassigned'}
+                              </span>
+                              <Button
+                                size="sm"
+                                className="bg-green-600 hover:bg-green-700 text-white font-bold text-xs"
+                                onClick={() => {
+                                  setEditingStudentId(s.id)
+                                  setSelectedTeacherId(s.teacher_id || '')
+                                }}
+                              >
+                                Change Teacher
+                              </Button>
+                            </div>
+                          )}
+                        </td>
                         <td className="p-4 text-sm text-gray-500 font-medium">
                           {format(new Date(s.created_at), "MMM d, yyyy")}
                         </td>
                       </tr>
                     )) : (
-                      <tr><td colSpan={4} className="p-8 text-center text-gray-500">No students found.</td></tr>
+                      <tr><td colSpan={5} className="p-8 text-center text-gray-500">No students found.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -238,20 +514,24 @@ export default function SuperAdminDashboard() {
                     <tr className="bg-green-50 border-b border-green-100">
                       <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Teacher Name</th>
                       <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Email</th>
+                      <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Students Count</th>
                       <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Joined Date</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {filteredTeachers.length > 0 ? filteredTeachers.map((t) => (
+                    {filteredTeachers.length > 0 ? filteredTeachers.map((t) => {
+                      const studentCount = students.filter(s => s.teacher_id === t.id).length;
+                      return (
                       <tr key={t.id} className="hover:bg-gray-50 transition-colors">
                         <td className="p-4 font-bold text-gray-900">{t.name}</td>
                         <td className="p-4 text-gray-500 text-sm">{t.email}</td>
+                        <td className="p-4 text-gray-700 font-bold text-center sm:text-left">{studentCount}</td>
                         <td className="p-4 text-sm text-gray-500 font-medium">
                           {format(new Date(t.created_at), "MMM d, yyyy")}
                         </td>
                       </tr>
-                    )) : (
-                      <tr><td colSpan={3} className="p-8 text-center text-gray-500">No teachers found.</td></tr>
+                    )}) : (
+                      <tr><td colSpan={4} className="p-8 text-center text-gray-500">No teachers found.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -368,14 +648,30 @@ export default function SuperAdminDashboard() {
                 </div>
 
                 {newUser.role === 'student' && (
-                  <div className="space-y-2">
-                    <Label className="font-semibold text-gray-700">Class Name (Optional)</Label>
-                    <Input 
-                      placeholder="e.g. Batch A - Quran Memorization" 
-                      value={newUser.className}
-                      onChange={e => setNewUser({...newUser, className: e.target.value})}
-                    />
-                  </div>
+                  <>
+                    <div className="space-y-2">
+                      <Label className="font-semibold text-gray-700">Assign to Teacher <span className="text-red-500">*</span></Label>
+                      <select 
+                        className="w-full p-2.5 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-green-500 outline-none"
+                        value={newUser.teacherId}
+                        onChange={e => setNewUser({...newUser, teacherId: e.target.value})}
+                        required
+                      >
+                        <option value="">Select a teacher...</option>
+                        {teachers.map(t => (
+                          <option key={t.id} value={t.id}>{t.name} ({t.email})</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="font-semibold text-gray-700">Class Name (Optional)</Label>
+                      <Input 
+                        placeholder="e.g. Batch A - Quran Memorization" 
+                        value={newUser.className}
+                        onChange={e => setNewUser({...newUser, className: e.target.value})}
+                      />
+                    </div>
+                  </>
                 )}
 
                 <Button type="submit" disabled={isSubmitting} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-6">
@@ -433,7 +729,8 @@ export default function SuperAdminDashboard() {
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around p-2 z-50 md:hidden pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around p-2 z-50 md:hidden pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] overflow-x-auto">
+        <NavBtn active={activeTab === 'statistics'} onClick={() => setActiveTab('statistics')} icon={<BarChart3 />} label="Stats" />
         <NavBtn active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<GraduationCap />} label="Students" />
         <NavBtn active={activeTab === 'teachers'} onClick={() => setActiveTab('teachers')} icon={<BookOpen />} label="Teachers" />
         <NavBtn active={activeTab === 'manage'} onClick={() => setActiveTab('manage')} icon={<Users />} label="Manage" />

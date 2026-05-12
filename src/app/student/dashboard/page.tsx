@@ -50,33 +50,22 @@ export default function StudentDashboard() {
           date_joined: profile?.created_at || user.created_at
         })
 
-        // Fetch classes
-        const { data: classes } = await supabase
-          .from('classes')
-          .select('*')
-          .eq('student_id', user.id)
+        // Fetch classes via server API (service-role backend query with user auth)
+        const classesRes = await fetch('/api/classes/student')
+        const classesPayload = await classesRes.json()
+        if (!classesRes.ok) throw new Error(classesPayload.error || 'Failed to fetch classes')
 
-        const allScheduledClasses = classes?.filter(c => c.status === 'scheduled') || []
-        
-        // Today's class & Upcoming
-        const now = new Date()
-        let today: any = null
-        const upcoming: any[] = []
+        const allClasses = classesPayload.allClasses || []
+        const scheduledClasses = classesPayload.scheduledClasses || []
 
-        allScheduledClasses.forEach(c => {
-          if (!c.scheduled_at) return
-          const date = parseISO(c.scheduled_at)
-          if (isToday(date)) {
-            today = c
-          } else if (isFuture(date)) {
-            upcoming.push(c)
-          }
+        const today = scheduledClasses.filter((c: any) => {
+          const classDate = new Date(c.scheduled_at).toDateString()
+          const todayDate = new Date().toDateString()
+          return classDate === todayDate
         })
-        
-        upcoming.sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
-
-        setTodayClass(today)
-        setUpcomingClasses(upcoming.slice(0, 5))
+        const upcoming = scheduledClasses.filter((c: any) => new Date(c.scheduled_at) > new Date())
+        setTodayClass(today[0] || null)
+        setUpcomingClasses(upcoming)
 
         // Fetch attendance
         const { data: attendance } = await supabase
@@ -84,13 +73,14 @@ export default function StudentDashboard() {
           .select('*')
           .eq('student_id', user.id)
           
-        const totalScheduled = classes?.length || 0
+        const totalScheduled = allClasses?.length || 0
         const attendedIds = new Set(attendance?.map(a => a.class_id) || [])
         const totalAttended = attendedIds.size
         const percentage = totalScheduled === 0 ? 0 : Math.round((totalAttended / totalScheduled) * 100)
 
         // Generate history: map all classes (past) to attendance status
-        const pastClasses = classes?.filter(c => c.scheduled_at && new Date(c.scheduled_at) < now) || []
+        const now = new Date()
+        const pastClasses = allClasses?.filter(c => c.scheduled_at && new Date(c.scheduled_at) < now) || []
         const history = pastClasses.map(c => ({
           date: c.scheduled_at,
           status: attendedIds.has(c.id) ? 'Attended' : 'Missed',

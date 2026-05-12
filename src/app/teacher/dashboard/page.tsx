@@ -26,39 +26,40 @@ export default function TeacherDashboard() {
   const [stats, setStats] = useState<any>({ total: 0, completed: 0, percentage: 0, studentBreakdown: [] })
 
   useEffect(() => {
-    async function init() {
+    const fetchStudents = async () => {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) {
+        setIsLoading(false)
+        return
+      }
       setTeacherId(user.id)
 
-      // Fetch students
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, email')
-        .eq('role', 'student')
-      
-      const { data: studentProfiles } = await supabase
+      const { data, error } = await supabase
         .from('student_profiles')
-        .select('user_id, name')
-
-      const combinedStudents = profiles?.map(p => ({
-        id: p.id,
-        email: p.email,
-        name: studentProfiles?.find(sp => sp.user_id === p.id)?.name || p.email
-      })) || []
-
-      setStudents(combinedStudents)
-      if (combinedStudents.length > 0) {
-        setSelectedStudentId(combinedStudents[0].id)
+        .select('user_id, name, teacher_id')
+        .eq('teacher_id', user.id)
+      
+      console.log('Teacher ID:', user.id)
+      console.log('Students found:', data)
+      console.log('Error:', error)
+      
+      if (data && data.length > 0) {
+        // Map user_id to id for compatibility with existing UI code
+        const mappedStudents = data.map((s: any) => ({
+          ...s,
+          id: s.user_id
+        }))
+        setStudents(mappedStudents)
+        setSelectedStudentId(mappedStudents[0].id)
       }
       setIsLoading(false)
     }
-    init()
+    fetchStudents()
   }, [])
 
   useEffect(() => {
     if (teacherId && selectedStudentId) {
-      fetchClasses()
+      fetchClasses(selectedStudentId)
     }
   }, [teacherId, selectedStudentId])
 
@@ -68,15 +69,18 @@ export default function TeacherDashboard() {
     }
   }, [teacherId, activeTab])
 
-  async function fetchClasses() {
-    if (!teacherId || !selectedStudentId) return
-    const { data } = await supabase
-      .from('classes')
-      .select('*')
-      .eq('teacher_id', teacherId)
-      .eq('student_id', selectedStudentId)
-      .order('scheduled_at', { ascending: false })
-    setClasses(data || [])
+  async function fetchClasses(studentId: string) {
+    if (!studentId) return
+
+    const response = await fetch(`/api/classes/teacher?studentId=${encodeURIComponent(studentId)}`)
+    const result = await response.json()
+    if (!response.ok) {
+      console.error('Teacher classes API error:', result?.error)
+      setClasses([])
+      return
+    }
+
+    setClasses(result.classes || [])
   }
 
   async function fetchStats() {
@@ -118,26 +122,16 @@ export default function TeacherDashboard() {
 
   async function markAsCompleted(classObj: any) {
     try {
-      const { error: updateError } = await supabase
-        .from('classes')
-        .update({ status: 'completed' })
-        .eq('id', classObj.id)
-
-      if (updateError) throw updateError
-
-      const { error: attendanceError } = await supabase
-        .from('attendance')
-        .insert({
-          class_id: classObj.id,
-          student_id: classObj.student_id,
-          teacher_id: teacherId,
-          marked_at: new Date().toISOString()
-        })
-
-      if (attendanceError) throw attendanceError
+      const response = await fetch('/api/classes/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ classId: classObj.id, studentId: classObj.student_id }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Failed to mark class completed')
 
       toast.success("Class marked as completed!")
-      fetchClasses()
+      fetchClasses(selectedStudentId)
     } catch (error: any) {
       toast.error(error.message)
     }
@@ -224,7 +218,15 @@ export default function TeacherDashboard() {
         )}
 
         {activeTab === 'create' && (
-          <CreateClassForm students={students} teacherId={teacherId} onCreated={() => setActiveTab('classes')} />
+          <CreateClassForm
+            students={students}
+            teacherId={teacherId}
+            onCreated={(studentId) => {
+              setSelectedStudentId(studentId)
+              setActiveTab('classes')
+              fetchClasses(studentId)
+            }}
+          />
         )}
 
         {activeTab === 'stats' && (
@@ -290,7 +292,7 @@ function NavBtn({ active, onClick, icon, label }: { active: boolean, onClick: ()
   )
 }
 
-function CreateClassForm({ students, teacherId, onCreated }: { students: any[], teacherId: string | null, onCreated: () => void }) {
+function CreateClassForm({ students, teacherId, onCreated }: { students: any[], teacherId: string | null, onCreated: (studentId: string) => void }) {
   const [formData, setFormData] = useState({ studentId: '', meetLink: '', date: '', time: '', repeatWeekly: false })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const supabase = createClient()
@@ -315,8 +317,7 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
             student_id: formData.studentId,
             meet_link: formData.meetLink,
             scheduled_at: addWeeks(scheduledAt, i).toISOString(),
-            status: 'scheduled',
-            repeat_weekly: true
+            status: 'scheduled'
           })
         }
       } else {
@@ -325,8 +326,7 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
           student_id: formData.studentId,
           meet_link: formData.meetLink,
           scheduled_at: scheduledAt.toISOString(),
-          status: 'scheduled',
-          repeat_weekly: false
+          status: 'scheduled'
         })
       }
 
@@ -334,7 +334,7 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
       if (error) throw error
 
       toast.success("Class created successfully!")
-      onCreated()
+      onCreated(formData.studentId)
     } catch (error: any) {
       toast.error(error.message)
     } finally {
