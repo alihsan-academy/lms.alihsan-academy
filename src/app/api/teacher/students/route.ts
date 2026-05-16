@@ -28,12 +28,28 @@ export async function GET() {
 
     const { data: students, error } = await supabaseAdmin
       .from('student_profiles')
-      .select('user_id, name, teacher_id, registration_number, profile_photo')
+      .select(`
+        user_id,
+        name,
+        teacher_id,
+        registration_number,
+        profile_photo,
+        profiles!inner(email)
+      `)
       .eq('teacher_id', user.id)
 
     if (error) throw error
 
-    return NextResponse.json({ students: students || [] })
+    const mappedStudents = students?.map((s: any) => ({
+      user_id: s.user_id,
+      name: s.name,
+      teacher_id: s.teacher_id,
+      registration_number: s.registration_number,
+      profile_photo: s.profile_photo,
+      email: s.profiles?.email || null
+    })) || []
+
+    return NextResponse.json({ students: mappedStudents })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

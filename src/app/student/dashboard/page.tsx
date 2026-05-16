@@ -4,9 +4,12 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
+import { AcademyHeader } from '@/components/academy-header'
 import { Home, BarChart3, User, Loader2, Calendar, Clock, Video } from 'lucide-react'
 import { format, isToday, isFuture, parseISO } from 'date-fns'
 import { Avatar } from '@/components/avatar'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Skeleton } from '@/components/skeleton'
 
 import StudentProfilePage from '@/app/student/profile/page'
 
@@ -132,18 +135,34 @@ export default function StudentDashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-green-50 flex justify-center items-center">
-        <Loader2 className="h-10 w-10 animate-spin text-green-600" />
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-white flex flex-col">
+        <header className="bg-white border-b border-green-100 p-4 flex justify-between items-center shadow-sm">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-8 w-20" />
+        </header>
+        <div className="p-8 max-w-4xl mx-auto w-full space-y-6">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-40 w-full rounded-2xl" />
+          <Skeleton className="h-10 w-48" />
+          <div className="grid gap-4">
+            <Skeleton className="h-20 w-full rounded-xl" />
+            <Skeleton className="h-20 w-full rounded-xl" />
+            <Skeleton className="h-20 w-full rounded-xl" />
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-green-50 flex flex-col pb-20 md:pb-0">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="min-h-screen bg-gradient-to-br from-green-50 to-white flex flex-col pb-20 md:pb-0"
+    >
       <header className="bg-white border-b border-green-100 p-4 flex justify-between items-center shadow-sm sticky top-0 z-10">
-        <div>
-          <h2 className="font-bold text-green-800 text-xl">Al-Ihsan Learnings</h2>
-        </div>
+        <AcademyHeader size="sm" showTagline={true} />
         <LogoutButton />
       </header>
 
@@ -175,14 +194,26 @@ export default function StudentDashboard() {
       </div>
 
       <main className="flex-1 w-full max-w-4xl mx-auto p-4 md:p-8">
-        {activeTab === 'home' && <HomeTab todayClass={todayClass} upcomingClasses={upcomingClasses} teachers={teachers} />}
-        {activeTab === 'attendance' && <AttendanceTab data={attendanceData} teachers={teachers} />}
-        {activeTab === 'profile' && <StudentProfilePage />}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2 }}
+          >
+            {activeTab === 'home' && <HomeTab todayClass={todayClass} upcomingClasses={upcomingClasses} teachers={teachers} />}
+            {activeTab === 'attendance' && <AttendanceTab data={attendanceData} teachers={teachers} />}
+            {activeTab === 'profile' && <StudentProfilePage />}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Bottom Navigation for Mobile */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around p-2 z-50 md:hidden pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-        <button 
+        <motion.button 
+          whileTap={{ scale: 0.8, y: -3 }}
+          whileHover={{ y: -2 }}
           onClick={() => setActiveTab('home')} 
           className={`flex flex-col items-center p-2 w-full transition-colors ${activeTab === 'home' ? 'text-green-700' : 'text-gray-500 hover:text-gray-900'}`}
         >
@@ -190,8 +221,10 @@ export default function StudentDashboard() {
             <Home className="h-6 w-6" />
           </div>
           <span className="text-xs font-medium">Home</span>
-        </button>
-        <button 
+        </motion.button>
+        <motion.button 
+          whileTap={{ scale: 0.8, y: -3 }}
+          whileHover={{ y: -2 }}
           onClick={() => setActiveTab('attendance')} 
           className={`flex flex-col items-center p-2 w-full transition-colors ${activeTab === 'attendance' ? 'text-green-700' : 'text-gray-500 hover:text-gray-900'}`}
         >
@@ -199,8 +232,10 @@ export default function StudentDashboard() {
             <BarChart3 className="h-6 w-6" />
           </div>
           <span className="text-xs font-medium">Attendance</span>
-        </button>
-        <button 
+        </motion.button>
+        <motion.button 
+          whileTap={{ scale: 0.8, y: -3 }}
+          whileHover={{ y: -2 }}
           onClick={() => setActiveTab('profile')} 
           className={`flex flex-col items-center p-2 w-full transition-colors ${activeTab === 'profile' ? 'text-green-700' : 'text-gray-500 hover:text-gray-900'}`}
         >
@@ -208,9 +243,9 @@ export default function StudentDashboard() {
             <User className="h-6 w-6" />
           </div>
           <span className="text-xs font-medium">Profile</span>
-        </button>
+        </motion.button>
       </nav>
-    </div>
+    </motion.div>
   )
 }
 
@@ -223,7 +258,12 @@ function HomeTab({ todayClass, upcomingClasses, teachers }: { todayClass: any, u
           Today's Class
         </h3>
         {todayClass ? (
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-green-100 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            whileHover={{ y: -4, boxShadow: "0 12px 30px rgba(0,0,0,0.08)" }}
+            className="bg-white rounded-2xl p-6 shadow-sm border border-green-100 flex flex-col md:flex-row md:items-center justify-between gap-6"
+          >
             <div className="flex items-center gap-4">
               {(() => {
                 const teacher = teachers.find(t => t.user_id === todayClass.teacher_id);
@@ -244,21 +284,25 @@ function HomeTab({ todayClass, upcomingClasses, teachers }: { todayClass: any, u
               })()}
             </div>
             {todayClass.meet_link ? (
-              <a 
+              <motion.a 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                animate={{ scale: [1, 1.03, 1] }}
+                transition={{ repeat: Infinity, duration: 2 }}
                 href={todayClass.meet_link} 
                 target="_blank" 
                 rel="noreferrer"
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl font-bold transition-all hover:shadow-lg flex items-center justify-center gap-2 text-center whitespace-nowrap"
+                className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-xl font-bold transition-all hover:shadow-lg flex items-center justify-center gap-2 text-center whitespace-nowrap shadow-md"
               >
                 <Video className="h-5 w-5" />
                 Join Class
-              </a>
+              </motion.a>
             ) : (
               <div className="bg-gray-100 text-gray-500 px-6 py-3 rounded-xl font-medium text-center">
                 Link not available yet
               </div>
             )}
-          </div>
+          </motion.div>
         ) : (
           <div className="bg-white rounded-2xl p-8 shadow-sm border border-green-100 text-center flex flex-col items-center">
             <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-4">
@@ -277,7 +321,14 @@ function HomeTab({ todayClass, upcomingClasses, teachers }: { todayClass: any, u
             {upcomingClasses.map((c, i) => {
               const teacher = teachers.find(t => t.user_id === c.teacher_id);
               return (
-                <div key={i} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center justify-between hover:border-green-200 transition-colors">
+                <motion.div 
+                  key={i} 
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  whileHover={{ y: -4, boxShadow: "0 8px 25px rgba(0,0,0,0.06)" }}
+                  className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-center justify-between hover:border-green-200 transition-colors"
+                >
                   <div className="flex items-center gap-4">
                     <Avatar photoUrl={teacher?.profile_photo} name={teacher?.name} size="md" />
                     <div>
@@ -286,7 +337,7 @@ function HomeTab({ todayClass, upcomingClasses, teachers }: { todayClass: any, u
                       <p className="text-sm text-gray-500 font-medium">{format(parseISO(c.scheduled_at), "MMM d, yyyy • h:mm a")}</p>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               )
             })}
           </div>
@@ -310,22 +361,46 @@ function AttendanceTab({ data, teachers }: { data: any, teachers: any[] }) {
       <h3 className="text-2xl font-bold text-green-900 mb-6">Attendance Overview</h3>
       
       <div className="grid grid-cols-4 gap-3 md:gap-6">
-        <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-green-100 text-center flex flex-col items-center justify-center">
-          <p className="text-gray-500 text-[10px] md:text-sm font-semibold uppercase tracking-wider mb-2">Total</p>
-          <p className="text-2xl md:text-4xl font-extrabold text-gray-900">{data.totalClasses}</p>
-        </div>
-        <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-green-100 text-center flex flex-col items-center justify-center">
-          <p className="text-gray-500 text-[10px] md:text-sm font-semibold uppercase tracking-wider mb-2">Present</p>
-          <p className="text-2xl md:text-4xl font-extrabold text-green-600">{data.presentCount}</p>
-        </div>
-        <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-green-100 text-center flex flex-col items-center justify-center">
-          <p className="text-gray-500 text-[10px] md:text-sm font-semibold uppercase tracking-wider mb-2">Absent</p>
-          <p className="text-2xl md:text-4xl font-extrabold text-red-600">{data.absentCount}</p>
-        </div>
-        <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-green-100 text-center flex flex-col items-center justify-center">
-          <p className="text-gray-500 text-[10px] md:text-sm font-semibold uppercase tracking-wider mb-2">Percent</p>
-          <p className="text-2xl md:text-4xl font-extrabold text-gray-900">{data.percentage}%</p>
-        </div>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0 * 0.15 }}
+          whileHover={{ scale: 1.03 }}
+          className="bg-gradient-to-br from-blue-400 to-blue-600 text-white rounded-2xl p-4 md:p-6 shadow-md text-center flex flex-col items-center justify-center"
+        >
+          <p className="text-blue-100 text-[10px] md:text-sm font-semibold uppercase tracking-wider mb-2">Total</p>
+          <p className="text-2xl md:text-4xl font-extrabold">{data.totalClasses}</p>
+        </motion.div>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 1 * 0.15 }}
+          whileHover={{ scale: 1.03 }}
+          className="bg-gradient-to-br from-green-400 to-green-600 text-white rounded-2xl p-4 md:p-6 shadow-md text-center flex flex-col items-center justify-center"
+        >
+          <p className="text-green-100 text-[10px] md:text-sm font-semibold uppercase tracking-wider mb-2">Present</p>
+          <p className="text-2xl md:text-4xl font-extrabold">{data.presentCount}</p>
+        </motion.div>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 2 * 0.15 }}
+          whileHover={{ scale: 1.03 }}
+          className="bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-2xl p-4 md:p-6 shadow-md text-center flex flex-col items-center justify-center"
+        >
+          <p className="text-orange-100 text-[10px] md:text-sm font-semibold uppercase tracking-wider mb-2">Absent</p>
+          <p className="text-2xl md:text-4xl font-extrabold">{data.absentCount}</p>
+        </motion.div>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 3 * 0.15 }}
+          whileHover={{ scale: 1.03 }}
+          className="bg-gradient-to-br from-purple-400 to-purple-600 text-white rounded-2xl p-4 md:p-6 shadow-md text-center flex flex-col items-center justify-center"
+        >
+          <p className="text-purple-100 text-[10px] md:text-sm font-semibold uppercase tracking-wider mb-2">Percent</p>
+          <p className="text-2xl md:text-4xl font-extrabold">{data.percentage}%</p>
+        </motion.div>
       </div>
 
       <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100">
@@ -334,7 +409,12 @@ function AttendanceTab({ data, teachers }: { data: any, teachers: any[] }) {
           <span className="font-extrabold text-2xl text-gray-900">{data.percentage}%</span>
         </div>
         <div className="w-full bg-gray-100 rounded-full h-4 overflow-hidden">
-          <div className={`${barColor} h-4 rounded-full transition-all duration-1000 ease-out`} style={{ width: `${data.percentage}%` }}></div>
+          <motion.div 
+            initial={{ width: 0 }}
+            animate={{ width: data.percentage + "%" }}
+            transition={{ duration: 1.2, ease: "easeOut" }}
+            className={`${barColor} h-4 rounded-full shadow-inner`}
+          ></motion.div>
         </div>
         <p className="text-xs text-gray-400 mt-3 text-center">Aim for 75% or higher to stay on track!</p>
       </div>

@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
-import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, Search, AlertCircle, X, ExternalLink, RefreshCw } from 'lucide-react'
+import { AcademyHeader } from '@/components/academy-header'
+import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, Search, AlertCircle, X, ExternalLink, RefreshCw, Trash } from 'lucide-react'
 import { format, parseISO, isValid } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,6 +12,8 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { Avatar } from '@/components/avatar'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Skeleton } from '@/components/skeleton'
 
 type Tab = 'statistics' | 'students' | 'teachers' | 'attendance' | 'manage'
 
@@ -29,9 +32,12 @@ export default function SuperAdminDashboard() {
   // UI state
   const [searchQuery, setSearchQuery] = useState('')
   const [removeAccessSearchQuery, setRemoveAccessSearchQuery] = useState('')
+  const [removeAccessRoleFilter, setRemoveAccessRoleFilter] = useState('all')
+  const [userToRemove, setUserToRemove] = useState<any>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [newUser, setNewUser] = useState({ email: '', password: '', role: 'student', name: '', className: '', teacherId: '', registrationNumber: '' })
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null)
+  const [reassigningStudentId, setReassigningStudentId] = useState<string | null>(null)
   const [selectedTeacherId, setSelectedTeacherId] = useState('')
   const [selectedProfile, setSelectedProfile] = useState<any>(null)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
@@ -49,44 +55,50 @@ export default function SuperAdminDashboard() {
       
       if (!response.ok) throw new Error(data.error || "Failed to fetch data")
 
-      const profiles = data.profiles
-      const studentProfiles = data.studentProfiles
-      const teacherProfiles = data.teacherProfiles
-      
-      const combinedUsers = profiles?.map((p: any) => {
-        if (p.role === 'student') {
-          const studentInfo = studentProfiles?.find((sp: any) => sp.user_id === p.id)
-          return {
-            ...studentInfo,
-            ...p,
-            id: p.id, // Explicitly use user ID from profiles
-            name: studentInfo?.name || p.email,
-            class_name: studentInfo?.class_name || 'N/A',
-            teacher_id: studentInfo?.teacher_id || null,
-            registration_number: studentInfo?.registration_number || 'N/A'
-          }
-        } else if (p.role === 'teacher') {
-          const teacherInfo = teacherProfiles?.find((tp: any) => tp.user_id === p.id)
-          return {
-            ...teacherInfo,
-            ...p,
-            id: p.id, // Explicitly use user ID from profiles
-            name: teacherInfo?.name || p.email
-          }
+      const mappedStudents = data.students?.map((s: any) => {
+        const sp = s.student_profiles?.[0] || {}
+        return {
+          ...s,
+          name: sp.name || s.email,
+          class_name: sp.class_name || 'N/A',
+          teacher_id: sp.teacher_id || null,
+          registration_number: sp.registration_number || 'N/A',
+          profile_photo: sp.profile_photo || null,
+          created_at: sp.joined_date || s.created_at
         }
-        return { ...p, name: p.email }
       }) || []
-      
-      setAllUsers(combinedUsers)
-      setStudents(combinedUsers.filter((u: any) => u.role === 'student'))
-      setTeachers(combinedUsers.filter((u: any) => u.role === 'teacher'))
+
+      const mappedTeachers = data.teachers?.map((t: any) => {
+        const tp = t.teacher_profiles?.[0] || {}
+        return {
+          ...t,
+          name: tp.name || t.email,
+          profile_photo: tp.profile_photo || null,
+          mobile_number: tp.mobile_number || tp.mobile || null,
+          date_of_joining: tp.date_of_joining || tp.doj || null,
+        }
+      }) || []
+
+      const mappedAllUsers = data.allUsers?.map((u: any) => {
+        let name = u.email;
+        if (u.role === 'student' && u.student_profiles?.[0]?.name) {
+          name = u.student_profiles[0].name;
+        } else if (u.role === 'teacher' && u.teacher_profiles?.[0]?.name) {
+          name = u.teacher_profiles[0].name;
+        }
+        return { ...u, name }
+      }) || []
+
+      setAllUsers(mappedAllUsers)
+      setStudents(mappedStudents)
+      setTeachers(mappedTeachers)
       setAttendanceRecords(data.attendance || [])
       setClasses(data.classes || [])
       
       console.log('Superadmin data refreshed:', {
-        totalProfiles: profiles?.length,
-        totalStudents: studentProfiles?.length,
-        totalTeachers: teacherProfiles?.length
+        totalStudents: mappedStudents.length,
+        totalTeachers: mappedTeachers.length,
+        totalAllUsers: mappedAllUsers.length
       })
 
     } catch (error) {
@@ -109,7 +121,7 @@ export default function SuperAdminDashboard() {
       const response = await fetch('/api/admin/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newUser)
+        body: JSON.stringify({ ...newUser, fullName: newUser.name })
       })
       
       const result = await response.json()
@@ -130,8 +142,6 @@ export default function SuperAdminDashboard() {
   }
 
   async function handleRemoveUser(userId: string) {
-    if (!confirm("Are you sure you want to remove this user? This action cannot be undone.")) return
-    
     try {
       const response = await fetch(`/api/admin/users?id=${userId}`, {
         method: 'DELETE',
@@ -148,6 +158,7 @@ export default function SuperAdminDashboard() {
   }
 
   async function handleReassignTeacher(studentId: string, teacherId: string) {
+    setReassigningStudentId(studentId)
     try {
       const response = await fetch('/api/admin/users', {
         method: 'PATCH',
@@ -165,6 +176,8 @@ export default function SuperAdminDashboard() {
     } catch (error: any) {
       toast.error(error.message)
       return false
+    } finally {
+      setReassigningStudentId(null)
     }
   }
 
@@ -183,32 +196,55 @@ export default function SuperAdminDashboard() {
 
   if (isLoading && allUsers.length === 0) {
     return (
-      <div className="min-h-screen bg-green-50 flex justify-center items-center">
-        <Loader2 className="h-10 w-10 animate-spin text-green-600" />
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-white flex flex-col">
+        <header className="bg-white border-b border-green-100 p-4 flex justify-between items-center shadow-sm">
+          <Skeleton className="h-8 w-48" />
+          <div className="flex gap-4">
+            <Skeleton className="h-8 w-24" />
+            <Skeleton className="h-8 w-12" />
+          </div>
+        </header>
+        <div className="p-8 max-w-5xl mx-auto w-full space-y-8">
+          <Skeleton className="h-8 w-40" />
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+          </div>
+          <Skeleton className="h-64 w-full rounded-2xl" />
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-green-50 flex flex-col pb-20 md:pb-0">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="min-h-screen bg-gradient-to-br from-green-50 to-white flex flex-col pb-20 md:pb-0"
+    >
       <header className="bg-white border-b border-green-100 p-4 flex justify-between items-center shadow-sm sticky top-0 z-10">
-        <div>
-          <h2 className="font-bold text-green-800 text-xl flex items-center gap-2">
-            <ShieldAlert className="h-5 w-5 text-red-600" />
-            Super Admin
-          </h2>
+        <div className="flex items-center gap-3">
+          <AcademyHeader size="sm" showTagline={true} />
+          <div className="flex items-center gap-2 border-l border-gray-200 pl-3 ml-3 hidden sm:flex">
+             <ShieldAlert className="h-5 w-5 text-red-600" />
+             <span className="font-bold text-green-800 text-xl">Super Admin</span>
+          </div>
         </div>
         <div className="flex items-center gap-4">
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <motion.button 
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
             onClick={fetchData} 
             disabled={isLoading}
-            className="border-green-200 text-green-700 hover:bg-green-50 flex items-center gap-2"
+            className="border border-green-200 text-green-700 bg-white hover:bg-green-50 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
           >
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             Refresh
-          </Button>
+          </motion.button>
           <LogoutButton />
         </div>
       </header>
@@ -225,6 +261,14 @@ export default function SuperAdminDashboard() {
       </div>
 
       <main className="flex-1 w-full max-w-5xl mx-auto p-4 md:p-8">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2 }}
+          >
 
         {/* STATISTICS TAB */}
         {activeTab === 'statistics' && (
@@ -233,46 +277,11 @@ export default function SuperAdminDashboard() {
             <section>
               <h3 className="text-xl font-bold text-green-900 mb-4">Academy Overview</h3>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <Card className="bg-white border-green-100 shadow-sm">
-                  <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-500">Total Students</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <div className="text-2xl font-bold text-green-800">{students.length}</div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-white border-green-100 shadow-sm">
-                  <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-500">Total Teachers</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <div className="text-2xl font-bold text-green-800">{teachers.length}</div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-white border-green-100 shadow-sm">
-                  <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-500">Scheduled Classes</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <div className="text-2xl font-bold text-green-800">{classes.length}</div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-white border-green-100 shadow-sm">
-                  <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-500">Completed Classes</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <div className="text-2xl font-bold text-green-800">{classes.filter(c => c.status === 'completed').length}</div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-white border-green-100 shadow-sm">
-                  <CardHeader className="p-4 pb-2">
-                    <CardTitle className="text-sm font-medium text-gray-500">Attendance Records</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <div className="text-2xl font-bold text-green-800">{attendanceRecords.length}</div>
-                  </CardContent>
-                </Card>
+                <DashboardStatCard title="Total Students" value={students.length} index={0} gradient="from-blue-400 to-blue-600" />
+                <DashboardStatCard title="Total Teachers" value={teachers.length} index={1} gradient="from-green-400 to-green-600" />
+                <DashboardStatCard title="Scheduled" value={classes.length} index={2} gradient="from-purple-400 to-purple-600" />
+                <DashboardStatCard title="Completed" value={classes.filter(c => c.status === 'completed').length} index={3} gradient="from-orange-400 to-orange-500" />
+                <DashboardStatCard title="Attendance" value={attendanceRecords.length} index={4} gradient="from-green-500 to-emerald-700" />
               </div>
             </section>
 
@@ -291,13 +300,19 @@ export default function SuperAdminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {teachers.map(t => {
+                      {teachers.map((t, index) => {
                         const assignedStudentsList = students.filter(s => s.teacher_id === t.id);
                         const assignedStudentsNames = assignedStudentsList.map(s => s.name);
                         const teacherClasses = classes.filter(c => c.teacher_id === t.id);
                         const completedClasses = teacherClasses.filter(c => c.status === 'completed').length;
                         return (
-                          <tr key={t.id} className="hover:bg-gray-50 transition-colors">
+                          <motion.tr 
+                            key={t.id} 
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.05 }}
+                            className="hover:bg-gray-50 transition-colors"
+                          >
                             <td className="p-4">
                               <p className="font-bold text-gray-900">{t.name}</p>
                               <p className="text-sm text-gray-500">{t.email}</p>
@@ -309,7 +324,7 @@ export default function SuperAdminDashboard() {
                             <td className="p-4 text-sm font-medium text-gray-600">
                               {teacherClasses.length} / {completedClasses}
                             </td>
-                          </tr>
+                          </motion.tr>
                         )
                       })}
                       {teachers.length === 0 && (
@@ -455,7 +470,6 @@ export default function SuperAdminDashboard() {
                     <tr className="bg-green-50 border-b border-green-100">
                       <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Reg No</th>
                       <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Student Name</th>
-                      <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Email</th>
                       <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Class</th>
                       <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Assigned Teacher</th>
                       <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Joined Date</th>
@@ -466,13 +480,15 @@ export default function SuperAdminDashboard() {
                     {filteredStudents.length > 0 ? filteredStudents.map((s) => (
                       <tr key={s.id} className="hover:bg-gray-50 transition-colors">
                         <td className="p-4 font-bold text-green-700">{s.registration_number}</td>
-                        <td className="p-4 font-bold text-gray-900">
+                        <td className="p-4">
                           <div className="flex items-center gap-3">
                             <Avatar photoUrl={s.profile_photo} name={s.name} size="sm" />
-                            {s.name}
+                            <div>
+                              <p className="font-bold text-gray-900">{s.name}</p>
+                              <p className="text-sm text-gray-500">{s.email}</p>
+                            </div>
                           </div>
                         </td>
-                        <td className="p-4 text-gray-500 text-sm">{s.email}</td>
                         <td className="p-4 font-medium text-gray-700">
                           <span className="bg-green-100 text-green-800 px-2.5 py-0.5 rounded text-xs font-bold uppercase">{s.class_name}</span>
                         </td>
@@ -493,8 +509,9 @@ export default function SuperAdminDashboard() {
                                 size="sm"
                                 className="bg-green-600 hover:bg-green-700 text-white font-bold text-xs"
                                 onClick={() => handleReassignTeacher(s.id, selectedTeacherId)}
+                                disabled={reassigningStudentId === s.id}
                               >
-                                Save
+                                {reassigningStudentId === s.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
                               </Button>
                               <Button
                                 size="sm"
@@ -543,7 +560,7 @@ export default function SuperAdminDashboard() {
                         </td>
                       </tr>
                     )) : (
-                      <tr><td colSpan={7} className="p-8 text-center text-gray-500">No students found.</td></tr>
+                      <tr><td colSpan={6} className="p-8 text-center text-gray-500">No students found.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -574,7 +591,6 @@ export default function SuperAdminDashboard() {
                   <thead>
                     <tr className="bg-green-50 border-b border-green-100">
                       <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Teacher Name</th>
-                      <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Email</th>
                       <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Students Count</th>
                       <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Joined Date</th>
                       <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider text-right">Actions</th>
@@ -585,13 +601,15 @@ export default function SuperAdminDashboard() {
                       const studentCount = students.filter(s => s.teacher_id === t.id).length;
                       return (
                       <tr key={t.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="p-4 font-bold text-gray-900">
+                        <td className="p-4">
                           <div className="flex items-center gap-3">
                             <Avatar photoUrl={t.profile_photo} name={t.name} size="sm" />
-                            {t.name}
+                            <div>
+                              <p className="font-bold text-gray-900">{t.name}</p>
+                              <p className="text-sm text-gray-500">{t.email}</p>
+                            </div>
                           </div>
                         </td>
-                        <td className="p-4 text-gray-500 text-sm">{t.email}</td>
                         <td className="p-4 text-gray-700 font-bold text-center sm:text-left">{studentCount}</td>
                         <td className="p-4 text-sm text-gray-500 font-medium">
                           {format(new Date(t.created_at), "MMM d, yyyy")}
@@ -611,7 +629,7 @@ export default function SuperAdminDashboard() {
                         </td>
                       </tr>
                     )}) : (
-                      <tr><td colSpan={5} className="p-8 text-center text-gray-500">No teachers found.</td></tr>
+                      <tr><td colSpan={4} className="p-8 text-center text-gray-500">No teachers found.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -642,8 +660,14 @@ export default function SuperAdminDashboard() {
                       const teacherName = allUsers.find(u => u.id === a.teacher_id)?.name || 'Unknown'
                       return (
                         <tr key={a.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="p-4 font-bold text-gray-900">{studentName}</td>
-                          <td className="p-4 text-gray-600 font-medium">{teacherName}</td>
+                          <td className="p-4">
+                            <p className="font-bold text-gray-900">{studentName}</p>
+                            <p className="text-sm text-gray-500">{allUsers.find(u => u.id === a.student_id)?.email || ''}</p>
+                          </td>
+                          <td className="p-4">
+                            <p className="font-bold text-gray-900">{teacherName}</p>
+                            <p className="text-sm text-gray-500">{allUsers.find(u => u.id === a.teacher_id)?.email || ''}</p>
+                          </td>
                           <td className="p-4 text-sm text-gray-500">
                             {a.classes?.scheduled_at ? format(parseISO(a.classes.scheduled_at), "MMM d, yyyy") : 'N/A'}
                           </td>
@@ -765,71 +789,117 @@ export default function SuperAdminDashboard() {
                   )}
                 </div>
 
-                <Button type="submit" disabled={isSubmitting} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-6 rounded-xl">
+                <motion.button 
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  type="submit" 
+                  disabled={isSubmitting} 
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-6 rounded-xl transition-all shadow-md"
+                >
                   {isSubmitting ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : null}
                   {isSubmitting ? "Creating Profile..." : "Create User Profile"}
-                </Button>
+                </motion.button>
               </form>
             </div>
 
             <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-red-100">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                 <h3 className="text-xl font-bold text-red-900 flex items-center gap-2 m-0">
                   <UserMinus className="h-6 w-6" /> Danger Zone: Remove Access
                 </h3>
-                <div className="relative w-full sm:w-72">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input 
-                    placeholder="Search by name or email..." 
-                    value={removeAccessSearchQuery}
-                    onChange={(e) => setRemoveAccessSearchQuery(e.target.value)}
-                    className="pl-9 bg-gray-50 border-gray-200 focus-visible:ring-red-500"
-                  />
+                <div className="flex w-full sm:w-auto items-center gap-2">
+                  <div className="relative w-full sm:w-72">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input 
+                      placeholder="Search by name or email..." 
+                      value={removeAccessSearchQuery}
+                      onChange={(e) => setRemoveAccessSearchQuery(e.target.value)}
+                      className="pl-9 bg-gray-50 border-gray-200 focus-visible:ring-red-500"
+                    />
+                  </div>
+                  <select
+                    className="p-2 border border-gray-200 rounded-md bg-gray-50 text-sm font-medium focus:ring-2 focus:ring-red-500 outline-none"
+                    value={removeAccessRoleFilter}
+                    onChange={(e) => setRemoveAccessRoleFilter(e.target.value)}
+                  >
+                    <option value="all">All Roles</option>
+                    <option value="teacher">Teacher</option>
+                    <option value="student">Student</option>
+                    <option value="admin">Admin</option>
+                  </select>
                 </div>
               </div>
               
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-red-50 border-b border-red-100">
-                      <th className="p-4 text-xs font-bold text-red-800 uppercase tracking-wider">User</th>
-                      <th className="p-4 text-xs font-bold text-red-800 uppercase tracking-wider">Role</th>
-                      <th className="p-4 text-xs font-bold text-red-800 uppercase tracking-wider text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {allUsers.filter(u => u.role === 'student' || u.role === 'teacher')
-                      .filter(u => safeLower(u.name).includes(safeLower(removeAccessSearchQuery)) || safeLower(u.email).includes(safeLower(removeAccessSearchQuery)))
-                      .map((u) => (
-                      <tr key={u.id} className="hover:bg-red-50/50 transition-colors">
-                        <td className="p-4">
-                          <p className="font-bold text-gray-900">{u.name}</p>
-                          <p className="text-sm text-gray-500">{u.email}</p>
-                        </td>
-                        <td className="p-4">
-                          <span className="bg-gray-100 text-gray-800 px-2.5 py-0.5 rounded text-xs font-bold uppercase">
-                            {u.role}
-                          </span>
-                        </td>
-                        <td className="p-4 text-right">
-                          <Button 
-                            variant="destructive" 
-                            size="sm" 
-                            onClick={() => handleRemoveUser(u.id)}
-                            className="bg-red-600 hover:bg-red-700 font-bold text-xs"
-                          >
-                            Remove
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {(() => {
+                const filteredRemoveUsers = allUsers
+                  .filter(u => removeAccessRoleFilter === 'all' ? true : u.role === removeAccessRoleFilter)
+                  .filter(u => safeLower(u.name).includes(safeLower(removeAccessSearchQuery)) || safeLower(u.email).includes(safeLower(removeAccessSearchQuery)))
+                
+                const roleLabel = removeAccessRoleFilter === 'all' ? 'Users' : 
+                                  removeAccessRoleFilter === 'teacher' ? 'Teachers' :
+                                  removeAccessRoleFilter === 'student' ? 'Students' : 'Admins'
+                                  
+                return (
+                  <>
+                    <p className="text-sm text-gray-500 font-medium mb-4">
+                      Showing {filteredRemoveUsers.length} {filteredRemoveUsers.length === 1 ? roleLabel.slice(0, -1) : roleLabel}
+                    </p>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-red-50 border-b border-red-100">
+                            <th className="p-4 text-xs font-bold text-red-800 uppercase tracking-wider">User</th>
+                            <th className="p-4 text-xs font-bold text-red-800 uppercase tracking-wider">Role</th>
+                            <th className="p-4 text-xs font-bold text-red-800 uppercase tracking-wider text-right">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {filteredRemoveUsers.length > 0 ? filteredRemoveUsers.map((u) => (
+                            <tr key={u.id} className="hover:bg-red-50/50 transition-colors">
+                              <td className="p-4">
+                                <p className="font-bold text-gray-900">{u.name}</p>
+                                {u.name !== u.email && <p className="text-sm text-gray-500">{u.email}</p>}
+                              </td>
+                              <td className="p-4">
+                                <span className="bg-gray-100 text-gray-800 px-2.5 py-0.5 rounded text-xs font-bold uppercase">
+                                  {u.role}
+                                </span>
+                              </td>
+                              <td className="p-4 text-right">
+                                <motion.button 
+                                  whileHover={{ 
+                                    x: [0, -3, 3, -3, 0],
+                                    transition: { duration: 0.3 }
+                                  }}
+                                  onClick={() => setUserToRemove(u)}
+                                  className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg shadow-sm"
+                                >
+                                  <Trash className="h-3.5 w-3.5" /> Remove
+                                </motion.button>
+                              </td>
+                            </tr>
+                          )) : (
+                            <tr>
+                              <td colSpan={3} className="p-8 text-center text-gray-500">
+                                <div className="flex flex-col items-center justify-center gap-2">
+                                  <Search className="h-8 w-8 text-gray-300" />
+                                  <p>No users found matching your search</p>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )
+              })()}
             </div>
 
           </div>
         )}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Mobile Bottom Navigation */}
@@ -841,9 +911,16 @@ export default function SuperAdminDashboard() {
       </nav>
 
       {/* Profile Modal */}
-      {isProfileModalOpen && selectedProfile && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+      <AnimatePresence>
+        {isProfileModalOpen && selectedProfile && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.8, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ type: "spring", duration: 0.4 }}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+            >
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-green-50">
               <h3 className="text-xl font-bold text-green-900">
                 {selectedProfile.role === 'student' ? 'Student Profile' : 'Teacher Profile'}
@@ -890,10 +967,10 @@ export default function SuperAdminDashboard() {
                           
                           return (
                             <>
-                              <StatCard label="Total Classes" value={totalClasses} />
-                              <StatCard label="Present" value={present} color="text-green-600" />
-                              <StatCard label="Absent" value={absent} color="text-red-600" />
-                              <StatCard label="Percentage" value={`${percentage}%`} color={percentage >= 75 ? 'text-green-600' : 'text-orange-600'} />
+                              <ModalStatCard label="Total Classes" value={totalClasses} />
+                              <ModalStatCard label="Present" value={present} color="text-green-600" />
+                              <ModalStatCard label="Absent" value={absent} color="text-red-600" />
+                              <ModalStatCard label="Percentage" value={`${percentage}%`} color={percentage >= 75 ? 'text-green-600' : 'text-orange-600'} />
                             </>
                           )
                         })()}
@@ -925,10 +1002,10 @@ export default function SuperAdminDashboard() {
                           
                           return (
                             <>
-                              <StatCard label="Total Students" value={assignedStudents.length} />
-                              <StatCard label="Classes Taken" value={teacherClasses.length} />
-                              <StatCard label="Completed" value={completed} color="text-green-600" />
-                              <StatCard label="Completion Rate" value={`${rate}%`} color={rate >= 75 ? 'text-green-600' : 'text-orange-600'} />
+                              <ModalStatCard label="Total Students" value={assignedStudents.length} />
+                              <ModalStatCard label="Classes Taken" value={teacherClasses.length} />
+                              <ModalStatCard label="Completed" value={completed} color="text-green-600" />
+                              <ModalStatCard label="Completion Rate" value={`${rate}%`} color={rate >= 75 ? 'text-green-600' : 'text-orange-600'} />
                             </>
                           )
                         })()}
@@ -948,16 +1025,67 @@ export default function SuperAdminDashboard() {
                 )}
               </div>
             </div>
-            
-            <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end">
-              <Button onClick={() => setIsProfileModalOpen(false)} className="bg-green-600 hover:bg-green-700 text-white font-bold">
-                Close Profile
-              </Button>
-            </div>
-          </div>
+          </motion.div>
         </div>
       )}
-    </div>
+      </AnimatePresence>
+
+      {/* Remove User Confirmation Modal */}
+      <AnimatePresence>
+        {userToRemove && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white rounded-xl shadow-xl w-full max-w-md p-6"
+            >
+            <div className="flex items-center gap-3 text-red-600 mb-4">
+              <AlertCircle className="h-6 w-6" />
+              <h3 className="text-lg font-bold">Confirm Removal</h3>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to remove access for <strong className="text-gray-900">{userToRemove.name}</strong>? This cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setUserToRemove(null)}>
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive" 
+                className="bg-red-600 hover:bg-red-700 text-white font-bold"
+                onClick={() => {
+                  handleRemoveUser(userToRemove.id)
+                  setUserToRemove(null)
+                }}
+              >
+                Yes, Remove
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+function DashboardStatCard({ title, value, index, gradient }: { title: string, value: any, index: number, gradient: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.15 }}
+      whileHover={{ y: -5, scale: 1.02 }}
+    >
+      <Card className={`bg-gradient-to-br ${gradient} text-white border-none shadow-md overflow-hidden`}>
+        <CardHeader className="p-4 pb-1">
+          <CardTitle className="text-xs font-bold uppercase tracking-wider opacity-80">{title}</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-0">
+          <div className="text-2xl font-extrabold">{value}</div>
+        </CardContent>
+      </Card>
+    </motion.div>
   )
 }
 
@@ -970,7 +1098,7 @@ function ProfileItem({ label, value }: { label: string, value: any }) {
   )
 }
 
-function StatCard({ label, value, color = 'text-gray-900' }: { label: string, value: any, color?: string }) {
+function ModalStatCard({ label, value, color = 'text-gray-900' }: { label: string, value: any, color?: string }) {
   return (
     <div className="bg-white border border-gray-100 p-3 rounded-xl shadow-sm">
       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">{label}</p>

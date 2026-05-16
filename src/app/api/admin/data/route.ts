@@ -59,21 +59,25 @@ export async function GET(request: Request) {
       )
     }
 
-    // Fetch all profiles and student details
-    const { data: profiles, error: pError } = await supabase
+    // Fetch joined profiles for students
+    const { data: students, error: sError } = await supabase
       .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false })
+      .select('id, email, role, created_at, student_profiles(*)')
+      .eq('role', 'student')
 
-    const { data: studentProfiles, error: sError } = await supabase
-      .from('student_profiles')
-      .select('*')
+    // Fetch joined profiles for teachers
+    const { data: teachers, error: tError } = await supabase
+      .from('profiles')
+      .select('id, email, role, created_at, teacher_profiles(*)')
+      .eq('role', 'teacher')
 
-    const { data: teacherProfiles, error: tError } = await supabase
-      .from('teacher_profiles')
-      .select('*')
+    // Fetch all non-superadmin users for manage access
+    const { data: allUsers, error: uError } = await supabase
+      .from('profiles')
+      .select('id, email, role, student_profiles(name), teacher_profiles(name)')
+      .neq('role', 'superadmin')
 
-    if (pError || sError || tError) throw pError || sError || tError
+    if (sError || tError || uError) throw sError || tError || uError
 
     // Fetch attendance for the dashboard
     const { data: attendance, error: aError } = await supabase
@@ -94,9 +98,9 @@ export async function GET(request: Request) {
     if (aError || cError) console.error("Error fetching attendance or classes", aError, cError)
 
     return NextResponse.json({ 
-      profiles: profiles || [], 
-      studentProfiles: studentProfiles || [],
-      teacherProfiles: teacherProfiles || [],
+      students: students || [], 
+      teachers: teachers || [],
+      allUsers: allUsers || [],
       attendance: attendance || [],
       classes: classes || []
     })

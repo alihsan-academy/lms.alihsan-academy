@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
+import { AcademyHeader } from '@/components/academy-header'
 import { Calendar, Plus, BarChart3, Loader2, Video, CheckCircle, Clock, User, Globe, AlertCircle, ChevronDown } from 'lucide-react'
 import { format, parseISO, addWeeks, isAfter, startOfToday } from 'date-fns'
 import { Button } from '@/components/ui/button'
@@ -12,6 +13,8 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { Avatar } from '@/components/avatar'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Skeleton } from '@/components/skeleton'
 
 import TeacherProfilePage from '@/app/teacher/profile/page'
 
@@ -127,6 +130,7 @@ export default function TeacherDashboard() {
         id: sid,
         name: student?.name || 'Unknown Student',
         profile_photo: student?.profile_photo,
+        registration_number: student?.registration_number,
         total: data.total,
         completed: data.completed,
         percentage: data.total === 0 ? 0 : Math.round((data.completed / data.total) * 100)
@@ -162,7 +166,8 @@ export default function TeacherDashboard() {
       } else {
         toast.success("Student marked as absent")
       }
-      fetchClasses(selectedStudentId)
+      await fetchClasses(selectedStudentId)
+      await fetchStats()
     } catch (error: any) {
       toast.error(error.message)
     }
@@ -170,18 +175,36 @@ export default function TeacherDashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-green-50 flex justify-center items-center">
-        <Loader2 className="h-10 w-10 animate-spin text-green-600" />
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-white flex flex-col">
+        <header className="bg-white border-b border-green-100 p-4 flex justify-between items-center shadow-sm">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-8 w-20" />
+        </header>
+        <div className="p-8 max-w-4xl mx-auto w-full space-y-6">
+          <Skeleton className="h-10 w-48" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Skeleton className="h-24 w-full rounded-2xl" />
+            <Skeleton className="h-24 w-full rounded-2xl" />
+            <Skeleton className="h-24 w-full rounded-2xl" />
+          </div>
+          <div className="space-y-4">
+            <Skeleton className="h-20 w-full rounded-xl" />
+            <Skeleton className="h-20 w-full rounded-xl" />
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-green-50 flex flex-col pb-20 md:pb-0">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="min-h-screen bg-gradient-to-br from-green-50 to-white flex flex-col pb-20 md:pb-0"
+    >
       <header className="bg-white border-b border-green-100 p-4 flex justify-between items-center shadow-sm sticky top-0 z-10">
-        <div>
-          <h2 className="font-bold text-green-800 text-xl">Al-Ihsan Learnings</h2>
-        </div>
+        <AcademyHeader size="sm" showTagline={true} />
         <LogoutButton />
       </header>
 
@@ -196,7 +219,15 @@ export default function TeacherDashboard() {
       </div>
 
       <main className="flex-1 w-full max-w-4xl mx-auto p-4 md:p-8">
-        {activeTab === 'classes' && (
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2 }}
+          >
+            {activeTab === 'classes' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="bg-white p-4 rounded-xl border border-green-100 shadow-sm space-y-2">
               <Label className="text-sm font-medium text-gray-500">Viewing classes for:</Label>
@@ -211,49 +242,67 @@ export default function TeacherDashboard() {
 
             <div className="space-y-4">
               {classes.length > 0 ? (
-                classes.map(c => (
-                  <Card key={c.id} className="border-green-100 overflow-hidden shadow-sm">
-                    <CardContent className="p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                      <div className="flex items-center gap-4">
-                        {(() => {
-                          const student = students.find(s => s.id === c.student_id);
-                          return (
-                            <>
-                              <Avatar photoUrl={student?.profile_photo} name={student?.name} size="md" />
-                              <div className="space-y-1">
-                                <h4 className="font-bold text-gray-900">{student?.name || 'Unknown Student'}</h4>
-                                <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
-                                  <Clock className="h-4 w-4" />
-                                  {format(parseISO(c.scheduled_at), "EEEE, d MMMM yyyy 'at' h:mm a")}
+                classes.map((c, index) => (
+                  <motion.div
+                    key={c.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    whileHover={{ y: -3 }}
+                  >
+                    <Card className="border-green-100 overflow-hidden shadow-sm">
+                      <CardContent className="p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div className="flex items-center gap-4">
+                          {(() => {
+                            const student = students.find(s => s.id === c.student_id);
+                            return (
+                              <>
+                                <Avatar photoUrl={student?.profile_photo} name={student?.name} size="md" />
+                                <div className="space-y-1">
+                                  <h4 className="font-bold text-gray-900">{student?.name || 'Unknown Student'}</h4>
+                                  <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
+                                    <Clock className="h-4 w-4" />
+                                    {format(parseISO(c.scheduled_at), "EEEE, d MMMM yyyy 'at' h:mm a")}
+                                  </div>
+                                  {c.meet_link && (
+                                    <a href={c.meet_link} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-blue-600 hover:underline text-sm font-medium">
+                                      <Video className="h-4 w-4" />
+                                      Google Meet Link
+                                    </a>
+                                  )}
                                 </div>
-                                {c.meet_link && (
-                                  <a href={c.meet_link} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-blue-600 hover:underline text-sm font-medium">
-                                    <Video className="h-4 w-4" />
-                                    Google Meet Link
-                                  </a>
-                                )}
-                              </div>
-                            </>
-                          )
-                        })()}
-                      </div>
-                      <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${c.status === 'scheduled' ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-green-50 text-green-700 border border-green-100'}`}>
-                          {c.status}
-                        </span>
-                        {c.status === 'scheduled' && (
-                          <div className="flex gap-2">
-                            <Button onClick={() => markClassStatus(c, 'present')} size="sm" className="bg-green-600 hover:bg-green-700 text-white font-bold">
-                              Mark as Completed
-                            </Button>
-                            <Button onClick={() => markClassStatus(c, 'absent')} size="sm" className="bg-red-600 hover:bg-red-700 text-white font-bold">
-                              Mark as Absent
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
+                              </>
+                            )
+                          })()}
+                        </div>
+                        <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${c.status === 'scheduled' ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-green-50 text-green-700 border border-green-100'}`}>
+                            {c.status}
+                          </span>
+                          {c.status === 'scheduled' && (
+                            <div className="flex gap-2">
+                              <motion.button 
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => markClassStatus(c, 'present')} 
+                                className="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors shadow-sm"
+                              >
+                                Mark as Completed
+                              </motion.button>
+                              <motion.button 
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => markClassStatus(c, 'absent')} 
+                                className="bg-red-500 hover:bg-red-600 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors shadow-sm"
+                              >
+                                Mark as Absent
+                              </motion.button>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
                 ))
               ) : (
                 <div className="text-center p-12 bg-white rounded-2xl border border-dashed border-gray-200">
@@ -280,9 +329,9 @@ export default function TeacherDashboard() {
         {activeTab === 'stats' && (
           <div className="space-y-8 animate-in fade-in duration-300">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <StatCard title="Total Classes Taken" value={stats.completed} />
-              <StatCard title="Total Present" value={stats.presentCount} />
-              <StatCard title="Total Absent" value={stats.absentCount} />
+              <StatCard title="Total Classes Taken" value={stats.completed} index={0} gradient="from-blue-400 to-blue-600" />
+              <StatCard title="Total Present" value={stats.presentCount} index={1} gradient="from-green-400 to-green-600" />
+              <StatCard title="Total Absent" value={stats.absentCount} index={2} gradient="from-orange-400 to-orange-500" />
             </div>
 
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -296,7 +345,10 @@ export default function TeacherDashboard() {
                           <Avatar photoUrl={s.profile_photo} name={s.name} size="md" />
                           <div>
                             <p className="font-bold text-gray-900">{s.name}</p>
-                            <p className="text-xs text-gray-500 font-medium">{s.completed} / {s.total} Classes</p>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">Reg: {s.registration_number || 'N/A'}</span>
+                              <p className="text-xs text-gray-500 font-medium">{s.completed} / {s.total} Classes</p>
+                            </div>
                           </div>
                         </div>
                         <span className="font-bold text-green-700">{s.percentage}%</span>
@@ -315,25 +367,36 @@ export default function TeacherDashboard() {
         )}
 
         {activeTab === 'profile' && <TeacherProfilePage />}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around p-2 z-50 md:hidden pb-safe">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around p-2 z-50 md:hidden pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <NavBtn active={activeTab === 'classes'} onClick={() => setActiveTab('classes')} icon={<Calendar />} label="Classes" />
         <NavBtn active={activeTab === 'create'} onClick={() => setActiveTab('create')} icon={<Plus />} label="Create" />
         <NavBtn active={activeTab === 'stats'} onClick={() => setActiveTab('stats')} icon={<BarChart3 />} label="Stats" />
         <NavBtn active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<User />} label="Profile" />
       </nav>
-    </div>
+    </motion.div>
   )
 }
 
-function StatCard({ title, value }: { title: string, value: any }) {
+function StatCard({ title, value, index, gradient }: { title: string, value: any, index: number, gradient: string }) {
   return (
-    <Card className="border-green-100 shadow-sm">
-      <CardHeader className="p-4 pb-0"><CardTitle className="text-xs font-bold uppercase tracking-wider text-gray-500">{title}</CardTitle></CardHeader>
-      <CardContent className="p-4 pt-2 text-3xl font-extrabold text-green-900">{value}</CardContent>
-    </Card>
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: index * 0.2 }}
+      whileHover={{ scale: 1.02 }}
+    >
+      <Card className={`border-none shadow-md bg-gradient-to-br ${gradient} text-white`}>
+        <CardHeader className="p-4 pb-0">
+          <CardTitle className="text-xs font-bold uppercase tracking-wider opacity-80">{title}</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-2 text-3xl font-extrabold">{value}</CardContent>
+      </Card>
+    </motion.div>
   )
 }
 
@@ -485,10 +548,16 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
           <Label htmlFor="repeat" className="text-green-900 font-bold cursor-pointer">Repeat this class every week (for 4 weeks)</Label>
         </div>
 
-        <Button type="submit" disabled={isSubmitting} className="w-full bg-green-600 hover:bg-green-700 text-white font-extrabold py-6 rounded-xl transition-all shadow-md">
+        <motion.button 
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          type="submit" 
+          disabled={isSubmitting} 
+          className="w-full bg-green-600 hover:bg-green-700 text-white font-extrabold py-6 rounded-xl transition-all shadow-md"
+        >
           {isSubmitting ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : null}
           {isSubmitting ? "Creating..." : "Create Class"}
-        </Button>
+        </motion.button>
       </form>
     </div>
   )

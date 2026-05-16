@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -114,11 +115,32 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-green-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-green-700 text-white text-center py-8 px-6 rounded-t-xl">
-          <h1 className="text-3xl font-bold">Al-Ihsan Learnings</h1>
-          <p className="mt-2 text-green-100">Islamic Online Academy</p>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-white flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="w-full max-w-md"
+      >
+        <motion.div 
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="bg-gray-900 rounded-t-xl p-6 text-center"
+        >
+          <img 
+            src="/alihsan-logo.png"
+            alt="Al Ihsan Academy"
+            className="h-24 mx-auto object-contain"
+          />
+        </motion.div>
+        <div className="bg-white p-6 pb-2 text-center border-x border-gray-100">
+          <h1 className="text-xl font-bold text-gray-800">
+            AL IHSAN Academy of Moral Education
+          </h1>
+          <p className="text-sm text-gray-500 italic mt-1">
+            "Building a generation for tomorrow"
+          </p>
         </div>
         <div className="bg-white px-6 py-8 rounded-b-xl shadow-lg">
           <div className="mb-4">
@@ -145,18 +167,28 @@ export default function LoginPage() {
               placeholder="Enter your password"
             />
           </div>
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
-          <button
+          <AnimatePresence>
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto', x: [0, -8, 8, -8, 0] }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.4 }}
+                className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm overflow-hidden"
+              >
+                {error}
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
             onClick={handleLogin}
             disabled={loading}
-            className="w-full bg-green-700 text-white py-3 rounded-lg font-semibold hover:bg-green-800 disabled:opacity-50"
+            className="w-full bg-green-700 text-white py-3 rounded-lg font-semibold hover:bg-green-800 disabled:opacity-50 transition-colors shadow-md"
           >
             {loading ? 'Signing in...' : 'Sign In'}
-          </button>
+          </motion.button>
 
           <div className="mt-4 text-center">
             <button
@@ -168,7 +200,12 @@ export default function LoginPage() {
           </div>
 
           {showForgotPassword && (
-            <div className="mt-6 pt-6 border-t border-gray-100 animate-in fade-in slide-in-from-top-4 duration-300">
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              transition={{ duration: 0.3 }}
+              className="mt-6 pt-6 border-t border-gray-100 overflow-hidden"
+            >
               <h3 className="text-sm font-bold text-gray-800 mb-2">Reset Password</h3>
               <p className="text-xs text-gray-500 mb-3">Enter your email and we'll send you a link to reset your password.</p>
               
@@ -188,17 +225,19 @@ export default function LoginPage() {
                 </div>
               )}
               
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={handleResetPassword}
                 disabled={resetLoading}
                 className="w-full bg-gray-800 text-white py-2 rounded-lg text-sm font-semibold hover:bg-gray-900 disabled:opacity-50 transition-colors"
               >
                 {resetLoading ? 'Sending...' : 'Send Reset Link'}
-              </button>
-            </div>
+              </motion.button>
+            </motion.div>
           )}
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }

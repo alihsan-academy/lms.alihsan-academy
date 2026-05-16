@@ -43,13 +43,29 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { email, password, role, name, className, teacherId, registrationNumber } = body
+    const { 
+      fullName,
+      email, 
+      password,
+      role,
+      teacherId,
+      registrationNumber,
+      className
+    } = body
+
+    console.log('Received body:', { 
+      fullName, email, role, teacherId, 
+      registrationNumber, className 
+    })
+
+    console.log('Full name received:', fullName)
 
     // 1. Create the user in Auth (or reuse existing account by email)
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true
+      email: email,
+      password: password,
+      email_confirm: true,
+      user_metadata: { name: fullName, role: role }
     })
 
     let userId = authData?.user?.id
@@ -73,6 +89,7 @@ export async function POST(request: Request) {
         const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
           password,
           email_confirm: true,
+          user_metadata: { name: fullName, role: role }
         })
         if (updateError) throw updateError
       } else {
@@ -84,44 +101,44 @@ export async function POST(request: Request) {
       throw new Error('Failed to resolve user id for provisioning')
     }
 
-    // 2. Create or update role in profiles table
+    // 2. Insert into profiles table
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
-      .upsert({ id: userId, role }, { onConflict: 'id' })
+      .upsert({ id: userId, email: email, role }, { onConflict: 'id' })
 
-    if (profileError) throw profileError
+    if (profileError) {
+      console.log('Profile insert result error:', profileError)
+      throw profileError
+    }
 
     // 3. Create student/teacher profile
     if (role === 'student') {
-      const { error: detailedProfileError } = await supabaseAdmin
+      const { error: spError } = await supabaseAdmin
         .from('student_profiles')
-        .upsert({
+        .insert({
           user_id: userId,
-          name: name || email,
-          class_name: className || null,
-          teacher_id: teacherId || null,
+          name: fullName,
           registration_number: registrationNumber || null,
-          academy_joined_date: new Date().toISOString(),
-          joined_date: new Date().toISOString()
-        }, { onConflict: 'user_id' })
+          teacher_id: teacherId || null,
+          class_name: className || null,
+          joined_date: new Date().toISOString().split('T')[0]
+        })
 
-      if (detailedProfileError) {
-        throw detailedProfileError
-      }
+      console.log('student_profiles insert error:', spError)
+      if (spError) throw spError
     }
 
     if (role === 'teacher') {
-      const { error: teacherProfileError } = await supabaseAdmin
+      const { error: tpError } = await supabaseAdmin
         .from('teacher_profiles')
-        .upsert({ 
+        .insert({
           user_id: userId,
-          name: name || email,
-          date_of_joining: new Date().toISOString()
-        }, { onConflict: 'user_id' })
+          name: fullName,
+          date_of_joining: new Date().toISOString().split('T')[0]
+        })
 
-      if (teacherProfileError) {
-        throw teacherProfileError
-      }
+      console.log('teacher_profiles insert error:', tpError)
+      if (tpError) throw tpError
     }
 
     const { data: userData } = await supabaseAdmin.auth.admin.getUserById(userId)
@@ -172,52 +189,41 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json()
-    const { userId, teacherId } = body
+    const studentId = body.userId || body.studentId
+    const newTeacherId = body.teacherId || body.newTeacherId || null
 
-    if (!userId) {
+    if (!studentId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
     }
 
     const { data: existingStudentProfile, error: existingStudentProfileError } = await supabaseAdmin
       .from('student_profiles')
       .select('teacher_id')
-      .eq('user_id', userId)
+      .eq('user_id', studentId)
       .maybeSingle()
 
     if (existingStudentProfileError) throw existingStudentProfileError
 
-    const previousTeacherId = existingStudentProfile?.teacher_id || null
+    const oldTeacherId = existingStudentProfile?.teacher_id || null
 
-    const { data: updatedRows, error } = await supabaseAdmin
+    console.log('Reassigning student:', studentId)
+    console.log('New teacher:', newTeacherId)
+
+    const { error } = await supabaseAdmin
       .from('student_profiles')
-      .update({ teacher_id: teacherId || null })
-      .eq('user_id', userId)
-      .select('user_id')
+      .update({ teacher_id: newTeacherId })
+      .eq('user_id', studentId)
 
+    console.log('Update result:', error)
     if (error) throw error
 
-    if (!updatedRows || updatedRows.length === 0) {
-      const { error: insertError } = await supabaseAdmin
-        .from('student_profiles')
-        .insert({
-          user_id: userId,
-          name: null,
-          class_name: null,
-          teacher_id: teacherId || null,
-          joined_date: new Date().toISOString(),
-        })
-
-      if (insertError && insertError.code !== '23505') throw insertError
-    }
-
-    if (previousTeacherId && teacherId && previousTeacherId !== teacherId) {
+    if (oldTeacherId && oldTeacherId !== newTeacherId) {
       const { error: deleteClassesError } = await supabaseAdmin
         .from('classes')
         .delete()
-        .eq('student_id', userId)
-        .eq('teacher_id', previousTeacherId)
+        .eq('student_id', studentId)
+        .eq('teacher_id', oldTeacherId)
         .eq('status', 'scheduled')
-        .gt('scheduled_at', new Date().toISOString())
 
       if (deleteClassesError) throw deleteClassesError
     }
