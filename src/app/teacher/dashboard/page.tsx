@@ -25,6 +25,7 @@ export default function TeacherDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('classes')
   const [isLoading, setIsLoading] = useState(true)
   const [teacherId, setTeacherId] = useState<string | null>(null)
+  const [teacherName, setTeacherName] = useState<string>('')
   const supabase = createClient()
 
   // Data state
@@ -42,6 +43,20 @@ export default function TeacherDashboard() {
         return
       }
       setTeacherId(user.id)
+
+      // Fix #1: Fetch teacher name from teacher_profiles
+      const { data: teacherProfile } = await supabase
+        .from('teacher_profiles')
+        .select('name')
+        .eq('user_id', user.id)
+        .single()
+
+      if (teacherProfile?.name) {
+        setTeacherName(teacherProfile.name)
+      } else {
+        // Fallback to email prefix if no profile name yet
+        setTeacherName(user.email?.split('@')[0] || 'Teacher')
+      }
 
       const response = await fetch('/api/teacher/students')
       const result = await response.json()
@@ -204,7 +219,15 @@ export default function TeacherDashboard() {
       className="min-h-screen bg-gradient-to-br from-green-50 to-white flex flex-col pb-20 md:pb-0"
     >
       <header className="bg-white border-b border-green-100 p-4 flex justify-between items-center shadow-sm sticky top-0 z-10">
-        <AcademyHeader size="sm" showTagline={true} />
+        <div className="flex items-center gap-3">
+          <AcademyHeader size="sm" showTagline={false} />
+          {teacherName && (
+            <div className="hidden sm:flex flex-col border-l border-gray-200 pl-3 ml-1">
+              <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">Teacher</span>
+              <h2 className="font-bold text-green-800 leading-tight">{teacherName}</h2>
+            </div>
+          )}
+        </div>
         <LogoutButton />
       </header>
 

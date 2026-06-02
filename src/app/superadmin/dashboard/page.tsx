@@ -28,6 +28,7 @@ export default function SuperAdminDashboard() {
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
   const [allUsers, setAllUsers] = useState<any[]>([])
+  const [statsLoading, setStatsLoading] = useState(true)
   
   // UI state
   const [searchQuery, setSearchQuery] = useState('')
@@ -93,6 +94,7 @@ export default function SuperAdminDashboard() {
       setTeachers(mappedTeachers)
       setAttendanceRecords(data.attendance || [])
       setClasses(data.classes || [])
+      setStatsLoading(false)
       
       console.log('Superadmin data refreshed:', {
         totalStudents: mappedStudents.length,
@@ -301,11 +303,11 @@ export default function SuperAdminDashboard() {
             <section>
               <h3 className="text-xl font-bold text-green-900 mb-4">Academy Overview</h3>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <DashboardStatCard title="Total Students" value={students.length} index={0} gradient="from-blue-400 to-blue-600" />
-                <DashboardStatCard title="Total Teachers" value={teachers.length} index={1} gradient="from-green-400 to-green-600" />
-                <DashboardStatCard title="Scheduled" value={classes.length} index={2} gradient="from-purple-400 to-purple-600" />
-                <DashboardStatCard title="Completed" value={classes.filter(c => c.status === 'completed').length} index={3} gradient="from-orange-400 to-orange-500" />
-                <DashboardStatCard title="Attendance" value={attendanceRecords.length} index={4} gradient="from-green-500 to-emerald-700" />
+                <DashboardStatCard title="Total Students" value={statsLoading ? null : students.length} index={0} gradient="from-blue-400 to-blue-600" />
+                <DashboardStatCard title="Total Teachers" value={statsLoading ? null : teachers.length} index={1} gradient="from-green-400 to-green-600" />
+                <DashboardStatCard title="Total Classes" value={statsLoading ? null : classes.length} index={2} gradient="from-purple-400 to-purple-600" />
+                <DashboardStatCard title="Completed" value={statsLoading ? null : classes.filter(c => c.status === 'completed').length} index={3} gradient="from-orange-400 to-orange-500" />
+                <DashboardStatCard title="Attendance" value={statsLoading ? null : attendanceRecords.length} index={4} gradient="from-green-500 to-emerald-700" />
               </div>
             </section>
 
@@ -1088,7 +1090,11 @@ function DashboardStatCard({ title, value, index, gradient }: { title: string, v
           <CardTitle className="text-xs font-bold uppercase tracking-wider opacity-80">{title}</CardTitle>
         </CardHeader>
         <CardContent className="p-4 pt-0">
-          <div className="text-2xl font-extrabold">{value}</div>
+          {value === null ? (
+            <div className="animate-pulse bg-white/30 h-8 w-12 rounded" />
+          ) : (
+            <div className="text-2xl font-extrabold">{value}</div>
+          )}
         </CardContent>
       </Card>
     </motion.div>

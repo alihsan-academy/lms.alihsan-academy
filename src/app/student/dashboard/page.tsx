@@ -17,6 +17,8 @@ export default function StudentDashboard() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<'home' | 'attendance' | 'profile'>('home')
   const [isLoading, setIsLoading] = useState(true)
+  const [studentName, setStudentName] = useState<string>('')
+  const [registrationNumber, setRegistrationNumber] = useState<string>('')
   const supabase = createClient()
 
   // State data
@@ -52,9 +54,15 @@ export default function StudentDashboard() {
           .eq('user_id', user.id)
           .single()
 
+        // Fix #2 & #3: Set student name + registration number for header
+        const resolvedName = studentProfile?.name || user.email?.split('@')[0] || 'Student'
+        const resolvedReg = studentProfile?.registration_number || ''
+        setStudentName(resolvedName)
+        setRegistrationNumber(resolvedReg)
+
         setProfileData({
           email: user.email,
-          name: studentProfile?.name || user.email,
+          name: resolvedName,
           photo_url: studentProfile?.photo_url,
           class_name: studentProfile?.class_name || 'Unassigned',
           date_joined: profile?.created_at || user.created_at
@@ -162,7 +170,17 @@ export default function StudentDashboard() {
       className="min-h-screen bg-gradient-to-br from-green-50 to-white flex flex-col pb-20 md:pb-0"
     >
       <header className="bg-white border-b border-green-100 p-4 flex justify-between items-center shadow-sm sticky top-0 z-10">
-        <AcademyHeader size="sm" showTagline={true} />
+        <div className="flex items-center gap-3">
+          <AcademyHeader size="sm" showTagline={false} />
+          {studentName && (
+            <div className="hidden sm:flex flex-col border-l border-gray-200 pl-3 ml-1">
+              <h2 className="font-bold text-green-800 leading-tight">{studentName}</h2>
+              {registrationNumber && (
+                <span className="text-xs font-bold text-green-600">#{registrationNumber}</span>
+              )}
+            </div>
+          )}
+        </div>
         <LogoutButton />
       </header>
 
