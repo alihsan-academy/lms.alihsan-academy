@@ -18,6 +18,18 @@ import { Skeleton } from '@/components/skeleton'
 type Tab = 'statistics' | 'students' | 'teachers' | 'attendance' | 'manage'
 
 export default function SuperAdminDashboard() {
+  const formatUKTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleString('en-GB', {
+      timeZone: 'Europe/London',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    })
+  }
+
   const [activeTab, setActiveTab] = useState<Tab>('statistics')
   const [isLoading, setIsLoading] = useState(true)
   const supabase = createClient()
@@ -45,6 +57,10 @@ export default function SuperAdminDashboard() {
   useEffect(() => {
     fetchData()
   }, [])
+
+  useEffect(() => {
+    setSearchQuery('')
+  }, [activeTab])
 
   async function fetchData() {
     console.log("Fetching data started...")
@@ -394,7 +410,6 @@ export default function SuperAdminDashboard() {
                           <tr key={s.id} className="hover:bg-gray-50 transition-colors">
                             <td className="p-4">
                               <p className="font-bold text-gray-900">{s.name}</p>
-                              <p className="text-sm text-gray-500">{s.email}</p>
                             </td>
                             <td className="p-4 text-sm text-gray-600">{teacherNames || 'None'}</td>
                             <td className="p-4 font-medium text-gray-700">{totalScheduled}</td>
@@ -511,7 +526,6 @@ export default function SuperAdminDashboard() {
                             <Avatar photoUrl={s.profile_photo} name={s.name} size="sm" />
                             <div>
                               <p className="font-bold text-gray-900">{s.name}</p>
-                              <p className="text-sm text-gray-500">{s.email}</p>
                             </div>
                           </div>
                         </td>
@@ -695,10 +709,10 @@ export default function SuperAdminDashboard() {
                             <p className="text-sm text-gray-500">{allUsers.find(u => u.id === a.teacher_id)?.email || ''}</p>
                           </td>
                           <td className="p-4 text-sm text-gray-500">
-                            {a.classes?.scheduled_at ? format(parseISO(a.classes.scheduled_at), "MMM d, yyyy") : 'N/A'}
+                            {a.classes?.scheduled_at ? formatUKTime(a.classes.scheduled_at) : 'N/A'}
                           </td>
                           <td className="p-4 text-sm text-gray-400">
-                            {format(parseISO(a.marked_at), "MMM d, yyyy h:mm a")}
+                            {formatUKTime(a.marked_at)}
                           </td>
                         </tr>
                       )
@@ -733,6 +747,7 @@ export default function SuperAdminDashboard() {
                   <div className="space-y-2">
                     <Label className="font-bold text-lg text-gray-800">Account Role</Label>
                     <select 
+                      id="create-user-role"
                       className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-green-500 outline-none font-semibold text-gray-700"
                       value={newUser.role}
                       onChange={e => setNewUser({...newUser, role: e.target.value})}
@@ -753,17 +768,6 @@ export default function SuperAdminDashboard() {
                         required
                       />
                     </div>
-                    {newUser.role === 'student' && (
-                      <div className="space-y-2">
-                        <Label className="font-semibold text-gray-700">Registration Number</Label>
-                        <Input 
-                          placeholder="e.g. 26009" 
-                          value={newUser.registrationNumber}
-                          onChange={e => setNewUser({...newUser, registrationNumber: e.target.value})}
-                          required
-                        />
-                      </div>
-                    )}
                     <div className="space-y-2">
                       <Label className="font-semibold text-gray-700">Email Address</Label>
                       <Input 
@@ -789,6 +793,15 @@ export default function SuperAdminDashboard() {
 
                   {newUser.role === 'student' && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="font-semibold text-gray-700">Registration Number <span className="text-red-500">*</span></Label>
+                        <Input 
+                          placeholder="e.g. 26009" 
+                          value={newUser.registrationNumber || ''}
+                          onChange={e => setNewUser({...newUser, registrationNumber: e.target.value})}
+                          required
+                        />
+                      </div>
                       <div className="space-y-2">
                         <Label className="font-semibold text-gray-700">Assign to Teacher <span className="text-red-500">*</span></Label>
                         <select 
@@ -1087,7 +1100,7 @@ function DashboardStatCard({ title, value, index, gradient }: { title: string, v
     >
       <Card className={`bg-gradient-to-br ${gradient} text-white border-none shadow-md overflow-hidden`}>
         <CardHeader className="p-4 pb-1">
-          <CardTitle className="text-xs font-bold uppercase tracking-wider opacity-80">{title}</CardTitle>
+          <CardTitle className="text-xs font-bold tracking-wider opacity-80">{title}</CardTitle>
         </CardHeader>
         <CardContent className="p-4 pt-0">
           {value === null ? (

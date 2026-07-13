@@ -34,112 +34,113 @@ export default function StudentDashboard() {
   const [profileData, setProfileData] = useState<any>(null)
   const [teachers, setTeachers] = useState<any[]>([])
   
+  const fetchClasses = async () => {
+    setIsLoading(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { router.push('/login'); return }
+
+      const response = await fetch('/api/student/dashboard-data')
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch dashboard data')
+      }
+
+      const studentProfile = data.studentProfile
+      const profile = data.profile
+      const allClasses = data.classes || []
+      const attendance = data.attendance || []
+      const teacherProfiles = data.teachers || []
+
+      // Fix #2 & #3: Set student name + registration number for header
+      const resolvedName = studentProfile?.name || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Student'
+      const resolvedReg = studentProfile?.registration_number || ''
+      setStudentName(resolvedName)
+      setRegistrationNumber(resolvedReg)
+
+      setProfileData({
+        email: user.email,
+        name: resolvedName,
+        photo_url: studentProfile?.profile_photo || studentProfile?.photo_url || null,
+        class_name: studentProfile?.class_name || 'Unassigned',
+        date_joined: profile?.created_at || user.created_at
+      })
+
+      const now = new Date()
+      
+      const todayUK = now.toLocaleDateString('en-GB', { 
+        timeZone: 'Europe/London'
+      })
+      
+      const todayClasses = allClasses.filter((c: any) => {
+        const classDateUK = new Date(c.scheduled_at)
+          .toLocaleDateString('en-GB', { 
+            timeZone: 'Europe/London'
+          })
+        return classDateUK === todayUK 
+          && c.status === 'scheduled'
+      })
+      
+      const upcoming = allClasses.filter((c: any) => {
+        const classTime = new Date(c.scheduled_at)
+        return classTime > now 
+          && c.status === 'scheduled'
+          && !todayClasses.find((tc: any) => tc.id === c.id)
+      })
+      
+      setTeachers(teacherProfiles)
+      setTodayClass(todayClasses[0] || null)
+      setUpcomingClasses(upcoming)
+
+      const completedClasses = allClasses.filter((c: any) => c.status === 'completed')
+      const totalClasses = completedClasses.length
+      const presentCount = attendance?.filter((a: any) => a.status === 'present' || !a.status).length || 0 // Default to present if status missing
+      const absentCount = attendance?.filter((a: any) => a.status === 'absent').length || 0
+      const percentage = totalClasses === 0 ? 0 : Math.round((presentCount / totalClasses) * 100)
+
+      const history = completedClasses.map((c: any) => {
+        const att = attendance?.find((a: any) => a.class_id === c.id)
+        const status = att && att.status === 'absent' ? 'Absent' : 'Present'
+        return {
+          date: c.scheduled_at,
+          status: status,
+          className: c.title || 'Class',
+          teacher_id: c.teacher_id
+        }
+      }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+      setAttendanceData({ totalClasses, presentCount, absentCount, percentage, history })
+
+    } catch (err) {
+      console.error("Error fetching data:", err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   useEffect(() => {
-    async function fetchData() {
-      setIsLoading(true)
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) { router.push('/login'); return }
-
-        // Fetch profile
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single()
-
-        const { data: studentProfile } = await supabase
-          .from('student_profiles')
-          .select('*')
-          .eq('user_id', user.id)
-          .single()
-
-        // Fix #2 & #3: Set student name + registration number for header
-        const resolvedName = studentProfile?.name || user.email?.split('@')[0] || 'Student'
-        const resolvedReg = studentProfile?.registration_number || ''
-        setStudentName(resolvedName)
-        setRegistrationNumber(resolvedReg)
-
-        setProfileData({
-          email: user.email,
-          name: resolvedName,
-          photo_url: studentProfile?.photo_url,
-          class_name: studentProfile?.class_name || 'Unassigned',
-          date_joined: profile?.created_at || user.created_at
-        })
-
-        // Fetch classes via direct Supabase call
-        const { data: classesData, error: classesError } = await supabase
-          .from('classes')
-          .select('*')
-          .eq('student_id', user.id)
-          .order('scheduled_at', { ascending: true })
-
-        console.log('Student ID:', user.id)
-        console.log('Classes:', classesData)
-        console.log('Error:', classesError)
-
-        const allClasses = classesData || []
-
-        const today = allClasses.filter((c: any) => {
-          const classDate = new Date(c.scheduled_at).toDateString()
-          const todayDate = new Date().toDateString()
-          return classDate === todayDate
-        })
-        
-        const upcoming = allClasses.filter((c: any) => {
-          const classDate = new Date(c.scheduled_at)
-          const todayDate = new Date()
-          todayDate.setHours(23, 59, 59, 999)
-          return classDate > todayDate && c.status === 'scheduled'
-        })
-        
-        // Fetch teachers
-        const teacherIds = Array.from(new Set(allClasses.map((c: any) => c.teacher_id))).filter(Boolean)
-        const { data: teacherProfiles } = await supabase
-          .from('teacher_profiles')
-          .select('user_id, name, profile_photo')
-          .in('user_id', teacherIds)
-        
-        setTeachers(teacherProfiles || [])
-
-        setTodayClass(today[0] || null)
-        setUpcomingClasses(upcoming)
-
-        // Fetch attendance
-        const { data: attendance } = await supabase
-          .from('attendance')
-          .select('*')
-          .eq('student_id', user.id)
-          
-        const completedClasses = allClasses.filter(c => c.status === 'completed')
-        const totalClasses = completedClasses.length
-        const presentCount = attendance?.filter(a => a.status === 'present' || !a.status).length || 0 // Default to present if status missing
-        const absentCount = attendance?.filter(a => a.status === 'absent').length || 0
-        const percentage = totalClasses === 0 ? 0 : Math.round((presentCount / totalClasses) * 100)
-
-        const history = completedClasses.map(c => {
-          const att = attendance?.find(a => a.class_id === c.id)
-          const status = att && att.status === 'absent' ? 'Absent' : 'Present'
-          return {
-            date: c.scheduled_at,
-            status: status,
-            className: c.title || 'Class',
-            teacher_id: c.teacher_id
-          }
-        }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-
-        setAttendanceData({ totalClasses, presentCount, absentCount, percentage, history })
-
-      } catch (err) {
-        console.error("Error fetching data:", err)
-      } finally {
-        setIsLoading(false)
+    fetchClasses()
+    
+    // Refresh when page becomes visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchClasses()
       }
     }
-
-    fetchData()
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [])
+
+  useEffect(() => {
+    if (activeTab === 'home') {
+      fetchClasses()
+    }
+  }, [activeTab])
 
   if (isLoading) {
     return (
@@ -220,7 +221,7 @@ export default function StudentDashboard() {
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.2 }}
           >
-            {activeTab === 'home' && <HomeTab todayClass={todayClass} upcomingClasses={upcomingClasses} teachers={teachers} />}
+            {activeTab === 'home' && <HomeTab todayClass={todayClass} upcomingClasses={upcomingClasses} teachers={teachers} onRefresh={fetchClasses} />}
             {activeTab === 'attendance' && <AttendanceTab data={attendanceData} teachers={teachers} />}
             {activeTab === 'profile' && <StudentProfilePage />}
           </motion.div>
@@ -267,14 +268,35 @@ export default function StudentDashboard() {
   )
 }
 
-function HomeTab({ todayClass, upcomingClasses, teachers }: { todayClass: any, upcomingClasses: any[], teachers: any[] }) {
+function HomeTab({ todayClass, upcomingClasses, teachers, onRefresh }: { todayClass: any, upcomingClasses: any[], teachers: any[], onRefresh: () => void }) {
+  const formatUKTime = (scheduledAt: string) => {
+    return new Date(scheduledAt).toLocaleString('en-GB', {
+      timeZone: 'Europe/London',
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    })
+  }
+
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       <section>
-        <h3 className="text-xl font-bold text-green-900 mb-4 flex items-center gap-2">
-          <Calendar className="h-6 w-6 text-green-600" />
-          Today's Class
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-green-900 flex items-center gap-2">
+            <Calendar className="h-6 w-6 text-green-600" />
+            Today's Class
+          </h3>
+          <button
+            onClick={onRefresh}
+            className="text-xs text-green-600 hover:text-green-800 flex items-center gap-1 underline"
+          >
+            ↻ Refresh
+          </button>
+        </div>
         {todayClass ? (
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
@@ -292,10 +314,14 @@ function HomeTab({ todayClass, upcomingClasses, teachers }: { todayClass: any, u
                       <span className="inline-block px-3 py-1 bg-green-100 text-green-800 text-xs font-bold rounded-full uppercase tracking-wider mb-1">Live Today</span>
                       <h4 className="font-bold text-2xl text-gray-900">{todayClass.title || 'Live Session'}</h4>
                       <p className="text-sm font-bold text-green-700 mb-1">Teacher: {teacher?.name || 'Assigned Teacher'}</p>
-                      <p className="text-gray-600 flex items-center gap-2 font-medium">
-                        <Clock className="h-5 w-5 text-gray-400" />
-                        {format(parseISO(todayClass.scheduled_at), "EEEE, d MMMM yyyy 'at' h:mm a")}
-                      </p>
+                      <div className="text-gray-600 space-y-0.5 font-medium mt-1">
+                        <p className="font-medium text-gray-800">
+                          📅 {formatUKTime(todayClass.scheduled_at)}
+                        </p>
+                        <p className="text-xs text-green-600">
+                          🇬🇧 UK Time (GMT/BST)
+                        </p>
+                      </div>
                     </div>
                   </>
                 )
@@ -352,7 +378,28 @@ function HomeTab({ todayClass, upcomingClasses, teachers }: { todayClass: any, u
                     <div>
                       <h4 className="font-bold text-gray-900">{c.title || 'Live Session'}</h4>
                       <p className="text-xs font-bold text-green-700">{teacher?.name || 'Teacher'}</p>
-                      <p className="text-sm text-gray-500 font-medium">{format(parseISO(c.scheduled_at), "MMM d, yyyy • h:mm a")}</p>
+                      <div className="mt-1">
+                        <p className="font-medium text-gray-800 text-sm">
+                          📅 {formatUKTime(c.scheduled_at)}
+                        </p>
+                        <p className="text-xs text-green-600">
+                          🇬🇧 UK Time (GMT/BST)
+                        </p>
+                      </div>
+                      {c.meet_link && (
+                        <div className="mt-2 flex flex-col gap-1">
+                          <a 
+                            href={c.meet_link} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 hover:bg-green-100 text-xs font-bold px-3 py-1.5 rounded-lg border border-green-200 transition-colors w-max"
+                          >
+                            <Video className="h-3.5 w-3.5" />
+                            Join Class
+                          </a>
+                          <span className="text-[10px] text-gray-400 font-medium break-all">{c.meet_link}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </motion.div>
@@ -386,7 +433,7 @@ function AttendanceTab({ data, teachers }: { data: any, teachers: any[] }) {
           whileHover={{ scale: 1.03 }}
           className="bg-gradient-to-br from-blue-400 to-blue-600 text-white rounded-2xl p-4 md:p-6 shadow-md text-center flex flex-col items-center justify-center"
         >
-          <p className="text-blue-100 text-[10px] md:text-sm font-semibold uppercase tracking-wider mb-2">Total</p>
+          <p className="text-blue-100 text-[10px] md:text-sm font-semibold tracking-wider mb-2">Total Classes</p>
           <p className="text-2xl md:text-4xl font-extrabold">{data.totalClasses}</p>
         </motion.div>
         <motion.div 
@@ -396,7 +443,7 @@ function AttendanceTab({ data, teachers }: { data: any, teachers: any[] }) {
           whileHover={{ scale: 1.03 }}
           className="bg-gradient-to-br from-green-400 to-green-600 text-white rounded-2xl p-4 md:p-6 shadow-md text-center flex flex-col items-center justify-center"
         >
-          <p className="text-green-100 text-[10px] md:text-sm font-semibold uppercase tracking-wider mb-2">Present</p>
+          <p className="text-green-100 text-[10px] md:text-sm font-semibold tracking-wider mb-2">Present</p>
           <p className="text-2xl md:text-4xl font-extrabold">{data.presentCount}</p>
         </motion.div>
         <motion.div 
@@ -406,7 +453,7 @@ function AttendanceTab({ data, teachers }: { data: any, teachers: any[] }) {
           whileHover={{ scale: 1.03 }}
           className="bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-2xl p-4 md:p-6 shadow-md text-center flex flex-col items-center justify-center"
         >
-          <p className="text-orange-100 text-[10px] md:text-sm font-semibold uppercase tracking-wider mb-2">Absent</p>
+          <p className="text-orange-100 text-[10px] md:text-sm font-semibold tracking-wider mb-2">Absent</p>
           <p className="text-2xl md:text-4xl font-extrabold">{data.absentCount}</p>
         </motion.div>
         <motion.div 
@@ -416,7 +463,7 @@ function AttendanceTab({ data, teachers }: { data: any, teachers: any[] }) {
           whileHover={{ scale: 1.03 }}
           className="bg-gradient-to-br from-purple-400 to-purple-600 text-white rounded-2xl p-4 md:p-6 shadow-md text-center flex flex-col items-center justify-center"
         >
-          <p className="text-purple-100 text-[10px] md:text-sm font-semibold uppercase tracking-wider mb-2">Percent</p>
+          <p className="text-purple-100 text-[10px] md:text-sm font-semibold tracking-wider mb-2">Percent</p>
           <p className="text-2xl md:text-4xl font-extrabold">{data.percentage}%</p>
         </motion.div>
       </div>

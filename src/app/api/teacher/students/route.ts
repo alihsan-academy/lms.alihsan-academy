@@ -40,6 +40,13 @@ export async function GET() {
 
     if (error) throw error
 
+    // Fetch teacher profile using service role to bypass RLS recursion
+    const { data: teacherProfile } = await supabaseAdmin
+      .from('teacher_profiles')
+      .select('name')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
     const mappedStudents = students?.map((s: any) => ({
       user_id: s.user_id,
       name: s.name,
@@ -49,7 +56,14 @@ export async function GET() {
       email: s.profiles?.email || null
     })) || []
 
-    return NextResponse.json({ students: mappedStudents })
+    return NextResponse.json({ 
+      students: mappedStudents,
+      teacher: {
+        id: user.id,
+        email: user.email,
+        name: teacherProfile?.name || user.user_metadata?.full_name || user.user_metadata?.name || user.email
+      }
+    })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

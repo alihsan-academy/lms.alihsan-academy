@@ -176,6 +176,19 @@ export default function TeacherProfilePage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="md:col-span-2">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+            <p className="text-sm font-medium text-yellow-800">
+              ⏰ Important: Class Time Policy
+            </p>
+            <p className="text-xs text-yellow-700 mt-1">
+              All classes at Al-Ihsan Academy are scheduled 
+              in UK time (GMT/BST). Please always enter 
+              class times in UK timezone when creating sessions.
+            </p>
+          </div>
+        </div>
+
         <div className="space-y-4 md:col-span-2">
            <h4 className="font-bold text-gray-700 border-b pb-2">Professional Information</h4>
         </div>

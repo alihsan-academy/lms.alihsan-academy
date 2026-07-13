@@ -21,6 +21,19 @@ import TeacherProfilePage from '@/app/teacher/profile/page'
 type Tab = 'classes' | 'create' | 'stats' | 'profile'
 
 export default function TeacherDashboard() {
+  const formatUKTime = (scheduledAt: string) => {
+    return new Date(scheduledAt).toLocaleString('en-GB', {
+      timeZone: 'Europe/London',
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    })
+  }
+
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<Tab>('classes')
   const [isLoading, setIsLoading] = useState(true)
@@ -32,7 +45,7 @@ export default function TeacherDashboard() {
   const [students, setStudents] = useState<any[]>([])
   const [selectedStudentId, setSelectedStudentId] = useState<string>('')
   const [classes, setClasses] = useState<any[]>([])
-  const [stats, setStats] = useState<any>({ completed: 0, presentCount: 0, absentCount: 0, studentBreakdown: [] })
+  const [stats, setStats] = useState<any>({ totalClasses: 0, completed: 0, presentCount: 0, absentCount: 0, studentBreakdown: [] })
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -43,20 +56,7 @@ export default function TeacherDashboard() {
         return
       }
       setTeacherId(user.id)
-
-      // Fix #1: Fetch teacher name from teacher_profiles
-      const { data: teacherProfile } = await supabase
-        .from('teacher_profiles')
-        .select('name')
-        .eq('user_id', user.id)
-        .single()
-
-      if (teacherProfile?.name) {
-        setTeacherName(teacherProfile.name)
-      } else {
-        // Fallback to email prefix if no profile name yet
-        setTeacherName(user.email?.split('@')[0] || 'Teacher')
-      }
+      setTeacherName(user.user_metadata?.full_name || user.user_metadata?.name || user.email)
 
       const response = await fetch('/api/teacher/students')
       const result = await response.json()
@@ -66,6 +66,10 @@ export default function TeacherDashboard() {
         setStudents([])
         setIsLoading(false)
         return
+      }
+
+      if (result.teacher?.name) {
+        setTeacherName(result.teacher.name)
       }
       
       const data = result.students
@@ -152,29 +156,23 @@ export default function TeacherDashboard() {
       }
     })
 
-    setStats({ completed, presentCount, absentCount, studentBreakdown: breakdown })
+    setStats({ totalClasses: allTeacherClasses.length, completed, presentCount, absentCount, studentBreakdown: breakdown })
   }
 
   async function markClassStatus(classObj: any, status: 'present' | 'absent') {
     try {
-      const { error: classError } = await supabase
-        .from('classes')
-        .update({ status: 'completed' })
-        .eq('id', classObj.id)
-
-      if (classError) throw classError
-
-      const { error: attError } = await supabase
-        .from('attendance')
-        .insert({
-          class_id: classObj.id,
-          student_id: classObj.student_id,
-          teacher_id: teacherId,
-          status: status,
-          marked_at: new Date().toISOString()
+      const response = await fetch('/api/classes/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          classId: classObj.id,
+          studentId: classObj.student_id,
+          status: status
         })
+      })
 
-      if (attError && attError.code !== '23505') throw attError
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || "Failed to mark class status")
 
       if (status === 'present') {
         toast.success("Class marked as completed")
@@ -294,14 +292,21 @@ export default function TeacherDashboard() {
                                 <Avatar photoUrl={student?.profile_photo} name={student?.name} size="md" />
                                 <div className="space-y-1">
                                   <h4 className="font-bold text-gray-900">{student?.name || 'Unknown Student'}</h4>
-                                  <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
-                                    <Clock className="h-4 w-4" />
-                                    {format(parseISO(c.scheduled_at), "EEEE, d MMMM yyyy 'at' h:mm a")}
+                                  <div className="flex flex-col text-sm font-medium text-gray-500">
+                                    <div className="flex items-center gap-2">
+                                      <Clock className="h-4 w-4" />
+                                      <p className="font-medium text-gray-800">
+                                        {formatUKTime(c.scheduled_at)}
+                                      </p>
+                                    </div>
+                                    <p className="text-xs text-gray-400 ml-6">
+                                      🇬🇧 UK Time
+                                    </p>
                                   </div>
                                   {c.meet_link && (
                                     <a href={c.meet_link} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-blue-600 hover:underline text-sm font-medium">
                                       <Video className="h-4 w-4" />
-                                      Google Meet Link
+                                      Meeting Link
                                     </a>
                                   )}
                                 </div>
@@ -362,10 +367,11 @@ export default function TeacherDashboard() {
 
         {activeTab === 'stats' && (
           <div className="space-y-8 animate-in fade-in duration-300">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <StatCard title="Total Classes Taken" value={stats.completed} index={0} gradient="from-blue-400 to-blue-600" />
-              <StatCard title="Total Present" value={stats.presentCount} index={1} gradient="from-green-400 to-green-600" />
-              <StatCard title="Total Absent" value={stats.absentCount} index={2} gradient="from-orange-400 to-orange-500" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard title="Total Classes" value={stats.totalClasses} index={0} gradient="from-purple-400 to-purple-600" />
+              <StatCard title="Completed" value={stats.completed} index={1} gradient="from-blue-400 to-blue-600" />
+              <StatCard title="Total Present" value={stats.presentCount} index={2} gradient="from-green-400 to-green-600" />
+              <StatCard title="Total Absent" value={stats.absentCount} index={3} gradient="from-orange-400 to-orange-500" />
             </div>
 
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -426,7 +432,7 @@ function StatCard({ title, value, index, gradient }: { title: string, value: any
     >
       <Card className={`border-none shadow-md bg-gradient-to-br ${gradient} text-white`}>
         <CardHeader className="p-4 pb-0">
-          <CardTitle className="text-xs font-bold uppercase tracking-wider opacity-80">{title}</CardTitle>
+          <CardTitle className="text-xs font-bold tracking-wider opacity-80">{title}</CardTitle>
         </CardHeader>
         <CardContent className="p-4 pt-2 text-3xl font-extrabold">{value}</CardContent>
       </Card>
@@ -459,33 +465,48 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
     
     setIsSubmitting(true)
     try {
-      const scheduledAt = new Date(`${formData.date}T${formData.time}`)
-      const classesToCreate = []
-
-      if (formData.repeatWeekly) {
-        for (let i = 0; i < 4; i++) {
-          classesToCreate.push({
-            teacher_id: teacherId,
-            student_id: formData.studentId,
-            meet_link: formData.meetLink,
-            scheduled_at: addWeeks(scheduledAt, i).toISOString(),
-            status: 'scheduled'
-          })
-        }
-      } else {
-        classesToCreate.push({
-          teacher_id: teacherId,
-          student_id: formData.studentId,
-          meet_link: formData.meetLink,
-          scheduled_at: scheduledAt.toISOString(),
-          status: 'scheduled'
+      const dateTimeString = `${formData.date}T${formData.time}:00`
+      const ukDate = new Date(
+        new Date(dateTimeString).toLocaleString('en-US', {
+          timeZone: 'Europe/London'
         })
-      }
+      )
+      const utcOffset = new Date(dateTimeString).getTime() - ukDate.getTime()
+      const scheduledUTC = new Date(new Date(dateTimeString).getTime() + utcOffset)
 
-      const { error } = await supabase.from('classes').insert(classesToCreate)
-      if (error) throw error
+      const response = await fetch('/api/classes/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentId: formData.studentId,
+          meetLink: formData.meetLink,
+          date: formData.date,
+          time: formData.time,
+          repeatWeekly: formData.repeatWeekly
+        })
+      })
 
-      toast.success("Class created successfully!")
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || "Failed to create class")
+
+      const ukDisplay = scheduledUTC.toLocaleString('en-GB', {
+        timeZone: 'Europe/London',
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      })
+      toast.success(`Class created for ${ukDisplay} UK time`)
+
+      setFormData(prev => ({
+        ...prev,
+        meetLink: '',
+        date: '',
+        time: '',
+        repeatWeekly: false
+      }))
       onCreated(formData.studentId)
     } catch (error: any) {
       toast.error(error.message)
@@ -547,9 +568,9 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
         </div>
 
         <div className="space-y-2">
-          <Label className="text-green-900 font-semibold">Google Meet Link</Label>
+          <Label className="text-green-900 font-semibold">Meeting Link</Label>
           <Input 
-            placeholder="https://meet.google.com/xxx-xxxx-xxx"
+            placeholder="https://meet.google.com/xxx-xxxx-xxx or Zoom/Teams link"
             value={formData.meetLink}
             onChange={(e) => setFormData(prev => ({ ...prev, meetLink: e.target.value }))}
             className="rounded-xl border-gray-200"
@@ -577,6 +598,26 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
               required
               className="rounded-xl border-gray-200"
             />
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
+              <p className="text-sm text-blue-700 font-medium">
+                🇬🇧 Please enter class time in UK time (GMT/BST)
+              </p>
+              <p className="text-xs text-blue-500 mt-1">
+                All classes are scheduled in UK timezone.
+                Students will see this exact time.
+              </p>
+            </div>
+            <p className="text-xs text-gray-500 mt-2" suppressHydrationWarning>
+              Current UK time: {new Date().toLocaleString('en-GB', {
+                timeZone: 'Europe/London',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+                weekday: 'short',
+                day: 'numeric',
+                month: 'short'
+              })}
+            </p>
           </div>
         </div>
 

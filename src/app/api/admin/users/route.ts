@@ -65,7 +65,7 @@ export async function POST(request: Request) {
       email: email,
       password: password,
       email_confirm: true,
-      user_metadata: { name: fullName, role: role }
+      user_metadata: { name: fullName, full_name: fullName, role: role }
     })
 
     let userId = authData?.user?.id
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
         const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
           password,
           email_confirm: true,
-          user_metadata: { name: fullName, role: role }
+          user_metadata: { name: fullName, full_name: fullName, role: role }
         })
         if (updateError) throw updateError
       } else {
