@@ -277,10 +277,39 @@ function HomeTab({ studentName, todayClass, upcomingClasses, teachers, onRefresh
     { text: "Indeed, with hardship [will be] ease.", source: "Quran 94:6" },
     { text: "Whoever travels a path in search of knowledge, Allah will make easy for him a path to Paradise.", source: "Sahih Muslim" },
     { text: "The best among you are those who learn the Quran and teach it.", source: "Sahih al-Bukhari" },
-    { text: "Read! In the name of your Lord who created.", source: "Quran 96:1" }
+    { text: "Read! In the name of your Lord who created.", source: "Quran 96:1" },
+    { text: "And He found you lost and guided you.", source: "Quran 93:7" },
+    { text: "So remember Me; I will remember you.", source: "Quran 2:152" },
+    { text: "When you treat people well, those same people might not treat you well. But Allah will.", source: "Islamic Proverb" },
+    { text: "A kind word with forgiveness is better than charity followed by injury.", source: "Quran 2:263" },
+    { text: "Do not lose hope, nor be sad.", source: "Quran 3:139" },
+    { text: "Patience is a pillar of faith.", source: "Umar ibn Al-Khattab" },
+    { text: "Verily, in the remembrance of Allah do hearts find rest.", source: "Quran 13:28" },
+    { text: "If Allah wants to do good to somebody, He afflicts him with trials.", source: "Sahih al-Bukhari" },
+    { text: "Speak a good word or remain silent.", source: "Prophet Muhammad (PBUH)" },
+    { text: "He who has no patience has no faith.", source: "Ali ibn Abi Talib" },
+    { text: "Allah is with the doers of good.", source: "Quran 29:69" },
+    { text: "A true believer is one who does not defame or curse.", source: "Al-Tirmidhi" },
+    { text: "Call upon Me; I will respond to you.", source: "Quran 40:60" },
+    { text: "The strong man is not the good wrestler; the strong man is only the one who controls himself when he is angry.", source: "Sahih al-Bukhari" },
+    { text: "My mercy encompasses all things.", source: "Quran 7:156" },
+    { text: "Be mindful of Allah, and you will find Him in front of you.", source: "Al-Tirmidhi" },
+    { text: "O you who have believed, seek help through patience and prayer.", source: "Quran 2:153" },
+    { text: "No fatigue, nor disease, nor sorrow, nor sadness, nor hurt, nor distress befalls a Muslim, even if it were the prick he receives from a thorn, but that Allah expiates some of his sins for that.", source: "Sahih al-Bukhari" },
+    { text: "Trust in Allah, but tie your camel.", source: "Prophet Muhammad (PBUH)" },
+    { text: "The richest of the rich is the one who is not a prisoner to greed.", source: "Ali ibn Abi Talib" },
+    { text: "And whoever turns away from My remembrance - indeed, he will have a depressed life.", source: "Quran 20:124" },
+    { text: "The greatest jihad is to battle your own soul, to fight the evil within yourself.", source: "Prophet Muhammad (PBUH)" },
+    { text: "Allah is with those who have patience.", source: "Quran 2:153" },
+    { text: "Good manners are the beautiful fragrance of the soul.", source: "Islamic Proverb" }
   ];
   
-  const quoteIndex = new Date().getDay(); // 0-6 based on day of week
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const diff = now.getTime() - start.getTime();
+  const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const quoteIndex = dayOfYear % quotes.length;
+  
   const todayQuote = quotes[quoteIndex];
 
   return (
