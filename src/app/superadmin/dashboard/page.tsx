@@ -4,16 +4,17 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
 import { AcademyHeader } from '@/components/academy-header'
-import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, Search, AlertCircle, X, ExternalLink, RefreshCw, Trash } from 'lucide-react'
-import { format, parseISO, isValid } from 'date-fns'
-import { Button } from '@/components/ui/button'
+import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, Search, AlertCircle, X, RefreshCw, Trash } from 'lucide-react'
+import { format, parseISO } from 'date-fns'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { Avatar } from '@/components/avatar'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Skeleton } from '@/components/skeleton'
+import { AnimatedCard } from '@/components/animated-card'
+import { BouncyButton } from '@/components/bouncy-button'
+import { PageTransition } from '@/components/page-transition'
 
 type Tab = 'statistics' | 'students' | 'teachers' | 'attendance' | 'manage'
 
@@ -63,7 +64,6 @@ export default function SuperAdminDashboard() {
   }, [activeTab])
 
   async function fetchData() {
-    console.log("Fetching data started...")
     setIsLoading(true)
     try {
       const response = await fetch('/api/admin/data', { cache: 'no-store' })
@@ -111,19 +111,12 @@ export default function SuperAdminDashboard() {
       setAttendanceRecords(data.attendance || [])
       setClasses(data.classes || [])
       setStatsLoading(false)
-      
-      console.log('Superadmin data refreshed:', {
-        totalStudents: mappedStudents.length,
-        totalTeachers: mappedTeachers.length,
-        totalAllUsers: mappedAllUsers.length
-      })
 
     } catch (error) {
       console.error("Error fetching superadmin data:", error)
       toast.error("Failed to load dashboard data.")
     } finally {
       setIsLoading(false)
-      console.log("Fetching data finished.")
     }
   }
 
@@ -131,9 +124,6 @@ export default function SuperAdminDashboard() {
     e.preventDefault()
     setIsSubmitting(true)
     
-    // Note: In a real production app, you should create users via a secure API route 
-    // using the SUPABASE_SERVICE_ROLE_KEY so you don't log out the current admin.
-    // We are calling an API route here assuming it will be set up.
     try {
       const response = await fetch('/api/admin/users', {
         method: 'POST',
@@ -145,9 +135,9 @@ export default function SuperAdminDashboard() {
       
       if (!response.ok) throw new Error(result.error || "Failed to create user")
       
-      toast.success("User created successfully!")
+      toast.success("User created successfully! 🎉")
       setNewUser({ email: '', password: '', role: 'student', name: '', className: '', teacherId: '', registrationNumber: '' })
-      fetchData() // Refresh list
+      fetchData()
     } catch (error: any) {
       toast.error(error.message)
       if (error.message.includes("Service Role")) {
@@ -161,10 +151,6 @@ export default function SuperAdminDashboard() {
   const [removingUserId, setRemovingUserId] = useState<string | null>(null)
   const [showConfirm, setShowConfirm] = useState<string | null>(null)
 
-  const handleRemoveUser = (userId: string, userName: string) => {
-    setShowConfirm(userId)
-  }
-
   const confirmRemove = async (userId: string) => {
     setRemovingUserId(userId)
     setShowConfirm(null)
@@ -177,21 +163,14 @@ export default function SuperAdminDashboard() {
       })
 
       const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Failed to remove user')
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to remove user')
-      }
-
-      // Remove from local state immediately
       setAllUsers(prev => prev.filter(u => u.id !== userId))
       setStudents(prev => prev.filter(s => s.id !== userId))
       setTeachers(prev => prev.filter(t => t.id !== userId))
       
-      toast.success('User access removed successfully')
-      
-      // Also refresh background data to be sure
+      toast.success('User removed successfully 🗑️')
       fetchData()
-
     } catch (error: any) {
       toast.error('Failed to remove: ' + error.message)
     } finally {
@@ -210,7 +189,7 @@ export default function SuperAdminDashboard() {
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || "Failed to reassign teacher")
       
-      toast.success("Student reassigned successfully")
+      toast.success("Student reassigned successfully ✨")
       setEditingStudentId(null)
       setSelectedTeacherId('')
       fetchData()
@@ -238,763 +217,731 @@ export default function SuperAdminDashboard() {
 
   if (isLoading && allUsers.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-white flex flex-col">
-        <header className="bg-white border-b border-green-100 p-4 flex justify-between items-center shadow-sm">
-          <Skeleton className="h-8 w-48" />
+      <div className="min-h-screen bg-background flex flex-col">
+        <header className="bg-white border-b-2 border-border p-4 flex justify-between items-center shadow-sm">
+          <Skeleton className="h-8 w-48 rounded-full" />
           <div className="flex gap-4">
-            <Skeleton className="h-8 w-24" />
-            <Skeleton className="h-8 w-12" />
+            <Skeleton className="h-8 w-24 rounded-full" />
+            <Skeleton className="h-8 w-12 rounded-full" />
           </div>
         </header>
-        <div className="p-8 max-w-5xl mx-auto w-full space-y-8">
-          <Skeleton className="h-8 w-40" />
+        <div className="p-8 max-w-6xl mx-auto w-full space-y-8">
+          <Skeleton className="h-8 w-40 rounded-full" />
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <Skeleton className="h-24 w-full rounded-xl" />
-            <Skeleton className="h-24 w-full rounded-xl" />
-            <Skeleton className="h-24 w-full rounded-xl" />
-            <Skeleton className="h-24 w-full rounded-xl" />
-            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-32 w-full rounded-2xl" />
+            <Skeleton className="h-32 w-full rounded-2xl" />
+            <Skeleton className="h-32 w-full rounded-2xl" />
+            <Skeleton className="h-32 w-full rounded-2xl" />
+            <Skeleton className="h-32 w-full rounded-2xl" />
           </div>
-          <Skeleton className="h-64 w-full rounded-2xl" />
+          <Skeleton className="h-96 w-full rounded-3xl" />
         </div>
       </div>
     )
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="min-h-screen bg-gradient-to-br from-green-50 to-white flex flex-col pb-20 md:pb-0"
-    >
-      <header className="bg-white border-b border-green-100 p-4 flex justify-between items-center shadow-sm sticky top-0 z-10">
+    <div className="min-h-screen bg-background flex flex-col pb-24 md:pb-0 font-sans selection:bg-primary/20">
+      <header className="bg-white border-b-2 border-border p-3 md:p-4 flex justify-between items-center sticky top-0 z-40 shadow-sm backdrop-blur-md bg-white/90">
         <div className="flex items-center gap-3">
           <AcademyHeader size="sm" showTagline={true} />
-          <div className="flex items-center gap-2 border-l border-gray-200 pl-3 ml-3 hidden sm:flex">
-             <ShieldAlert className="h-5 w-5 text-red-600" />
-             <span className="font-bold text-green-800 text-xl">Super Admin</span>
+          <div className="hidden sm:flex items-center gap-2 border-l-2 border-border pl-4 ml-2">
+             <ShieldAlert className="h-5 w-5 text-destructive" />
+             <span className="font-extrabold text-foreground text-xl">Super Admin</span>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <motion.button 
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
+        <div className="flex items-center gap-3">
+          <BouncyButton 
+            variant="outline"
+            size="sm"
             onClick={fetchData} 
             disabled={isLoading}
-            className="border border-green-200 text-green-700 bg-white hover:bg-green-50 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
+            className="gap-2 hidden sm:flex border-2"
           >
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             Refresh
-          </motion.button>
+          </BouncyButton>
           <LogoutButton />
         </div>
       </header>
 
       {/* Desktop Navigation */}
-      <div className="hidden md:block bg-white border-b border-green-100 px-8">
-        <nav className="flex space-x-8 max-w-5xl mx-auto">
-          <button onClick={() => setActiveTab('statistics')} className={`py-4 px-2 border-b-2 font-medium transition-colors flex items-center gap-2 ${activeTab === 'statistics' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}><BarChart3 className="h-5 w-5" />Statistics</button>
-          <button onClick={() => setActiveTab('students')} className={`py-4 px-2 border-b-2 font-medium transition-colors flex items-center gap-2 ${activeTab === 'students' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}><GraduationCap className="h-5 w-5" />Students</button>
-          <button onClick={() => setActiveTab('teachers')} className={`py-4 px-2 border-b-2 font-medium transition-colors flex items-center gap-2 ${activeTab === 'teachers' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}><BookOpen className="h-5 w-5" />Teachers</button>
-          <button onClick={() => setActiveTab('attendance')} className={`py-4 px-2 border-b-2 font-medium transition-colors flex items-center gap-2 ${activeTab === 'attendance' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}><CheckCircle className="h-5 w-5" />Attendance</button>
-          <button onClick={() => setActiveTab('manage')} className={`py-4 px-2 border-b-2 font-medium transition-colors flex items-center gap-2 ${activeTab === 'manage' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}><Users className="h-5 w-5" />Manage Users</button>
+      <div className="hidden md:block bg-white border-b-2 border-border px-8">
+        <nav className="flex space-x-2 max-w-6xl mx-auto py-2">
+          <NavTab active={activeTab === 'statistics'} onClick={() => setActiveTab('statistics')} icon={<BarChart3 />} label="Statistics" />
+          <NavTab active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<GraduationCap />} label="Students" />
+          <NavTab active={activeTab === 'teachers'} onClick={() => setActiveTab('teachers')} icon={<BookOpen />} label="Teachers" />
+          <NavTab active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={<CheckCircle />} label="Attendance" />
+          <NavTab active={activeTab === 'manage'} onClick={() => setActiveTab('manage')} icon={<Users />} label="Manage Users" />
         </nav>
       </div>
 
-      <main className="flex-1 w-full max-w-5xl mx-auto p-4 md:p-8">
+      <main className="flex-1 w-full max-w-6xl mx-auto p-4 md:p-8">
         <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
-          >
-
-        {/* STATISTICS TAB */}
-        {activeTab === 'statistics' && (
-          <div className="space-y-8 animate-in fade-in duration-300">
-            {/* SECTION 1: Academy Overview */}
-            <section>
-              <h3 className="text-xl font-bold text-green-900 mb-4">Academy Overview</h3>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <DashboardStatCard title="Total Students" value={statsLoading ? null : students.length} index={0} gradient="from-blue-400 to-blue-600" />
-                <DashboardStatCard title="Total Teachers" value={statsLoading ? null : teachers.length} index={1} gradient="from-green-400 to-green-600" />
-                <DashboardStatCard title="Total Classes" value={statsLoading ? null : classes.length} index={2} gradient="from-purple-400 to-purple-600" />
-                <DashboardStatCard title="Completed" value={statsLoading ? null : classes.filter(c => c.status === 'completed').length} index={3} gradient="from-orange-400 to-orange-500" />
-                <DashboardStatCard title="Attendance" value={statsLoading ? null : attendanceRecords.length} index={4} gradient="from-green-500 to-emerald-700" />
-              </div>
-            </section>
-
-            {/* SECTION 2: Students Under Each Teacher */}
-            <section>
-              <h3 className="text-xl font-bold text-green-900 mb-4">Students Under Each Teacher</h3>
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-green-50 border-b border-green-100">
-                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Teacher Info</th>
-                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Total Students</th>
-                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Assigned Students</th>
-                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Classes (Total/Done)</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {teachers.map((t, index) => {
-                        const assignedStudentsList = students.filter(s => s.teacher_id === t.id);
-                        const assignedStudentsNames = assignedStudentsList.map(s => s.name);
-                        const teacherClasses = classes.filter(c => c.teacher_id === t.id);
-                        const completedClasses = teacherClasses.filter(c => c.status === 'completed').length;
-                        return (
-                          <motion.tr 
-                            key={t.id} 
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.05 }}
-                            className="hover:bg-gray-50 transition-colors"
-                          >
-                            <td className="p-4">
-                              <p className="font-bold text-gray-900">{t.name}</p>
-                              <p className="text-sm text-gray-500">{t.email}</p>
-                            </td>
-                            <td className="p-4 font-bold text-gray-700">{assignedStudentsList.length}</td>
-                            <td className="p-4 text-sm text-gray-600 max-w-xs truncate" title={assignedStudentsNames.join(', ')}>
-                              {assignedStudentsNames.length > 0 ? assignedStudentsNames.join(', ') : 'None'}
-                            </td>
-                            <td className="p-4 text-sm font-medium text-gray-600">
-                              {teacherClasses.length} / {completedClasses}
-                            </td>
-                          </motion.tr>
-                        )
-                      })}
-                      {teachers.length === 0 && (
-                        <tr><td colSpan={4} className="p-8 text-center text-gray-500">No data available yet</td></tr>
-                      )}
-                    </tbody>
-                  </table>
+          {activeTab === 'statistics' && (
+            <PageTransition key="statistics" className="space-y-8">
+              <section>
+                <h3 className="text-2xl font-black text-foreground mb-4">Academy Overview</h3>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  <DashboardStatCard title="Total Students" value={statsLoading ? null : students.length} index={0} gradient="from-blue-400 to-blue-600" />
+                  <DashboardStatCard title="Total Teachers" value={statsLoading ? null : teachers.length} index={1} gradient="from-primary to-emerald-600" />
+                  <DashboardStatCard title="Total Classes" value={statsLoading ? null : classes.length} index={2} gradient="from-purple-400 to-indigo-600" />
+                  <DashboardStatCard title="Completed" value={statsLoading ? null : classes.filter(c => c.status === 'completed').length} index={3} gradient="from-secondary to-orange-500" />
+                  <DashboardStatCard title="Attendance" value={statsLoading ? null : attendanceRecords.length} index={4} gradient="from-pink-400 to-rose-600" />
                 </div>
-              </div>
-            </section>
+              </section>
 
-            {/* SECTION 3: Each Student's Attendance */}
-            <section>
-              <h3 className="text-xl font-bold text-green-900 mb-4">Each Student's Attendance</h3>
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-green-50 border-b border-green-100">
-                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Student Info</th>
-                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Teacher(s)</th>
-                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Scheduled</th>
-                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Attended</th>
-                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Progress</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {students.map(s => {
-                        const studentClasses = classes.filter(c => c.student_id === s.id);
-                        const studentAttendance = attendanceRecords.filter(a => a.student_id === s.id);
-                        const totalScheduled = studentClasses.length;
-                        const totalAttended = studentAttendance.length;
-                        const percentage = totalScheduled > 0 ? Math.round((totalAttended / totalScheduled) * 100) : 0;
-                        const teacherNames = Array.from(new Set(studentClasses.map(c => teachers.find(t => t.id === c.teacher_id)?.name))).filter(Boolean).join(', ');
-                        
-                        let color = 'bg-red-500';
-                        if (percentage >= 76) color = 'bg-green-500';
-                        else if (percentage >= 51) color = 'bg-yellow-500';
+              <section>
+                <h3 className="text-2xl font-black text-foreground mb-4">Students Under Each Teacher</h3>
+                <AnimatedCard delay={0.2} className="p-0 overflow-hidden border-2 border-border">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-muted border-b-2 border-border">
+                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Teacher Info</th>
+                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Total Students</th>
+                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Assigned Students</th>
+                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Classes (Done/Total)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y-2 divide-border">
+                        {teachers.map((t, index) => {
+                          const assignedStudentsList = students.filter(s => s.teacher_id === t.id);
+                          const assignedStudentsNames = assignedStudentsList.map(s => s.name);
+                          const teacherClasses = classes.filter(c => c.teacher_id === t.id);
+                          const completedClasses = teacherClasses.filter(c => c.status === 'completed').length;
+                          return (
+                            <motion.tr 
+                              key={t.id} 
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.05 }}
+                              className="hover:bg-muted/30 transition-colors"
+                            >
+                              <td className="p-4">
+                                <p className="font-bold text-foreground text-lg">{t.name}</p>
+                                <p className="text-sm font-medium text-muted-foreground">{t.email}</p>
+                              </td>
+                              <td className="p-4 font-black text-primary text-xl">{assignedStudentsList.length}</td>
+                              <td className="p-4 text-sm font-medium text-foreground max-w-xs truncate" title={assignedStudentsNames.join(', ')}>
+                                {assignedStudentsNames.length > 0 ? assignedStudentsNames.join(', ') : 'None'}
+                              </td>
+                              <td className="p-4 text-sm font-bold text-foreground">
+                                {completedClasses} / {teacherClasses.length}
+                              </td>
+                            </motion.tr>
+                          )
+                        })}
+                        {teachers.length === 0 && (
+                          <tr><td colSpan={4} className="p-8 text-center text-muted-foreground font-bold">No data available yet</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </AnimatedCard>
+              </section>
 
-                        return (
-                          <tr key={s.id} className="hover:bg-gray-50 transition-colors">
-                            <td className="p-4">
-                              <p className="font-bold text-gray-900">{s.name}</p>
-                            </td>
-                            <td className="p-4 text-sm text-gray-600">{teacherNames || 'None'}</td>
-                            <td className="p-4 font-medium text-gray-700">{totalScheduled}</td>
-                            <td className="p-4 font-medium text-gray-700">{totalAttended}</td>
-                            <td className="p-4">
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                  <div className={`h-full ${color}`} style={{ width: `${percentage}%` }} />
+              <section>
+                <h3 className="text-2xl font-black text-foreground mb-4">Each Student's Attendance</h3>
+                <AnimatedCard delay={0.3} className="p-0 overflow-hidden border-2 border-border">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-muted border-b-2 border-border">
+                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Student Info</th>
+                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Teacher(s)</th>
+                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Scheduled</th>
+                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Attended</th>
+                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Progress</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y-2 divide-border">
+                        {students.map(s => {
+                          const studentClasses = classes.filter(c => c.student_id === s.id);
+                          const studentAttendance = attendanceRecords.filter(a => a.student_id === s.id);
+                          const totalScheduled = studentClasses.length;
+                          const totalAttended = studentAttendance.length;
+                          const percentage = totalScheduled > 0 ? Math.round((totalAttended / totalScheduled) * 100) : 0;
+                          const teacherNames = Array.from(new Set(studentClasses.map(c => teachers.find(t => t.id === c.teacher_id)?.name))).filter(Boolean).join(', ');
+                          
+                          let color = 'bg-destructive';
+                          if (percentage >= 76) color = 'bg-primary';
+                          else if (percentage >= 51) color = 'bg-secondary';
+
+                          return (
+                            <tr key={s.id} className="hover:bg-muted/30 transition-colors">
+                              <td className="p-4">
+                                <p className="font-bold text-foreground text-lg">{s.name}</p>
+                              </td>
+                              <td className="p-4 text-sm font-medium text-foreground">{teacherNames || 'None'}</td>
+                              <td className="p-4 font-black text-foreground">{totalScheduled}</td>
+                              <td className="p-4 font-black text-foreground">{totalAttended}</td>
+                              <td className="p-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden border-2 border-border p-[1px]">
+                                    <div className={`h-full rounded-full ${color}`} style={{ width: `${percentage}%` }} />
+                                  </div>
+                                  <span className="text-xs font-black text-foreground w-8">{percentage}%</span>
                                 </div>
-                                <span className="text-xs font-bold text-gray-600 w-8">{percentage}%</span>
-                              </div>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                      {students.length === 0 && (
-                        <tr><td colSpan={5} className="p-8 text-center text-gray-500">No data available yet</td></tr>
-                      )}
-                    </tbody>
-                  </table>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                        {students.length === 0 && (
+                          <tr><td colSpan={5} className="p-8 text-center text-muted-foreground font-bold">No data available yet</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </AnimatedCard>
+              </section>
+
+              <section>
+                <h3 className="text-2xl font-black text-foreground mb-4">Each Teacher's Performance</h3>
+                <AnimatedCard delay={0.4} className="p-0 overflow-hidden border-2 border-border">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-muted border-b-2 border-border">
+                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Teacher Info</th>
+                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Classes Created</th>
+                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Classes Completed</th>
+                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Completion Rate</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y-2 divide-border">
+                        {teachers.map(t => {
+                          const teacherClasses = classes.filter(c => c.teacher_id === t.id);
+                          const completedClasses = teacherClasses.filter(c => c.status === 'completed').length;
+                          const completionRate = teacherClasses.length > 0 ? Math.round((completedClasses / teacherClasses.length) * 100) : 0;
+                          
+                          let color = 'bg-destructive';
+                          if (completionRate >= 76) color = 'bg-primary';
+                          else if (completionRate >= 51) color = 'bg-secondary';
+
+                          return (
+                            <tr key={t.id} className="hover:bg-muted/30 transition-colors">
+                              <td className="p-4">
+                                <p className="font-bold text-foreground text-lg">{t.name}</p>
+                                <p className="text-sm font-medium text-muted-foreground">{t.email}</p>
+                              </td>
+                              <td className="p-4 font-black text-foreground">{teacherClasses.length}</td>
+                              <td className="p-4 font-black text-foreground">{completedClasses}</td>
+                              <td className="p-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden border-2 border-border p-[1px]">
+                                    <div className={`h-full rounded-full ${color}`} style={{ width: `${completionRate}%` }} />
+                                  </div>
+                                  <span className="text-xs font-black text-foreground w-8">{completionRate}%</span>
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                        {teachers.length === 0 && (
+                          <tr><td colSpan={4} className="p-8 text-center text-muted-foreground font-bold">No data available yet</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </AnimatedCard>
+              </section>
+            </PageTransition>
+          )}
+          
+          {activeTab === 'students' && (
+            <PageTransition key="students" className="space-y-6">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-5 rounded-2xl shadow-sm border-2 border-border">
+                <h3 className="text-2xl font-black text-foreground">All Students <span className="text-primary">({students.length})</span></h3>
+                <div className="relative w-full md:w-80">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input 
+                    placeholder="Search students..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 border-2 bg-muted/30 font-medium h-12"
+                  />
                 </div>
               </div>
-            </section>
 
-            {/* SECTION 4: Each Teacher's Performance */}
-            <section>
-              <h3 className="text-xl font-bold text-green-900 mb-4">Each Teacher's Performance</h3>
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <AnimatedCard delay={0.1} className="p-0 overflow-hidden border-2 border-border">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-green-50 border-b border-green-100">
-                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Teacher Info</th>
-                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Classes Created</th>
-                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Classes Completed</th>
-                        <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Completion Rate</th>
+                      <tr className="bg-muted border-b-2 border-border">
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Reg No</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Student Name</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Class</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Assigned Teacher</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Joined Date</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {teachers.map(t => {
-                        const teacherClasses = classes.filter(c => c.teacher_id === t.id);
-                        const completedClasses = teacherClasses.filter(c => c.status === 'completed').length;
-                        const completionRate = teacherClasses.length > 0 ? Math.round((completedClasses / teacherClasses.length) * 100) : 0;
-                        
-                        let color = 'bg-red-500';
-                        if (completionRate >= 76) color = 'bg-green-500';
-                        else if (completionRate >= 51) color = 'bg-yellow-500';
-
-                        return (
-                          <tr key={t.id} className="hover:bg-gray-50 transition-colors">
-                            <td className="p-4">
-                              <p className="font-bold text-gray-900">{t.name}</p>
-                              <p className="text-sm text-gray-500">{t.email}</p>
-                            </td>
-                            <td className="p-4 font-medium text-gray-700">{teacherClasses.length}</td>
-                            <td className="p-4 font-medium text-gray-700">{completedClasses}</td>
-                            <td className="p-4">
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                  <div className={`h-full ${color}`} style={{ width: `${completionRate}%` }} />
-                                </div>
-                                <span className="text-xs font-bold text-gray-600 w-8">{completionRate}%</span>
+                    <tbody className="divide-y-2 divide-border">
+                      {filteredStudents.length > 0 ? filteredStudents.map((s) => (
+                        <tr key={s.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="p-4 font-black text-primary">{s.registration_number}</td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              <Avatar photoUrl={s.profile_photo} name={s.name} size="sm" />
+                              <div>
+                                <p className="font-bold text-foreground">{s.name}</p>
                               </div>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                      {teachers.length === 0 && (
-                        <tr><td colSpan={4} className="p-8 text-center text-gray-500">No data available yet</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </section>
-          </div>
-        )}
-        
-        {/* STUDENTS TAB */}
-        {activeTab === 'students' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-green-100">
-              <h3 className="text-xl font-bold text-green-900">All Students ({students.length})</h3>
-              <div className="relative w-full md:w-72">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input 
-                  placeholder="Search students..." 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 bg-gray-50 border-gray-200"
-                />
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-green-50 border-b border-green-100">
-                      <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Reg No</th>
-                      <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Student Name</th>
-                      <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Class</th>
-                      <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Assigned Teacher</th>
-                      <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Joined Date</th>
-                      <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {filteredStudents.length > 0 ? filteredStudents.map((s) => (
-                      <tr key={s.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="p-4 font-bold text-green-700">{s.registration_number}</td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-3">
-                            <Avatar photoUrl={s.profile_photo} name={s.name} size="sm" />
-                            <div>
-                              <p className="font-bold text-gray-900">{s.name}</p>
                             </div>
-                          </div>
-                        </td>
-                        <td className="p-4 font-medium text-gray-700">
-                          <span className="bg-green-100 text-green-800 px-2.5 py-0.5 rounded text-xs font-bold uppercase">{s.class_name}</span>
-                        </td>
-                        <td className="p-4 text-sm text-gray-700">
-                          {editingStudentId === s.id ? (
-                            <div className="flex items-center gap-2">
-                              <select
-                                className="bg-transparent border-b border-gray-200 outline-none hover:border-green-500 focus:border-green-500 text-sm py-1 w-full max-w-[220px]"
-                                value={selectedTeacherId}
-                                onChange={(e) => setSelectedTeacherId(e.target.value)}
-                              >
-                                <option value="" className="text-gray-400 italic">Unassigned</option>
-                                {teachers.map(t => (
-                                  <option key={t.id} value={t.id}>{t.name} ({t.email})</option>
-                                ))}
-                              </select>
-                              <Button
-                                size="sm"
-                                className="bg-green-600 hover:bg-green-700 text-white font-bold text-xs"
-                                onClick={() => handleReassignTeacher(s.id, selectedTeacherId)}
-                                disabled={reassigningStudentId === s.id}
-                              >
-                                {reassigningStudentId === s.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setEditingStudentId(null)
-                                  setSelectedTeacherId('')
-                                }}
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-700 min-w-[140px]">
-                                {teachers.find(t => t.id === s.teacher_id)?.name || teachers.find(t => t.id === s.teacher_id)?.email || 'Unassigned'}
-                              </span>
-                              <Button
-                                size="sm"
-                                className="bg-green-600 hover:bg-green-700 text-white font-bold text-xs"
-                                onClick={() => {
-                                  setEditingStudentId(s.id)
-                                  setSelectedTeacherId(s.teacher_id || '')
-                                }}
-                              >
-                                Change Teacher
-                              </Button>
-                            </div>
-                          )}
-                        </td>
-                        <td className="p-4 text-sm text-gray-500 font-medium">
-                          {format(new Date(s.created_at), "MMM d, yyyy")}
-                        </td>
-                        <td className="p-4 text-right">
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            className="text-green-600 hover:text-green-700 font-bold"
-                            onClick={() => {
-                              setSelectedProfile(s)
-                              setIsProfileModalOpen(true)
-                            }}
-                          >
-                            View Profile
-                          </Button>
-                        </td>
-                      </tr>
-                    )) : (
-                      <tr><td colSpan={6} className="p-8 text-center text-gray-500">No students found.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TEACHERS TAB */}
-        {activeTab === 'teachers' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-green-100">
-              <h3 className="text-xl font-bold text-green-900">All Teachers ({teachers.length})</h3>
-              <div className="relative w-full md:w-72">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input 
-                  placeholder="Search teachers..." 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 bg-gray-50 border-gray-200"
-                />
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-green-50 border-b border-green-100">
-                      <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Teacher Name</th>
-                      <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Students Count</th>
-                      <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Joined Date</th>
-                      <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {filteredTeachers.length > 0 ? filteredTeachers.map((t) => {
-                      const studentCount = students.filter(s => s.teacher_id === t.id).length;
-                      return (
-                      <tr key={t.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="p-4">
-                          <div className="flex items-center gap-3">
-                            <Avatar photoUrl={t.profile_photo} name={t.name} size="sm" />
-                            <div>
-                              <p className="font-bold text-gray-900">{t.name}</p>
-                              <p className="text-sm text-gray-500">{t.email}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-4 text-gray-700 font-bold text-center sm:text-left">{studentCount}</td>
-                        <td className="p-4 text-sm text-gray-500 font-medium">
-                          {format(new Date(t.created_at), "MMM d, yyyy")}
-                        </td>
-                        <td className="p-4 text-right">
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            className="text-green-600 hover:text-green-700 font-bold"
-                            onClick={() => {
-                              setSelectedProfile(t)
-                              setIsProfileModalOpen(true)
-                            }}
-                          >
-                            View Profile
-                          </Button>
-                        </td>
-                      </tr>
-                    )}) : (
-                      <tr><td colSpan={4} className="p-8 text-center text-gray-500">No teachers found.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ATTENDANCE TAB */}
-        {activeTab === 'attendance' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <h3 className="text-xl font-bold text-green-900 mb-4">Academy Attendance Records</h3>
-            
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-green-50 border-b border-green-100">
-                      <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Student</th>
-                      <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Teacher</th>
-                      <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Class Date</th>
-                      <th className="p-4 text-xs font-bold text-green-800 uppercase tracking-wider">Marked At</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {attendanceRecords.length > 0 ? attendanceRecords.map((a) => {
-                      const studentName = allUsers.find(u => u.id === a.student_id)?.name || 'Unknown'
-                      const teacherName = allUsers.find(u => u.id === a.teacher_id)?.name || 'Unknown'
-                      return (
-                        <tr key={a.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="p-4">
-                            <p className="font-bold text-gray-900">{studentName}</p>
-                            <p className="text-sm text-gray-500">{allUsers.find(u => u.id === a.student_id)?.email || ''}</p>
                           </td>
-                          <td className="p-4">
-                            <p className="font-bold text-gray-900">{teacherName}</p>
-                            <p className="text-sm text-gray-500">{allUsers.find(u => u.id === a.teacher_id)?.email || ''}</p>
+                          <td className="p-4 font-bold text-foreground">
+                            <span className="bg-primary/10 text-primary border-2 border-primary/20 px-3 py-1 rounded-xl text-xs uppercase">{s.class_name}</span>
                           </td>
-                          <td className="p-4 text-sm text-gray-500">
-                            {a.classes?.scheduled_at ? formatUKTime(a.classes.scheduled_at) : 'N/A'}
+                          <td className="p-4 text-sm font-medium text-foreground">
+                            {editingStudentId === s.id ? (
+                              <div className="flex items-center gap-2">
+                                <select
+                                  className="bg-muted border-2 border-border rounded-lg outline-none focus:border-primary text-sm py-1.5 px-2 w-full max-w-[220px]"
+                                  value={selectedTeacherId}
+                                  onChange={(e) => setSelectedTeacherId(e.target.value)}
+                                >
+                                  <option value="" className="text-muted-foreground italic">Unassigned</option>
+                                  {teachers.map(t => (
+                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                  ))}
+                                </select>
+                                <BouncyButton
+                                  size="sm"
+                                  onClick={() => handleReassignTeacher(s.id, selectedTeacherId)}
+                                  disabled={reassigningStudentId === s.id}
+                                >
+                                  {reassigningStudentId === s.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                                </BouncyButton>
+                                <BouncyButton
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setEditingStudentId(null)
+                                    setSelectedTeacherId('')
+                                  }}
+                                >
+                                  Cancel
+                                </BouncyButton>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-3">
+                                <span className="font-bold text-foreground min-w-[140px]">
+                                  {teachers.find(t => t.id === s.teacher_id)?.name || 'Unassigned'}
+                                </span>
+                                <BouncyButton
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-xs py-1 h-8"
+                                  onClick={() => {
+                                    setEditingStudentId(s.id)
+                                    setSelectedTeacherId(s.teacher_id || '')
+                                  }}
+                                >
+                                  Change
+                                </BouncyButton>
+                              </div>
+                            )}
                           </td>
-                          <td className="p-4 text-sm text-gray-400">
-                            {formatUKTime(a.marked_at)}
+                          <td className="p-4 text-sm text-muted-foreground font-bold">
+                            {format(new Date(s.created_at), "MMM d, yyyy")}
+                          </td>
+                          <td className="p-4 text-right">
+                            <BouncyButton 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={() => {
+                                setSelectedProfile(s)
+                                setIsProfileModalOpen(true)
+                              }}
+                            >
+                              Profile
+                            </BouncyButton>
                           </td>
                         </tr>
-                      )
-                    }) : (
-                      <tr><td colSpan={4} className="p-8 text-center text-gray-500">No attendance records found.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
+                      )) : (
+                        <tr><td colSpan={6} className="p-8 text-center text-muted-foreground font-bold">No students found.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </AnimatedCard>
+            </PageTransition>
+          )}
 
-        {/* MANAGE USERS TAB */}
-        {activeTab === 'manage' && (
-          <div className="space-y-8 animate-in fade-in duration-300">
-            
-            <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-green-100">
-              <h3 className="text-xl font-bold text-green-900 mb-6 flex items-center gap-2">
-                <UserPlus className="h-6 w-6" /> Create New Profile
-              </h3>
+          {activeTab === 'teachers' && (
+            <PageTransition key="teachers" className="space-y-6">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-5 rounded-2xl shadow-sm border-2 border-border">
+                <h3 className="text-2xl font-black text-foreground">All Teachers <span className="text-primary">({teachers.length})</span></h3>
+                <div className="relative w-full md:w-80">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input 
+                    placeholder="Search teachers..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 border-2 bg-muted/30 font-medium h-12"
+                  />
+                </div>
+              </div>
+
+              <AnimatedCard delay={0.1} className="p-0 overflow-hidden border-2 border-border">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-muted border-b-2 border-border">
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Teacher Name</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Students Count</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Joined Date</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y-2 divide-border">
+                      {filteredTeachers.length > 0 ? filteredTeachers.map((t) => {
+                        const studentCount = students.filter(s => s.teacher_id === t.id).length;
+                        return (
+                        <tr key={t.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              <Avatar photoUrl={t.profile_photo} name={t.name} size="sm" />
+                              <div>
+                                <p className="font-bold text-foreground text-lg">{t.name}</p>
+                                <p className="text-xs font-medium text-muted-foreground">{t.email}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-4 text-foreground font-black text-xl">{studentCount}</td>
+                          <td className="p-4 text-sm text-muted-foreground font-bold">
+                            {format(new Date(t.created_at), "MMM d, yyyy")}
+                          </td>
+                          <td className="p-4 text-right">
+                            <BouncyButton 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={() => {
+                                setSelectedProfile(t)
+                                setIsProfileModalOpen(true)
+                              }}
+                            >
+                              Profile
+                            </BouncyButton>
+                          </td>
+                        </tr>
+                      )}) : (
+                        <tr><td colSpan={4} className="p-8 text-center text-muted-foreground font-bold">No teachers found.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </AnimatedCard>
+            </PageTransition>
+          )}
+
+          {activeTab === 'attendance' && (
+            <PageTransition key="attendance" className="space-y-6">
+              <h3 className="text-2xl font-black text-foreground mb-4">Academy Attendance Records</h3>
               
-              <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg mb-6 text-sm flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
-                <p>
-                  <strong>Note:</strong> Creating users directly from this dashboard requires the <code>SUPABASE_SERVICE_ROLE_KEY</code> to be configured in your environment variables.
-                </p>
-              </div>
+              <AnimatedCard delay={0.1} className="p-0 overflow-hidden border-2 border-border">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-muted border-b-2 border-border">
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Student</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Teacher</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Class Date</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Marked At</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y-2 divide-border">
+                      {attendanceRecords.length > 0 ? attendanceRecords.map((a) => {
+                        const studentName = allUsers.find(u => u.id === a.student_id)?.name || 'Unknown'
+                        const teacherName = allUsers.find(u => u.id === a.teacher_id)?.name || 'Unknown'
+                        return (
+                          <tr key={a.id} className="hover:bg-muted/30 transition-colors">
+                            <td className="p-4">
+                              <p className="font-bold text-foreground text-lg">{studentName}</p>
+                            </td>
+                            <td className="p-4">
+                              <p className="font-bold text-foreground">{teacherName}</p>
+                            </td>
+                            <td className="p-4 text-sm font-bold text-muted-foreground">
+                              {a.classes?.scheduled_at ? formatUKTime(a.classes.scheduled_at) : 'N/A'}
+                            </td>
+                            <td className="p-4 text-sm font-semibold text-muted-foreground">
+                              {formatUKTime(a.marked_at)}
+                            </td>
+                          </tr>
+                        )
+                      }) : (
+                        <tr><td colSpan={4} className="p-8 text-center text-muted-foreground font-bold">No attendance records found.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </AnimatedCard>
+            </PageTransition>
+          )}
 
-              <form onSubmit={handleCreateUser} className="space-y-6 max-w-2xl">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="font-bold text-lg text-gray-800">Account Role</Label>
-                    <select 
-                      id="create-user-role"
-                      className="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-green-500 outline-none font-semibold text-gray-700"
-                      value={newUser.role}
-                      onChange={e => setNewUser({...newUser, role: e.target.value})}
+          {activeTab === 'manage' && (
+            <PageTransition key="manage" className="space-y-8">
+              
+              <AnimatedCard delay={0.1} className="p-6 md:p-8 border-t-8 border-t-primary">
+                <h3 className="text-2xl font-black text-foreground mb-6 flex items-center gap-3">
+                  <span className="bg-primary/20 p-2 rounded-xl text-primary"><UserPlus className="h-6 w-6" /></span>
+                  Create New Profile
+                </h3>
+                
+                <div className="bg-secondary/10 border-2 border-secondary/20 text-secondary-foreground p-4 rounded-xl mb-8 font-semibold flex items-start gap-3">
+                  <AlertCircle className="h-6 w-6 flex-shrink-0" />
+                  <p>
+                    <strong>Note:</strong> Creating users directly from this dashboard requires the <code>SUPABASE_SERVICE_ROLE_KEY</code> to be configured in your environment variables.
+                  </p>
+                </div>
+
+                <form onSubmit={handleCreateUser} className="space-y-6 max-w-2xl">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="font-bold text-foreground text-lg">Account Role</Label>
+                      <select 
+                        className="w-full p-4 border-2 border-border rounded-xl bg-muted/30 focus:ring-4 focus:ring-primary/20 outline-none font-bold text-foreground transition-all"
+                        value={newUser.role}
+                        onChange={e => setNewUser({...newUser, role: e.target.value})}
+                      >
+                        <option value="student">Student</option>
+                        <option value="teacher">Teacher</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label className="font-bold text-foreground">Full Name</Label>
+                        <Input 
+                          placeholder="John Doe" 
+                          value={newUser.name}
+                          onChange={e => setNewUser({...newUser, name: e.target.value})}
+                          required
+                          className="border-2 font-medium h-12"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="font-bold text-foreground">Email Address</Label>
+                        <Input 
+                          type="email"
+                          placeholder="john@example.com" 
+                          value={newUser.email}
+                          onChange={e => setNewUser({...newUser, email: e.target.value})}
+                          required
+                          className="border-2 font-medium h-12"
+                        />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label className="font-bold text-foreground">Temporary Password</Label>
+                        <Input 
+                          type="password"
+                          placeholder="Minimum 6 characters" 
+                          value={newUser.password}
+                          onChange={e => setNewUser({...newUser, password: e.target.value})}
+                          required
+                          minLength={6}
+                          className="border-2 font-medium h-12"
+                        />
+                      </div>
+                    </div>
+
+                    {newUser.role === 'student' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted/30 p-6 rounded-2xl border-2 border-border/50">
+                        <div className="space-y-2">
+                          <Label className="font-bold text-foreground">Registration Number <span className="text-destructive">*</span></Label>
+                          <Input 
+                            placeholder="e.g. 26009" 
+                            value={newUser.registrationNumber || ''}
+                            onChange={e => setNewUser({...newUser, registrationNumber: e.target.value})}
+                            required
+                            className="border-2 font-medium h-12"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="font-bold text-foreground">Assign to Teacher <span className="text-destructive">*</span></Label>
+                          <select 
+                            className="w-full p-3 border-2 border-border rounded-xl bg-white focus:ring-4 focus:ring-primary/20 outline-none font-medium h-12"
+                            value={newUser.teacherId}
+                            onChange={e => setNewUser({...newUser, teacherId: e.target.value})}
+                            required
+                          >
+                            <option value="">Select a teacher...</option>
+                            {teachers.map(t => (
+                              <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <Label className="font-bold text-foreground">Class Name (Optional)</Label>
+                          <Input 
+                            placeholder="e.g. Batch A - Quran" 
+                            value={newUser.className}
+                            onChange={e => setNewUser({...newUser, className: e.target.value})}
+                            className="border-2 font-medium h-12"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <BouncyButton 
+                    type="submit" 
+                    disabled={isSubmitting} 
+                    className="w-full h-16 text-xl shadow-[0_6px_0_oklch(0.5_0.19_255)] hover:shadow-[0_2px_0_oklch(0.5_0.19_255)] active:shadow-none bg-primary hover:bg-primary/90 text-white rounded-2xl"
+                  >
+                    {isSubmitting ? <Loader2 className="animate-spin mr-2 h-6 w-6" /> : null}
+                    {isSubmitting ? "Creating Profile..." : "Create User Profile"}
+                  </BouncyButton>
+                </form>
+              </AnimatedCard>
+
+              <AnimatedCard delay={0.2} className="p-6 md:p-8 border-t-8 border-t-destructive bg-destructive/5">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                  <h3 className="text-2xl font-black text-destructive flex items-center gap-3 m-0">
+                    <UserMinus className="h-6 w-6" /> Danger Zone
+                  </h3>
+                  <div className="flex w-full sm:w-auto items-center gap-3">
+                    <div className="relative w-full sm:w-72">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                      <Input 
+                        placeholder="Search users..." 
+                        value={removeAccessSearchQuery}
+                        onChange={(e) => setRemoveAccessSearchQuery(e.target.value)}
+                        className="pl-10 border-2 bg-white font-medium focus-visible:ring-destructive"
+                      />
+                    </div>
+                    <select
+                      className="p-3 border-2 border-border rounded-xl bg-white font-bold text-foreground focus:ring-4 focus:ring-destructive/20 outline-none h-11"
+                      value={removeAccessRoleFilter}
+                      onChange={(e) => setRemoveAccessRoleFilter(e.target.value)}
                     >
-                      <option value="student">Student</option>
+                      <option value="all">All Roles</option>
                       <option value="teacher">Teacher</option>
+                      <option value="student">Student</option>
                       <option value="admin">Admin</option>
                     </select>
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="font-semibold text-gray-700">Full Name</Label>
-                      <Input 
-                        placeholder="John Doe" 
-                        value={newUser.name}
-                        onChange={e => setNewUser({...newUser, name: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="font-semibold text-gray-700">Email Address</Label>
-                      <Input 
-                        type="email"
-                        placeholder="john@example.com" 
-                        value={newUser.email}
-                        onChange={e => setNewUser({...newUser, email: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="font-semibold text-gray-700">Temporary Password</Label>
-                      <Input 
-                        type="password"
-                        placeholder="Minimum 6 characters" 
-                        value={newUser.password}
-                        onChange={e => setNewUser({...newUser, password: e.target.value})}
-                        required
-                        minLength={6}
-                      />
-                    </div>
-                  </div>
-
-                  {newUser.role === 'student' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="font-semibold text-gray-700">Registration Number <span className="text-red-500">*</span></Label>
-                        <Input 
-                          placeholder="e.g. 26009" 
-                          value={newUser.registrationNumber || ''}
-                          onChange={e => setNewUser({...newUser, registrationNumber: e.target.value})}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="font-semibold text-gray-700">Assign to Teacher <span className="text-red-500">*</span></Label>
-                        <select 
-                          className="w-full p-2.5 border border-gray-200 rounded-lg bg-gray-50 focus:ring-2 focus:ring-green-500 outline-none"
-                          value={newUser.teacherId}
-                          onChange={e => setNewUser({...newUser, teacherId: e.target.value})}
-                          required
-                        >
-                          <option value="">Select a teacher...</option>
-                          {teachers.map(t => (
-                            <option key={t.id} value={t.id}>{t.name} ({t.email})</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="font-semibold text-gray-700">Class Name (Optional)</Label>
-                        <Input 
-                          placeholder="e.g. Batch A - Quran Memorization" 
-                          value={newUser.className}
-                          onChange={e => setNewUser({...newUser, className: e.target.value})}
-                        />
-                      </div>
-                    </div>
-                  )}
                 </div>
-
-                <motion.button 
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  type="submit" 
-                  disabled={isSubmitting} 
-                  className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-6 rounded-xl transition-all shadow-md"
-                >
-                  {isSubmitting ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : null}
-                  {isSubmitting ? "Creating Profile..." : "Create User Profile"}
-                </motion.button>
-              </form>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-red-100">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                <h3 className="text-xl font-bold text-red-900 flex items-center gap-2 m-0">
-                  <UserMinus className="h-6 w-6" /> Danger Zone: Remove Access
-                </h3>
-                <div className="flex w-full sm:w-auto items-center gap-2">
-                  <div className="relative w-full sm:w-72">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input 
-                      placeholder="Search by name or email..." 
-                      value={removeAccessSearchQuery}
-                      onChange={(e) => setRemoveAccessSearchQuery(e.target.value)}
-                      className="pl-9 bg-gray-50 border-gray-200 focus-visible:ring-red-500"
-                    />
-                  </div>
-                  <select
-                    className="p-2 border border-gray-200 rounded-md bg-gray-50 text-sm font-medium focus:ring-2 focus:ring-red-500 outline-none"
-                    value={removeAccessRoleFilter}
-                    onChange={(e) => setRemoveAccessRoleFilter(e.target.value)}
-                  >
-                    <option value="all">All Roles</option>
-                    <option value="teacher">Teacher</option>
-                    <option value="student">Student</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-              </div>
-              
-              {(() => {
-                const filteredRemoveUsers = allUsers
-                  .filter(u => removeAccessRoleFilter === 'all' ? true : u.role === removeAccessRoleFilter)
-                  .filter(u => safeLower(u.name).includes(safeLower(removeAccessSearchQuery)) || safeLower(u.email).includes(safeLower(removeAccessSearchQuery)))
                 
-                const roleLabel = removeAccessRoleFilter === 'all' ? 'Users' : 
-                                  removeAccessRoleFilter === 'teacher' ? 'Teachers' :
-                                  removeAccessRoleFilter === 'student' ? 'Students' : 'Admins'
-                                  
-                return (
-                  <>
-                    <p className="text-sm text-gray-500 font-medium mb-4">
-                      Showing {filteredRemoveUsers.length} {filteredRemoveUsers.length === 1 ? roleLabel.slice(0, -1) : roleLabel}
-                    </p>
-                    <div className="overflow-x-auto">
+                {(() => {
+                  const filteredRemoveUsers = allUsers
+                    .filter(u => removeAccessRoleFilter === 'all' ? true : u.role === removeAccessRoleFilter)
+                    .filter(u => safeLower(u.name).includes(safeLower(removeAccessSearchQuery)) || safeLower(u.email).includes(safeLower(removeAccessSearchQuery)))
+                  
+                  return (
+                    <div className="overflow-x-auto border-2 border-border rounded-2xl bg-white">
                       <table className="w-full text-left border-collapse">
                         <thead>
-                          <tr className="bg-red-50 border-b border-red-100">
-                            <th className="p-4 text-xs font-bold text-red-800 uppercase tracking-wider">User</th>
-                            <th className="p-4 text-xs font-bold text-red-800 uppercase tracking-wider">Role</th>
-                            <th className="p-4 text-xs font-bold text-red-800 uppercase tracking-wider text-right">Action</th>
+                          <tr className="bg-muted border-b-2 border-border">
+                            <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">User</th>
+                            <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Role</th>
+                            <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest text-right">Action</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y-2 divide-border">
                           {filteredRemoveUsers.length > 0 ? filteredRemoveUsers.map((u) => (
-                            <tr key={u.id} className="hover:bg-red-50/50 transition-colors">
+                            <tr key={u.id} className="hover:bg-destructive/5 transition-colors">
                               <td className="p-4">
-                                <p className="font-bold text-gray-900">{u.name}</p>
-                                <p className="text-sm text-gray-500">{u.email}</p>
+                                <p className="font-bold text-foreground text-lg">{u.name}</p>
+                                <p className="text-sm font-medium text-muted-foreground">{u.email}</p>
                               </td>
                               <td className="p-4">
-                                <span className="bg-gray-100 text-gray-800 px-2.5 py-0.5 rounded text-xs font-bold uppercase">
+                                <span className="bg-muted text-foreground border-2 border-border px-3 py-1 rounded-xl text-xs font-bold uppercase tracking-wider">
                                   {u.role}
                                 </span>
                               </td>
                               <td className="p-4 text-right">
                                 {showConfirm === u.id ? (
                                   <div className="flex items-center justify-end gap-2">
-                                    <span className="text-sm text-red-600 font-bold">Sure?</span>
-                                    <button
+                                    <span className="text-sm text-destructive font-black">Sure?</span>
+                                    <BouncyButton
+                                      size="sm"
+                                      variant="destructive"
                                       onClick={() => confirmRemove(u.id)}
-                                      className="bg-red-600 text-white px-3 py-1 rounded text-xs font-bold shadow-sm hover:bg-red-700 transition-colors"
                                     >
                                       Yes, Remove
-                                    </button>
-                                    <button
+                                    </BouncyButton>
+                                    <BouncyButton
+                                      size="sm"
+                                      variant="outline"
                                       onClick={() => setShowConfirm(null)}
-                                      className="bg-gray-200 text-gray-700 px-3 py-1 rounded text-xs font-bold hover:bg-gray-300 transition-colors"
                                     >
                                       Cancel
-                                    </button>
+                                    </BouncyButton>
                                   </div>
                                 ) : removingUserId === u.id ? (
-                                  <div className="flex items-center justify-end gap-2 text-gray-500">
-                                    <div className="animate-spin h-4 w-4 border-2 border-red-500 border-t-transparent rounded-full" />
+                                  <div className="flex items-center justify-end gap-2 text-muted-foreground">
+                                    <Loader2 className="animate-spin h-4 w-4" />
                                     <span className="text-xs font-bold">Removing...</span>
                                   </div>
                                 ) : (
-                                  <button
-                                    onClick={() => handleRemoveUser(u.id, u.name)}
-                                    className="flex items-center gap-1.5 bg-red-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-600 transition-all shadow-sm hover:shadow-md"
+                                  <BouncyButton
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => setShowConfirm(u.id)}
                                   >
-                                    <Trash className="h-3.5 w-3.5" /> Remove
-                                  </button>
+                                    <Trash className="h-4 w-4 mr-2" /> Remove
+                                  </BouncyButton>
                                 )}
                               </td>
                             </tr>
                           )) : (
                             <tr>
-                              <td colSpan={3} className="p-8 text-center text-gray-500">
-                                <div className="flex flex-col items-center justify-center gap-2">
-                                  <Search className="h-8 w-8 text-gray-300" />
-                                  <p>No users found matching your search</p>
-                                </div>
+                              <td colSpan={3} className="p-8 text-center text-muted-foreground font-bold">
+                                No users found matching your search.
                               </td>
                             </tr>
                           )}
                         </tbody>
                       </table>
                     </div>
-                  </>
-                )
-              })()}
-            </div>
+                  )
+                })()}
+              </AnimatedCard>
 
-          </div>
-        )}
-          </motion.div>
+            </PageTransition>
+          )}
         </AnimatePresence>
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around p-2 z-50 md:hidden pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] overflow-x-auto">
-        <NavBtn active={activeTab === 'statistics'} onClick={() => setActiveTab('statistics')} icon={<BarChart3 />} label="Stats" />
-        <NavBtn active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<GraduationCap />} label="Students" />
-        <NavBtn active={activeTab === 'teachers'} onClick={() => setActiveTab('teachers')} icon={<BookOpen />} label="Teachers" />
-        <NavBtn active={activeTab === 'manage'} onClick={() => setActiveTab('manage')} icon={<Users />} label="Manage" />
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-border flex justify-around p-3 z-50 md:hidden pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.08)] rounded-t-3xl overflow-x-auto">
+        <NavBtn active={activeTab === 'statistics'} onClick={() => setActiveTab('statistics')} icon={<BarChart3 className={activeTab === 'statistics' ? 'fill-primary/20' : ''} />} label="Stats" />
+        <NavBtn active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<GraduationCap className={activeTab === 'students' ? 'fill-primary/20' : ''} />} label="Students" />
+        <NavBtn active={activeTab === 'teachers'} onClick={() => setActiveTab('teachers')} icon={<BookOpen className={activeTab === 'teachers' ? 'fill-primary/20' : ''} />} label="Teachers" />
+        <NavBtn active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={<CheckCircle className={activeTab === 'attendance' ? 'fill-primary/20' : ''} />} label="Attendance" />
+        <NavBtn active={activeTab === 'manage'} onClick={() => setActiveTab('manage')} icon={<Users className={activeTab === 'manage' ? 'fill-primary/20' : ''} />} label="Manage" />
       </nav>
 
       {/* Profile Modal */}
       <AnimatePresence>
         {isProfileModalOpen && selectedProfile && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
             <motion.div 
-              initial={{ opacity: 0, scale: 0.8, y: 20 }}
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ type: "spring", duration: 0.4 }}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col border-4 border-border"
             >
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-green-50">
-              <h3 className="text-xl font-bold text-green-900">
+            <div className="p-6 border-b-2 border-border flex justify-between items-center bg-muted/50">
+              <h3 className="text-2xl font-black text-foreground">
                 {selectedProfile.role === 'student' ? 'Student Profile' : 'Teacher Profile'}
               </h3>
-              <Button variant="ghost" size="icon" onClick={() => setIsProfileModalOpen(false)}>
-                <X className="h-6 w-6 text-gray-500" />
-              </Button>
+              <BouncyButton variant="ghost" size="icon" onClick={() => setIsProfileModalOpen(false)}>
+                <X className="h-6 w-6" />
+              </BouncyButton>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-6 md:p-8">
               <div className="flex flex-col items-center mb-8 text-center">
-                <Avatar photoUrl={selectedProfile.profile_photo} name={selectedProfile.name} size="lg" className="border-4 border-white shadow-lg mb-4" />
-                <h4 className="text-2xl font-bold text-gray-900">{selectedProfile.name}</h4>
-                <p className="text-gray-500">{selectedProfile.email}</p>
+                <Avatar photoUrl={selectedProfile.profile_photo} name={selectedProfile.name} size="lg" className="border-4 border-primary shadow-xl mb-4" />
+                <h4 className="text-3xl font-black text-foreground">{selectedProfile.name}</h4>
+                <p className="text-muted-foreground font-bold">{selectedProfile.email}</p>
                 {selectedProfile.role === 'student' && (
-                  <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm font-bold">
+                  <div className="mt-3 inline-flex items-center px-4 py-1.5 rounded-full bg-primary/10 text-primary border-2 border-primary/20 text-sm font-black">
                     Reg. No: {selectedProfile.registration_number}
                   </div>
                 )}
@@ -1012,8 +959,8 @@ export default function SuperAdminDashboard() {
                     <ProfileItem label="Academy Joined Date" value={selectedProfile.academy_joined_date ? format(parseISO(selectedProfile.academy_joined_date), 'MMM d, yyyy') : (selectedProfile.created_at ? format(new Date(selectedProfile.created_at), 'MMM d, yyyy') : 'N/A')} />
                     
                     {/* Attendance Stats */}
-                    <div className="md:col-span-2 mt-4 pt-6 border-t border-gray-100">
-                      <h5 className="font-bold text-green-800 mb-4">Attendance Statistics</h5>
+                    <div className="md:col-span-2 mt-4 pt-6 border-t-2 border-border">
+                      <h5 className="font-black text-foreground text-xl mb-4">Attendance Stats</h5>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {(() => {
                           const studentClasses = classes.filter(c => c.student_id === selectedProfile.id);
@@ -1025,10 +972,10 @@ export default function SuperAdminDashboard() {
                           
                           return (
                             <>
-                              <ModalStatCard label="Total Classes" value={totalClasses} />
-                              <ModalStatCard label="Present" value={present} color="text-green-600" />
-                              <ModalStatCard label="Absent" value={absent} color="text-red-600" />
-                              <ModalStatCard label="Percentage" value={`${percentage}%`} color={percentage >= 75 ? 'text-green-600' : 'text-orange-600'} />
+                              <ModalStatCard label="Classes" value={totalClasses} />
+                              <ModalStatCard label="Present" value={present} color="text-primary" />
+                              <ModalStatCard label="Absent" value={absent} color="text-destructive" />
+                              <ModalStatCard label="Progress" value={`${percentage}%`} color={percentage >= 75 ? 'text-primary' : 'text-secondary'} />
                             </>
                           )
                         })()}
@@ -1049,8 +996,8 @@ export default function SuperAdminDashboard() {
                     </div>
 
                     {/* Teacher Performance */}
-                    <div className="md:col-span-2 mt-4 pt-6 border-t border-gray-100">
-                      <h5 className="font-bold text-green-800 mb-4">Teaching Performance</h5>
+                    <div className="md:col-span-2 mt-4 pt-6 border-t-2 border-border">
+                      <h5 className="font-black text-foreground text-xl mb-4">Teaching Performance</h5>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {(() => {
                           const teacherClasses = classes.filter(c => c.teacher_id === selectedProfile.id);
@@ -1060,22 +1007,22 @@ export default function SuperAdminDashboard() {
                           
                           return (
                             <>
-                              <ModalStatCard label="Total Students" value={assignedStudents.length} />
-                              <ModalStatCard label="Classes Taken" value={teacherClasses.length} />
-                              <ModalStatCard label="Completed" value={completed} color="text-green-600" />
-                              <ModalStatCard label="Completion Rate" value={`${rate}%`} color={rate >= 75 ? 'text-green-600' : 'text-orange-600'} />
+                              <ModalStatCard label="Students" value={assignedStudents.length} />
+                              <ModalStatCard label="Classes" value={teacherClasses.length} />
+                              <ModalStatCard label="Completed" value={completed} color="text-primary" />
+                              <ModalStatCard label="Rate" value={`${rate}%`} color={rate >= 75 ? 'text-primary' : 'text-secondary'} />
                             </>
                           )
                         })()}
                       </div>
-                      <div className="mt-4">
-                        <Label className="text-xs font-bold text-gray-400 uppercase">Assigned Students</Label>
-                        <div className="flex flex-wrap gap-2 mt-2">
+                      <div className="mt-6">
+                        <Label className="text-xs font-black text-muted-foreground uppercase tracking-widest">Assigned Students</Label>
+                        <div className="flex flex-wrap gap-2 mt-3">
                           {students.filter(s => s.teacher_id === selectedProfile.id).map(s => (
-                            <span key={s.id} className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-xs font-medium">
+                            <span key={s.id} className="bg-muted text-foreground border-2 border-border px-3 py-1.5 rounded-xl text-sm font-bold shadow-sm">
                               {s.name}
                             </span>
-                          )) || <span className="text-sm text-gray-500">No students assigned</span>}
+                          )) || <span className="text-sm font-bold text-muted-foreground">No students assigned</span>}
                         </div>
                       </div>
                     </div>
@@ -1083,62 +1030,68 @@ export default function SuperAdminDashboard() {
                 )}
               </div>
             </div>
-          </motion.div>
-        </div>
-      )}
+            </motion.div>
+          </div>
+        )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   )
 }
+
 function DashboardStatCard({ title, value, index, gradient }: { title: string, value: any, index: number, gradient: string }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.15 }}
-      whileHover={{ y: -5, scale: 1.02 }}
-    >
-      <Card className={`bg-gradient-to-br ${gradient} text-white border-none shadow-md overflow-hidden`}>
-        <CardHeader className="p-4 pb-1">
-          <CardTitle className="text-xs font-bold tracking-wider opacity-80">{title}</CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 pt-0">
-          {value === null ? (
-            <div className="animate-pulse bg-white/30 h-8 w-12 rounded" />
-          ) : (
-            <div className="text-2xl font-extrabold">{value}</div>
-          )}
-        </CardContent>
-      </Card>
-    </motion.div>
+    <AnimatedCard delay={index * 0.1} className={`border-none text-white p-5 relative overflow-hidden bg-gradient-to-br ${gradient}`}>
+      <p className="text-white/80 text-[10px] font-black tracking-widest uppercase mb-1">{title}</p>
+      {value === null ? (
+        <div className="animate-pulse bg-white/30 h-8 w-12 rounded mt-1" />
+      ) : (
+        <p className="text-4xl font-black">{value}</p>
+      )}
+    </AnimatedCard>
   )
 }
 
 function ProfileItem({ label, value }: { label: string, value: any }) {
   return (
     <div className="space-y-1">
-      <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{label}</Label>
-      <p className="font-semibold text-gray-800">{value || 'N/A'}</p>
+      <Label className="text-xs font-black text-muted-foreground uppercase tracking-widest">{label}</Label>
+      <p className="font-bold text-foreground text-lg">{value || 'N/A'}</p>
     </div>
   )
 }
 
-function ModalStatCard({ label, value, color = 'text-gray-900' }: { label: string, value: any, color?: string }) {
+function ModalStatCard({ label, value, color = 'text-foreground' }: { label: string, value: any, color?: string }) {
   return (
-    <div className="bg-white border border-gray-100 p-3 rounded-xl shadow-sm">
-      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">{label}</p>
-      <p className={`text-lg font-bold ${color}`}>{value}</p>
+    <div className="bg-muted/30 border-2 border-border p-4 rounded-2xl shadow-sm text-center">
+      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">{label}</p>
+      <p className={`text-2xl font-black ${color}`}>{value}</p>
     </div>
+  )
+}
+
+function NavTab({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: any, label: string }) {
+  return (
+    <BouncyButton 
+      variant={active ? 'default' : 'ghost'} 
+      onClick={onClick} 
+      className={`gap-2 ${active ? 'shadow-md' : ''}`}
+    >
+      {icon} {label}
+    </BouncyButton>
   )
 }
 
 function NavBtn({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: any, label: string }) {
   return (
-    <button onClick={onClick} className={`flex flex-col items-center p-2 w-full transition-colors ${active ? 'text-green-700' : 'text-gray-500 hover:text-gray-900'}`}>
-      <div className={`p-1.5 rounded-full mb-1 ${active ? 'bg-green-100 text-green-700' : ''}`}>
+    <motion.button 
+      whileTap={{ scale: 0.85 }}
+      onClick={onClick} 
+      className={`flex flex-col items-center p-2 w-full transition-all ${active ? 'text-primary scale-110' : 'text-muted-foreground'}`}
+    >
+      <div className={`p-2 rounded-2xl mb-1 ${active ? 'bg-primary/10' : ''}`}>
         {icon}
       </div>
-      <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
-    </button>
+      <span className="text-[11px] font-bold">{label}</span>
+    </motion.button>
   )
 }

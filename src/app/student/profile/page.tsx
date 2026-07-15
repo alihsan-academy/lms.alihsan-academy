@@ -2,13 +2,15 @@
 
 import { useState, useEffect, ChangeEvent } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Upload, Lock } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Loader2, Upload, Lock, Shield, Star, Award } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { format, parseISO } from 'date-fns'
+import { motion } from 'framer-motion'
+import { AnimatedCard } from '@/components/animated-card'
+import { BouncyButton } from '@/components/bouncy-button'
 
 function calculateCompletion(data: any) {
   const fields = [
@@ -87,7 +89,7 @@ export default function StudentProfilePage() {
     const updatedProfile = { ...profile, profile_photo: urlData.publicUrl }
     setProfile(updatedProfile)
     setCompletion(calculateCompletion(updatedProfile))
-    toast.success('Photo uploaded')
+    toast.success('Photo uploaded! Looking good! 📸')
     setSaving(false)
   }
 
@@ -107,123 +109,141 @@ export default function StudentProfilePage() {
     }).eq('user_id', user.id)
 
     if (studError) {
-      toast.error('Failed to save student details')
+      toast.error('Failed to save your details.')
     } else {
-      toast.success('Profile saved')
+      toast.success('Profile saved successfully! 🚀')
     }
     setSaving(false)
   }
 
   if (loading || !profile) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="h-10 w-10 animate-spin text-green-600" />
+      <div className="flex justify-center items-center min-h-[50vh]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     )
   }
 
-  const barColor = completion.percent >= 100 ? 'bg-green-500' : completion.percent >= 50 ? 'bg-orange-500' : 'bg-red-500'
+  const barColor = completion.percent >= 100 ? 'bg-green-500' : completion.percent >= 50 ? 'bg-secondary' : 'bg-destructive'
 
   return (
-    <div className="max-w-2xl mx-auto p-4 space-y-8 pb-10">
-      {/* Profile Completion Bar */}
-      <div className="sticky top-0 z-20 bg-green-50/80 backdrop-blur-md p-4 rounded-xl border border-green-100 shadow-sm">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-bold text-green-800">Profile {completion.percent}% complete</span>
-          <span className="text-xs font-medium text-green-600">{completion.filled}/{completion.total} fields filled</span>
+    <div className="max-w-3xl mx-auto space-y-8">
+      {/* Profile XP Completion Bar */}
+      <AnimatedCard delay={0.1} className="sticky top-20 z-20 bg-background/90 backdrop-blur-md p-5 rounded-2xl border-2 border-primary/20 shadow-[0_8px_30px_rgba(0,0,0,0.05)]">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Star className="h-5 w-5 text-secondary fill-secondary" />
+            <span className="text-sm font-black text-foreground">Profile XP: {completion.percent}%</span>
+          </div>
+          <span className="text-xs font-bold text-muted-foreground bg-muted px-3 py-1 rounded-full">{completion.filled}/{completion.total} Quests Complete</span>
         </div>
-        <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-          <div className={`h-full transition-all duration-500 ${barColor}`} style={{ width: `${completion.percent}%` }} />
+        <div className="w-full h-4 bg-muted rounded-full overflow-hidden border-2 border-border p-0.5">
+          <motion.div 
+            initial={{ width: 0 }}
+            animate={{ width: `${completion.percent}%` }}
+            transition={{ duration: 1, type: "spring" }}
+            className={`h-full rounded-full ${barColor}`} 
+          />
         </div>
-      </div>
+        {completion.percent === 100 && (
+          <p className="text-xs font-bold text-green-600 mt-2 text-center">Max Level Reached! You are awesome! 🎉</p>
+        )}
+      </AnimatedCard>
 
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-green-900">Student Profile</h2>
-      </div>
-
-      {/* Profile Header Section */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-green-100 flex flex-col items-center text-center">
-        <div className="relative mb-4">
-          <div className="w-32 h-32 rounded-full bg-green-50 flex items-center justify-center overflow-hidden border-4 border-white shadow-md">
+      {/* Profile Player Card Section */}
+      <AnimatedCard delay={0.2} className="bg-gradient-to-br from-primary to-blue-500 p-8 flex flex-col items-center text-center relative overflow-hidden border-none text-white">
+        <div className="absolute top-0 right-0 p-4 opacity-20">
+          <Shield className="h-32 w-32" />
+        </div>
+        <div className="relative mb-6 z-10">
+          <div className="w-36 h-36 rounded-full bg-white flex items-center justify-center overflow-hidden border-8 border-white/20 shadow-xl">
             {profile.profile_photo ? (
               <img src={profile.profile_photo} alt="Profile" className="w-full h-full object-cover" />
             ) : (
-              <span className="text-4xl font-bold text-green-300">{profile.full_name?.charAt(0) || 'U'}</span>
+              <span className="text-6xl font-black text-primary">{profile.full_name?.charAt(0) || 'U'}</span>
             )}
           </div>
-          <label className="absolute bottom-1 right-1 p-2 bg-green-600 rounded-full text-white cursor-pointer hover:bg-green-700 transition-colors shadow-lg">
-            <Upload className="h-4 w-4" />
+          <label className="absolute bottom-0 right-0 p-3 bg-secondary rounded-full text-white cursor-pointer hover:bg-orange-500 transition-colors shadow-lg border-4 border-white active:scale-95">
+            <Upload className="h-5 w-5" />
             <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={saving} />
           </label>
         </div>
         
-        <h3 className="text-2xl font-bold text-gray-900">{profile.full_name || 'Your Name'}</h3>
-        <div className="mt-2 inline-flex items-center px-4 py-1.5 rounded-full bg-green-100 border border-green-200 text-green-700 font-bold text-lg shadow-sm">
-          Reg No: {profile.registration_number || 'N/A'}
+        <h3 className="text-3xl font-black z-10">{profile.full_name || 'Your Name'}</h3>
+        <div className="mt-3 inline-flex items-center px-5 py-2 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white font-bold text-lg shadow-sm z-10 gap-2">
+          <Award className="h-5 w-5" /> Reg No: {profile.registration_number || 'N/A'}
         </div>
-      </div>
+      </AnimatedCard>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-4 md:col-span-2">
-           <h4 className="font-bold text-gray-700 border-b pb-2">Personal Information</h4>
-        </div>
+      <AnimatedCard delay={0.3} className="p-8 space-y-8">
+        <div>
+          <h4 className="font-black text-foreground text-xl mb-4 flex items-center gap-2">
+            <span className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-sm">1</span>
+            Personal Information
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted/30 p-6 rounded-2xl border-2 border-border/50">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">Registered Email <Lock className="h-3 w-3" /></Label>
+              <Input value={profile.registered_email} disabled className="bg-muted border-none opacity-70 font-medium" />
+            </div>
 
-        <div className="space-y-2">
-          <Label className="flex items-center gap-2 text-gray-500">Registered Email <Lock className="h-3 w-3" /></Label>
-          <Input value={profile.registered_email} disabled className="bg-gray-50 border-gray-200" />
-        </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">Registration Number <Lock className="h-3 w-3" /></Label>
+              <Input value={profile.registration_number} disabled className="bg-primary/5 border-primary/20 font-black text-primary" />
+            </div>
 
-        <div className="space-y-2">
-          <Label className="flex items-center gap-2 text-gray-500">Registration Number <Lock className="h-3 w-3" /></Label>
-          <Input value={profile.registration_number} disabled className="bg-gray-50 border-gray-200 font-bold text-green-700" />
-        </div>
+            <div className="space-y-2">
+              <Label className="font-bold text-foreground">Full Name</Label>
+              <Input name="full_name" value={profile.full_name} onChange={handleChange} placeholder="Enter your full name" className="font-medium bg-white" />
+            </div>
 
-        <div className="space-y-2">
-          <Label className="text-gray-700">Full Name</Label>
-          <Input name="full_name" value={profile.full_name} onChange={handleChange} placeholder="Enter your full name" />
-        </div>
+            <div className="space-y-2">
+              <Label className="font-bold text-foreground">Date of Birth</Label>
+              <Input type="date" name="dob" value={profile.dob} onChange={handleChange} className="font-medium bg-white" />
+            </div>
 
-        <div className="space-y-2">
-          <Label className="text-gray-700">Date of Birth</Label>
-          <Input type="date" name="dob" value={profile.dob} onChange={handleChange} />
-        </div>
+            <div className="space-y-2">
+              <Label className="font-bold text-foreground">Guardian Name</Label>
+              <Input name="guardian_name" value={profile.guardian_name} onChange={handleChange} placeholder="Father/Guardian name" className="font-medium bg-white" />
+            </div>
 
-        <div className="space-y-2">
-          <Label className="text-gray-700">Guardian Name</Label>
-          <Input name="guardian_name" value={profile.guardian_name} onChange={handleChange} placeholder="Father/Guardian name" />
-        </div>
+            <div className="space-y-2">
+              <Label className="font-bold text-foreground">Guardian Mobile Number</Label>
+              <Input name="guardian_mobile" value={profile.guardian_mobile} onChange={handleChange} placeholder="e.g. +44 1234 567890" className="font-medium bg-white" />
+            </div>
 
-        <div className="space-y-2">
-          <Label className="text-gray-700">Guardian Mobile Number</Label>
-          <Input name="guardian_mobile" value={profile.guardian_mobile} onChange={handleChange} placeholder="e.g. +91 9876543210" />
-        </div>
-
-        <div className="space-y-2 md:col-span-2">
-          <Label className="text-gray-700">Address</Label>
-          <Textarea name="address" value={profile.address} onChange={handleChange} placeholder="Enter your full residential address" rows={3} />
-        </div>
-
-        <div className="space-y-4 md:col-span-2 mt-4">
-           <h4 className="font-bold text-gray-700 border-b pb-2">Academy Details</h4>
-        </div>
-
-        <div className="space-y-2">
-          <Label className="flex items-center gap-2 text-gray-500">Assigned Teacher <Lock className="h-3 w-3" /></Label>
-          <Input value={profile.assigned_teacher_name} disabled className="bg-gray-50 border-gray-200" />
+            <div className="space-y-2 md:col-span-2">
+              <Label className="font-bold text-foreground">Home Address</Label>
+              <Textarea name="address" value={profile.address} onChange={handleChange} placeholder="Enter your full residential address" rows={3} className="font-medium bg-white resize-none" />
+            </div>
+          </div>
         </div>
 
-        <div className="space-y-2">
-          <Label className="text-gray-700">Academy Joined Date</Label>
-          <Input type="date" name="academy_joined_date" value={profile.academy_joined_date} onChange={handleChange} />
-        </div>
-      </div>
+        <div>
+          <h4 className="font-black text-foreground text-xl mb-4 flex items-center gap-2">
+             <span className="w-8 h-8 rounded-full bg-secondary/20 text-secondary flex items-center justify-center text-sm">2</span>
+            Academy Details
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted/30 p-6 rounded-2xl border-2 border-border/50">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">Assigned Teacher <Lock className="h-3 w-3" /></Label>
+              <Input value={profile.assigned_teacher_name} disabled className="bg-muted border-none opacity-70 font-medium" />
+            </div>
 
-      <div className="pt-6">
-        <Button onClick={handleSave} disabled={saving} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-6 text-lg rounded-xl shadow-lg transition-all active:scale-[0.98]">
-          {saving ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : null}
-          Save Profile
-        </Button>
-      </div>
+            <div className="space-y-2">
+              <Label className="font-bold text-foreground">Academy Joined Date</Label>
+              <Input type="date" name="academy_joined_date" value={profile.academy_joined_date} onChange={handleChange} className="font-medium bg-white" />
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-4">
+          <BouncyButton onClick={handleSave} disabled={saving} className="w-full h-16 text-xl shadow-[0_6px_0_oklch(0.5_0.19_255)] hover:shadow-[0_2px_0_oklch(0.5_0.19_255)] active:shadow-none bg-primary hover:bg-primary/90 text-white rounded-2xl active:translate-y-1 hover:translate-y-1">
+            {saving ? <Loader2 className="animate-spin mr-2 h-6 w-6" /> : null}
+            Save Profile XP
+          </BouncyButton>
+        </div>
+      </AnimatedCard>
     </div>
   )
 }

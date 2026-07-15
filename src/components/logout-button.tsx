@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LogOut, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { BouncyButton } from '@/components/bouncy-button'
 
 export function LogoutButton() {
   const router = useRouter()
@@ -19,15 +19,15 @@ export function LogoutButton() {
   }
 
   return (
-    <Button 
+    <BouncyButton 
       variant="outline" 
       size="sm" 
       onClick={handleLogout} 
       disabled={isLoading}
-      className="text-green-700 border-green-700 hover:bg-green-50"
+      className="text-destructive border-destructive hover:bg-destructive/10 hover:text-destructive"
     >
       {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-4 w-4" />}
       Sign Out
-    </Button>
+    </BouncyButton>
   )
 }

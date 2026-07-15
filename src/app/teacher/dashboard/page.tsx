@@ -5,16 +5,17 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
 import { AcademyHeader } from '@/components/academy-header'
-import { Calendar, Plus, BarChart3, Loader2, Video, CheckCircle, Clock, User, Globe, AlertCircle, ChevronDown, Users } from 'lucide-react'
+import { Calendar, Plus, BarChart3, Loader2, Video, CheckCircle, Clock, User, Globe, AlertCircle, ChevronDown, Users, Copy, Sparkles } from 'lucide-react'
 import { format, parseISO, addWeeks, isAfter, startOfToday } from 'date-fns'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { Avatar } from '@/components/avatar'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Skeleton } from '@/components/skeleton'
+import { AnimatedCard } from '@/components/animated-card'
+import { BouncyButton } from '@/components/bouncy-button'
+import { PageTransition } from '@/components/page-transition'
 
 import TeacherProfilePage from '@/app/teacher/profile/page'
 
@@ -73,7 +74,6 @@ export default function TeacherDashboard() {
       }
       
       const data = result.students
-      console.log('Students found via API:', data)
       
       if (data && data.length > 0) {
         const mappedStudents = data.map((s: any) => ({
@@ -106,7 +106,6 @@ export default function TeacherDashboard() {
     const response = await fetch(`/api/classes/teacher?studentId=${encodeURIComponent(studentId)}`)
     const result = await response.json()
     if (!response.ok) {
-      console.error('Teacher classes API error:', result?.error)
       setClasses([])
       return
     }
@@ -121,7 +120,6 @@ export default function TeacherDashboard() {
     const result = await response.json()
     
     if (!response.ok) {
-      console.error('Teacher stats API error:', result?.error)
       return
     }
 
@@ -175,9 +173,9 @@ export default function TeacherDashboard() {
       if (!response.ok) throw new Error(result.error || "Failed to mark class status")
 
       if (status === 'present') {
-        toast.success("Class marked as completed")
+        toast.success("Great! Class marked as completed. 🎉")
       } else {
-        toast.success("Student marked as absent")
+        toast.success("Student marked as absent.")
       }
       await fetchClasses(selectedStudentId)
       await fetchStats()
@@ -188,21 +186,17 @@ export default function TeacherDashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-white flex flex-col">
-        <header className="bg-white border-b border-green-100 p-4 flex justify-between items-center shadow-sm">
-          <Skeleton className="h-8 w-40" />
-          <Skeleton className="h-8 w-20" />
+      <div className="min-h-screen bg-background flex flex-col">
+        <header className="bg-white border-b-2 border-border p-4 flex justify-between items-center shadow-sm">
+          <Skeleton className="h-8 w-40 rounded-full" />
+          <Skeleton className="h-8 w-20 rounded-full" />
         </header>
-        <div className="p-8 max-w-4xl mx-auto w-full space-y-6">
-          <Skeleton className="h-10 w-48" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Skeleton className="h-24 w-full rounded-2xl" />
-            <Skeleton className="h-24 w-full rounded-2xl" />
-            <Skeleton className="h-24 w-full rounded-2xl" />
-          </div>
-          <div className="space-y-4">
-            <Skeleton className="h-20 w-full rounded-xl" />
-            <Skeleton className="h-20 w-full rounded-xl" />
+        <div className="p-8 max-w-5xl mx-auto w-full space-y-6">
+          <Skeleton className="h-12 w-1/3 rounded-full" />
+          <div className="grid grid-cols-1 gap-4">
+            <Skeleton className="h-32 w-full rounded-3xl" />
+            <Skeleton className="h-32 w-full rounded-3xl" />
+            <Skeleton className="h-32 w-full rounded-3xl" />
           </div>
         </div>
       </div>
@@ -210,19 +204,14 @@ export default function TeacherDashboard() {
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="min-h-screen bg-gradient-to-br from-green-50 to-white flex flex-col pb-20 md:pb-0"
-    >
-      <header className="bg-white border-b border-green-100 p-4 flex justify-between items-center shadow-sm sticky top-0 z-10">
+    <div className="min-h-screen bg-background flex flex-col pb-24 md:pb-0 font-sans selection:bg-primary/20">
+      <header className="bg-white border-b-2 border-border p-3 md:p-4 flex justify-between items-center sticky top-0 z-50 shadow-sm backdrop-blur-md bg-white/90">
         <div className="flex items-center gap-3">
           <AcademyHeader size="sm" showTagline={false} />
           {teacherName && (
-            <div className="hidden sm:flex flex-col border-l border-gray-200 pl-3 ml-1">
-              <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">Teacher</span>
-              <h2 className="font-bold text-green-800 leading-tight">{teacherName}</h2>
+            <div className="hidden sm:flex flex-col border-l-2 border-border pl-4 ml-2">
+              <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Educator</span>
+              <h2 className="font-extrabold text-foreground leading-tight text-lg">{teacherName}</h2>
             </div>
           )}
         </div>
@@ -230,83 +219,70 @@ export default function TeacherDashboard() {
       </header>
 
       {/* Desktop Navigation */}
-      <div className="hidden md:block bg-white border-b border-green-100 px-8">
-        <nav className="flex space-x-8 max-w-4xl mx-auto">
-          <button onClick={() => setActiveTab('classes')} className={`py-4 px-2 border-b-2 font-medium transition-colors flex items-center gap-2 ${activeTab === 'classes' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500'}`}><Calendar className="h-5 w-5" />Classes</button>
-          <button onClick={() => setActiveTab('create')} className={`py-4 px-2 border-b-2 font-medium transition-colors flex items-center gap-2 ${activeTab === 'create' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500'}`}><Plus className="h-5 w-5" />Create</button>
-          <button onClick={() => setActiveTab('stats')} className={`py-4 px-2 border-b-2 font-medium transition-colors flex items-center gap-2 ${activeTab === 'stats' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500'}`}><BarChart3 className="h-5 w-5" />Stats</button>
-          <button onClick={() => setActiveTab('profile')} className={`py-4 px-2 border-b-2 font-medium transition-colors flex items-center gap-2 ${activeTab === 'profile' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500'}`}><User className="h-5 w-5" />Profile</button>
+      <div className="hidden md:block bg-white border-b-2 border-border px-8">
+        <nav className="flex space-x-2 max-w-5xl mx-auto py-2">
+          <BouncyButton variant={activeTab === 'classes' ? 'default' : 'ghost'} onClick={() => setActiveTab('classes')} className="gap-2"><Calendar className="h-5 w-5" /> Schedule</BouncyButton>
+          <BouncyButton variant={activeTab === 'create' ? 'default' : 'ghost'} onClick={() => setActiveTab('create')} className="gap-2"><Plus className="h-5 w-5" /> New Class</BouncyButton>
+          <BouncyButton variant={activeTab === 'stats' ? 'default' : 'ghost'} onClick={() => setActiveTab('stats')} className="gap-2"><BarChart3 className="h-5 w-5" /> Statistics</BouncyButton>
+          <BouncyButton variant={activeTab === 'profile' ? 'default' : 'ghost'} onClick={() => setActiveTab('profile')} className="gap-2"><User className="h-5 w-5" /> Profile</BouncyButton>
         </nav>
       </div>
 
-      <main className="flex-1 w-full max-w-4xl mx-auto p-4 md:p-8">
+      <main className="flex-1 w-full max-w-5xl mx-auto p-4 md:p-8">
         <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
-          >
-            {activeTab === 'classes' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="bg-white p-4 rounded-xl border border-green-100 shadow-sm space-y-2">
-              <Label className="text-sm font-medium text-gray-500">Viewing classes for:</Label>
-              <select 
-                className="w-full p-2 border border-gray-200 rounded-lg bg-gray-50 font-bold text-green-900"
-                value={selectedStudentId}
-                onChange={(e) => setSelectedStudentId(e.target.value)}
-                disabled={students.length === 0}
-              >
-                {students.length > 0 ? (
-                  students.map(s => <option key={s.id} value={s.id}>{s.name} • {s.registration_number || 'N/A'}</option>)
-                ) : (
-                  <option value="">No assigned students found</option>
-                )}
-              </select>
-            </div>
-
-            <div className="space-y-4">
-              {students.length === 0 ? (
-                <div className="text-center p-12 bg-white rounded-2xl border border-dashed border-gray-200">
-                  <Users className="h-10 w-10 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-500 font-medium">No assigned students found.</p>
-                  <p className="text-xs text-gray-400 mt-1">Please contact Superadmin to assign students to you.</p>
+          {activeTab === 'classes' && (
+            <PageTransition key="classes" className="space-y-6">
+              <div className="bg-white p-5 rounded-2xl border-2 border-border shadow-sm flex flex-col md:flex-row md:items-center gap-4 justify-between">
+                <div>
+                  <h3 className="font-black text-foreground text-xl">My Schedule</h3>
+                  <p className="text-muted-foreground font-medium text-sm">Select a student to view their upcoming and past classes.</p>
                 </div>
-              ) : classes.length > 0 ? (
-                classes.map((c, index) => (
-                  <motion.div
-                    key={c.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    whileHover={{ y: -3 }}
+                <div className="relative w-full md:w-72">
+                  <select 
+                    className="w-full p-3 border-2 border-border rounded-xl bg-muted/50 font-bold text-foreground focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none appearance-none cursor-pointer"
+                    value={selectedStudentId}
+                    onChange={(e) => setSelectedStudentId(e.target.value)}
+                    disabled={students.length === 0}
                   >
-                    <Card className="border-green-100 overflow-hidden shadow-sm">
-                      <CardContent className="p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div className="flex items-center gap-4">
+                    {students.length > 0 ? (
+                      students.map(s => <option key={s.id} value={s.id}>{s.name} • {s.registration_number || 'No Reg'}</option>)
+                    ) : (
+                      <option value="">No students assigned</option>
+                    )}
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {students.length === 0 ? (
+                  <AnimatedCard delay={0.1} className="text-center p-12 border-dashed shadow-none bg-transparent flex flex-col items-center">
+                    <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4">
+                      <Users className="h-10 w-10 text-muted-foreground" />
+                    </div>
+                    <h4 className="text-xl font-black text-foreground mb-1">No Students Assigned</h4>
+                    <p className="text-muted-foreground font-medium">Please contact the administration to assign students to you.</p>
+                  </AnimatedCard>
+                ) : classes.length > 0 ? (
+                  classes.map((c, index) => (
+                    <AnimatedCard key={c.id} delay={index * 0.05} className="p-0 overflow-hidden hover:border-primary/50 transition-colors">
+                      <div className="p-5 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                        <div className="flex items-center gap-5">
                           {(() => {
                             const student = students.find(s => s.id === c.student_id);
                             return (
                               <>
-                                <Avatar photoUrl={student?.profile_photo} name={student?.name} size="md" />
+                                <Avatar photoUrl={student?.profile_photo} name={student?.name} size="lg" />
                                 <div className="space-y-1">
-                                  <h4 className="font-bold text-gray-900">{student?.name || 'Unknown Student'}</h4>
-                                  <div className="flex flex-col text-sm font-medium text-gray-500">
-                                    <div className="flex items-center gap-2">
-                                      <Clock className="h-4 w-4" />
-                                      <p className="font-medium text-gray-800">
-                                        {formatUKTime(c.scheduled_at)}
-                                      </p>
-                                    </div>
-                                    <p className="text-xs text-gray-400 ml-6">
-                                      🇬🇧 UK Time
-                                    </p>
+                                  <h4 className="font-black text-foreground text-xl">{student?.name || 'Unknown Student'}</h4>
+                                  <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                                    <Clock className="h-4 w-4" />
+                                    <span>{formatUKTime(c.scheduled_at)} (UK Time)</span>
                                   </div>
                                   {c.meet_link && (
-                                    <a href={c.meet_link} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-blue-600 hover:underline text-sm font-medium">
+                                    <a href={c.meet_link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors mt-2">
                                       <Video className="h-4 w-4" />
-                                      Meeting Link
+                                      Join Meeting Link
                                     </a>
                                   )}
                                 </div>
@@ -314,138 +290,155 @@ export default function TeacherDashboard() {
                             )
                           })()}
                         </div>
-                        <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${c.status === 'scheduled' ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-green-50 text-green-700 border border-green-100'}`}>
+                        <div className="flex flex-col md:items-end gap-3 w-full md:w-auto">
+                          <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border-2 ${c.status === 'scheduled' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-green-50 text-green-700 border-green-200'}`}>
                             {c.status}
                           </span>
                           {c.status === 'scheduled' && (
-                            <div className="flex gap-2">
-                              <motion.button 
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.9 }}
+                            <div className="flex flex-wrap gap-2">
+                              <BouncyButton 
+                                variant="default"
+                                size="sm"
                                 onClick={() => markClassStatus(c, 'present')} 
-                                className="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors shadow-sm"
+                                className="bg-green-500 hover:bg-green-600 text-white"
                               >
-                                Mark as Completed
-                              </motion.button>
-                              <motion.button 
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.9 }}
+                                <CheckCircle className="h-4 w-4 mr-2" /> Mark Completed
+                              </BouncyButton>
+                              <BouncyButton 
+                                variant="destructive"
+                                size="sm"
                                 onClick={() => markClassStatus(c, 'absent')} 
-                                className="bg-red-500 hover:bg-red-600 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors shadow-sm"
                               >
-                                Mark as Absent
-                              </motion.button>
+                                <AlertCircle className="h-4 w-4 mr-2" /> Mark Absent
+                              </BouncyButton>
                             </div>
                           )}
                         </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))
-              ) : (
-                <div className="text-center p-12 bg-white rounded-2xl border border-dashed border-gray-200">
-                  <Calendar className="h-10 w-10 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-500 font-medium">No classes found for this student.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'create' && (
-          <CreateClassForm
-            students={students}
-            teacherId={teacherId}
-            onCreated={(studentId) => {
-              setSelectedStudentId(studentId)
-              setActiveTab('classes')
-              fetchClasses(studentId)
-            }}
-          />
-        )}
-
-        {activeTab === 'stats' && (
-          <div className="space-y-8 animate-in fade-in duration-300">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatCard title="Total Classes" value={stats.totalClasses} index={0} gradient="from-purple-400 to-purple-600" />
-              <StatCard title="Completed" value={stats.completed} index={1} gradient="from-blue-400 to-blue-600" />
-              <StatCard title="Total Present" value={stats.presentCount} index={2} gradient="from-green-400 to-green-600" />
-              <StatCard title="Total Absent" value={stats.absentCount} index={3} gradient="from-orange-400 to-orange-500" />
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <h3 className="font-bold text-gray-900 mb-6 text-xl">Student Breakdown</h3>
-              <div className="space-y-6">
-                {stats.studentBreakdown.length > 0 ? (
-                  stats.studentBreakdown.map((s: any, i: number) => (
-                    <div key={i} className="space-y-2">
-                      <div className="flex justify-between items-end">
-                        <div className="flex items-center gap-3">
-                          <Avatar photoUrl={s.profile_photo} name={s.name} size="md" />
-                          <div>
-                            <p className="font-bold text-gray-900">{s.name}</p>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">Reg: {s.registration_number || 'N/A'}</span>
-                              <p className="text-xs text-gray-500 font-medium">{s.completed} / {s.total} Classes</p>
-                            </div>
-                          </div>
-                        </div>
-                        <span className="font-bold text-green-700">{s.percentage}%</span>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                        <div className="bg-green-600 h-2 rounded-full" style={{ width: `${s.percentage}%` }}></div>
-                      </div>
-                    </div>
+                    </AnimatedCard>
                   ))
                 ) : (
-                  <p className="text-gray-500 text-center py-4">No data available yet.</p>
+                  <AnimatedCard delay={0.1} className="text-center p-12 border-dashed shadow-none bg-transparent flex flex-col items-center">
+                    <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4">
+                      <Calendar className="h-10 w-10 text-muted-foreground" />
+                    </div>
+                    <h4 className="text-xl font-black text-foreground mb-1">Clear Schedule!</h4>
+                    <p className="text-muted-foreground font-medium">No classes found for this student. Time to schedule one!</p>
+                  </AnimatedCard>
                 )}
               </div>
-            </div>
-          </div>
-        )}
+            </PageTransition>
+          )}
 
-        {activeTab === 'profile' && <TeacherProfilePage />}
-          </motion.div>
+          {activeTab === 'create' && (
+            <PageTransition key="create">
+              <CreateClassForm
+                students={students}
+                teacherId={teacherId}
+                onCreated={(studentId) => {
+                  setSelectedStudentId(studentId)
+                  setActiveTab('classes')
+                  fetchClasses(studentId)
+                }}
+              />
+            </PageTransition>
+          )}
+
+          {activeTab === 'stats' && (
+            <PageTransition key="stats" className="space-y-8">
+              <div>
+                <h3 className="font-black text-foreground text-2xl mb-4">Your Impact 🌟</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <StatCard title="Total Classes" value={stats.totalClasses} index={0} gradient="from-purple-500 to-indigo-600" />
+                  <StatCard title="Completed" value={stats.completed} index={1} gradient="from-blue-500 to-cyan-500" />
+                  <StatCard title="Total Present" value={stats.presentCount} index={2} gradient="from-green-500 to-emerald-600" />
+                  <StatCard title="Total Absent" value={stats.absentCount} index={3} gradient="from-orange-500 to-red-500" />
+                </div>
+              </div>
+
+              <AnimatedCard delay={0.3} className="p-6 md:p-8">
+                <h3 className="font-black text-foreground text-xl mb-6">Student Breakdown</h3>
+                <div className="space-y-6">
+                  {stats.studentBreakdown.length > 0 ? (
+                    stats.studentBreakdown.map((s: any, i: number) => (
+                      <div key={i} className="space-y-3 bg-muted/30 p-4 rounded-2xl border-2 border-border/50">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-4">
+                            <Avatar photoUrl={s.profile_photo} name={s.name} size="md" />
+                            <div>
+                              <p className="font-black text-foreground text-lg">{s.name}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">Reg: {s.registration_number || 'N/A'}</span>
+                                <p className="text-xs text-muted-foreground font-bold">{s.completed} / {s.total} Classes</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-black text-2xl text-foreground">{s.percentage}%</span>
+                          </div>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-3 overflow-hidden border-2 border-border p-0.5">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${s.percentage}%` }}
+                            transition={{ duration: 1, delay: i * 0.1 + 0.5 }}
+                            className="bg-primary h-full rounded-full" 
+                          />
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-10">
+                      <BarChart3 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+                      <p className="text-muted-foreground font-bold">No data available yet. Start teaching to see your stats!</p>
+                    </div>
+                  )}
+                </div>
+              </AnimatedCard>
+            </PageTransition>
+          )}
+
+          {activeTab === 'profile' && (
+            <PageTransition key="profile">
+              <TeacherProfilePage />
+            </PageTransition>
+          )}
         </AnimatePresence>
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around p-2 z-50 md:hidden pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-        <NavBtn active={activeTab === 'classes'} onClick={() => setActiveTab('classes')} icon={<Calendar />} label="Classes" />
-        <NavBtn active={activeTab === 'create'} onClick={() => setActiveTab('create')} icon={<Plus />} label="Create" />
-        <NavBtn active={activeTab === 'stats'} onClick={() => setActiveTab('stats')} icon={<BarChart3 />} label="Stats" />
-        <NavBtn active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<User />} label="Profile" />
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-border flex justify-around p-3 z-50 md:hidden pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.08)] rounded-t-3xl">
+        <NavBtn active={activeTab === 'classes'} onClick={() => setActiveTab('classes')} icon={<Calendar className={activeTab === 'classes' ? 'fill-primary/20' : ''} />} label="Schedule" />
+        <NavBtn active={activeTab === 'create'} onClick={() => setActiveTab('create')} icon={<Plus className={activeTab === 'create' ? 'fill-primary/20' : ''} />} label="Create" />
+        <NavBtn active={activeTab === 'stats'} onClick={() => setActiveTab('stats')} icon={<BarChart3 className={activeTab === 'stats' ? 'fill-primary/20' : ''} />} label="Stats" />
+        <NavBtn active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<User className={activeTab === 'profile' ? 'fill-primary/20' : ''} />} label="Profile" />
       </nav>
-    </motion.div>
+    </div>
   )
 }
 
 function StatCard({ title, value, index, gradient }: { title: string, value: any, index: number, gradient: string }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: index * 0.2 }}
-      whileHover={{ scale: 1.02 }}
-    >
-      <Card className={`border-none shadow-md bg-gradient-to-br ${gradient} text-white`}>
-        <CardHeader className="p-4 pb-0">
-          <CardTitle className="text-xs font-bold tracking-wider opacity-80">{title}</CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 pt-2 text-3xl font-extrabold">{value}</CardContent>
-      </Card>
-    </motion.div>
+    <AnimatedCard delay={index * 0.1} className={`border-none text-white p-6 relative overflow-hidden bg-gradient-to-br ${gradient}`}>
+      <Sparkles className="absolute -right-2 -top-2 w-16 h-16 opacity-20" />
+      <p className="text-white/80 text-xs font-bold tracking-widest uppercase mb-1">{title}</p>
+      <p className="text-4xl md:text-5xl font-black">{value}</p>
+    </AnimatedCard>
   )
 }
 
 function NavBtn({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: any, label: string }) {
   return (
-    <button onClick={onClick} className={`flex flex-col items-center p-2 w-full transition-colors ${active ? 'text-green-700' : 'text-gray-500'}`}>
-      <div className={`p-1 rounded-full mb-1 ${active ? 'bg-green-100' : ''}`}>{icon}</div>
-      <span className="text-xs font-medium">{label}</span>
-    </button>
+    <motion.button 
+      whileTap={{ scale: 0.85 }}
+      onClick={onClick} 
+      className={`flex flex-col items-center p-2 w-full transition-all ${active ? 'text-primary scale-110' : 'text-muted-foreground'}`}
+    >
+      <div className={`p-2 rounded-2xl mb-1 ${active ? 'bg-primary/10' : ''}`}>
+        {icon}
+      </div>
+      <span className="text-[11px] font-bold">{label}</span>
+    </motion.button>
   )
 }
 
@@ -498,7 +491,7 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
         minute: '2-digit',
         hour12: true
       })
-      toast.success(`Class created for ${ukDisplay} UK time`)
+      toast.success(`Class created for ${ukDisplay} UK time! 🚀`)
 
       setFormData(prev => ({
         ...prev,
@@ -516,14 +509,17 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
   }
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-green-100 animate-in fade-in duration-300">
-      <h3 className="text-xl font-bold text-green-900 mb-6 flex items-center gap-2"><Plus className="h-6 w-6" /> Create New Class</h3>
+    <AnimatedCard className="max-w-2xl mx-auto p-6 md:p-8 border-t-8 border-t-primary">
+      <h3 className="text-2xl font-black text-foreground mb-8 flex items-center gap-3">
+        <span className="bg-primary/20 p-2 rounded-xl text-primary"><Plus className="h-6 w-6" /></span>
+        Schedule New Class
+      </h3>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">
-          <Label className="text-green-900 font-semibold">Select Student</Label>
+          <Label className="text-foreground font-bold">Select Student</Label>
           <div className="relative">
             <div 
-              className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 focus:ring-2 focus:ring-green-500 outline-none cursor-pointer flex items-center justify-between"
+              className="w-full p-4 border-2 border-border rounded-xl bg-muted/30 focus:ring-4 focus:ring-primary/20 outline-none cursor-pointer flex items-center justify-between transition-all hover:bg-muted/50"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             >
               {(() => {
@@ -531,34 +527,34 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
                 return (
                   <div className="flex items-center gap-3">
                     <Avatar photoUrl={s?.profile_photo} name={s?.name} size="sm" />
-                    <span className="font-bold text-green-900">
+                    <span className="font-bold text-foreground">
                       {students.length === 0 ? 'No assigned students found' : (s?.name || 'Select a student')}
                       {s?.registration_number ? ` • ${s.registration_number}` : ''}
                     </span>
                   </div>
                 )
               })()}
-              <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
             </div>
             
             {isDropdownOpen && (
-              <div className="absolute z-[60] w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
+              <div className="absolute z-50 w-full mt-2 bg-white border-2 border-border rounded-xl shadow-xl max-h-60 overflow-y-auto">
                 {students.length > 0 ? (
                   students.map(s => (
                     <div 
                       key={s.id} 
-                      className={`p-3 hover:bg-green-50 cursor-pointer flex items-center gap-3 transition-colors ${formData.studentId === s.id ? 'bg-green-50' : ''}`}
+                      className={`p-3 hover:bg-muted/50 cursor-pointer flex items-center gap-3 transition-colors ${formData.studentId === s.id ? 'bg-primary/10' : ''}`}
                       onClick={() => {
                         setFormData(prev => ({ ...prev, studentId: s.id }))
                         setIsDropdownOpen(false)
                       }}
                     >
                       <Avatar photoUrl={s.profile_photo} name={s.name} size="sm" />
-                      <span className="font-medium text-gray-900">{s.name} • {s.registration_number || 'N/A'}</span>
+                      <span className="font-bold text-foreground">{s.name} <span className="text-muted-foreground">({s.registration_number || 'N/A'})</span></span>
                     </div>
                   ))
                 ) : (
-                  <div className="p-4 text-center text-gray-500 font-medium">
+                  <div className="p-4 text-center text-muted-foreground font-bold">
                     No assigned students found
                   </div>
                 )}
@@ -568,81 +564,73 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
         </div>
 
         <div className="space-y-2">
-          <Label className="text-green-900 font-semibold">Meeting Link</Label>
-          <Input 
-            placeholder="https://meet.google.com/xxx-xxxx-xxx or Zoom/Teams link"
-            value={formData.meetLink}
-            onChange={(e) => setFormData(prev => ({ ...prev, meetLink: e.target.value }))}
-            className="rounded-xl border-gray-200"
-          />
+          <Label className="text-foreground font-bold">Meeting Link (Zoom / Google Meet)</Label>
+          <div className="relative">
+            <Video className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input 
+              placeholder="https://meet.google.com/xxx-xxxx-xxx"
+              value={formData.meetLink}
+              onChange={(e) => setFormData(prev => ({ ...prev, meetLink: e.target.value }))}
+              className="pl-10 h-14 rounded-xl border-2 font-medium"
+            />
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label className="text-green-900 font-semibold">Class Date</Label>
+            <Label className="text-foreground font-bold">Class Date</Label>
             <Input 
               type="date"
               min={format(startOfToday(), "yyyy-MM-dd")}
               value={formData.date}
               onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
               required
-              className="rounded-xl border-gray-200"
+              className="h-14 rounded-xl border-2 font-medium"
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-green-900 font-semibold">Class Time</Label>
+            <Label className="text-foreground font-bold">Class Time</Label>
             <Input 
               type="time"
               value={formData.time}
               onChange={(e) => setFormData(prev => ({ ...prev, time: e.target.value }))}
               required
-              className="rounded-xl border-gray-200"
+              className="h-14 rounded-xl border-2 font-medium"
             />
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
-              <p className="text-sm text-blue-700 font-medium">
-                🇬🇧 Please enter class time in UK time (GMT/BST)
+            <div className="bg-primary/10 border-2 border-primary/20 rounded-xl p-3 mt-3">
+              <p className="text-sm text-primary font-bold flex items-center gap-2">
+                <Globe className="h-4 w-4" /> Schedule in UK Time!
               </p>
-              <p className="text-xs text-blue-500 mt-1">
-                All classes are scheduled in UK timezone.
-                Students will see this exact time.
+              <p className="text-xs text-primary/80 mt-1 font-medium">
+                All classes are scheduled in UK timezone (GMT/BST).
               </p>
             </div>
-            <p className="text-xs text-gray-500 mt-2" suppressHydrationWarning>
-              Current UK time: {new Date().toLocaleString('en-GB', {
-                timeZone: 'Europe/London',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true,
-                weekday: 'short',
-                day: 'numeric',
-                month: 'short'
-              })}
-            </p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 bg-green-50 p-4 rounded-xl border border-green-100">
-          <input 
-            type="checkbox"
-            id="repeat"
-            className="w-5 h-5 accent-green-600 rounded cursor-pointer"
-            checked={formData.repeatWeekly}
-            onChange={(e) => setFormData(prev => ({ ...prev, repeatWeekly: e.target.checked }))}
-          />
-          <Label htmlFor="repeat" className="text-green-900 font-bold cursor-pointer">Repeat this class every week (for 4 weeks)</Label>
+        <div className="flex items-center space-x-3 bg-secondary/10 p-4 rounded-xl border-2 border-secondary/20">
+          <div className="relative flex items-center justify-center">
+            <input 
+              type="checkbox"
+              id="repeat"
+              className="w-6 h-6 rounded-md border-2 border-secondary appearance-none checked:bg-secondary cursor-pointer transition-colors"
+              checked={formData.repeatWeekly}
+              onChange={(e) => setFormData(prev => ({ ...prev, repeatWeekly: e.target.checked }))}
+            />
+            {formData.repeatWeekly && <CheckCircle className="absolute h-4 w-4 text-white pointer-events-none" />}
+          </div>
+          <Label htmlFor="repeat" className="text-secondary-foreground font-bold cursor-pointer text-base">Repeat this class every week (for 4 weeks)</Label>
         </div>
 
-        <motion.button 
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
+        <BouncyButton 
           type="submit" 
           disabled={isSubmitting} 
-          className="w-full bg-green-600 hover:bg-green-700 text-white font-extrabold py-6 rounded-xl transition-all shadow-md"
+          className="w-full h-16 text-xl shadow-[0_6px_0_oklch(0.5_0.19_255)] hover:shadow-[0_2px_0_oklch(0.5_0.19_255)] active:shadow-none bg-primary hover:bg-primary/90 text-white rounded-2xl active:translate-y-1 hover:translate-y-1"
         >
-          {isSubmitting ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : null}
-          {isSubmitting ? "Creating..." : "Create Class"}
-        </motion.button>
+          {isSubmitting ? <Loader2 className="animate-spin mr-2 h-6 w-6" /> : <Calendar className="h-6 w-6 mr-2" />}
+          {isSubmitting ? "Creating..." : "Schedule Class"}
+        </BouncyButton>
       </form>
-    </div>
+    </AnimatedCard>
   )
 }
