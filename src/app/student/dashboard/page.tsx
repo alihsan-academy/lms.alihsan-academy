@@ -169,10 +169,6 @@ export default function StudentDashboard() {
           )}
         </div>
         <div className="flex items-center gap-3">
-          <div className="hidden md:flex items-center gap-2 bg-secondary/20 px-3 py-1.5 rounded-full border-2 border-secondary/30">
-            <Zap className="h-4 w-4 text-secondary fill-secondary" />
-            <span className="font-extrabold text-secondary-foreground text-sm">3 Day Streak!</span>
-          </div>
           <LogoutButton />
         </div>
       </header>
@@ -274,26 +270,28 @@ function HomeTab({ studentName, todayClass, upcomingClasses, teachers, onRefresh
     })
   }
 
+  const quotes = [
+    { text: "Seek knowledge from the cradle to the grave.", source: "Islamic Proverb" },
+    { text: "Allah does not burden a soul beyond that it can bear.", source: "Quran 2:286" },
+    { text: "The ink of the scholar is more holy than the blood of the martyr.", source: "Prophet Muhammad (PBUH)" },
+    { text: "Indeed, with hardship [will be] ease.", source: "Quran 94:6" },
+    { text: "Whoever travels a path in search of knowledge, Allah will make easy for him a path to Paradise.", source: "Sahih Muslim" },
+    { text: "The best among you are those who learn the Quran and teach it.", source: "Sahih al-Bukhari" },
+    { text: "Read! In the name of your Lord who created.", source: "Quran 96:1" }
+  ];
+  
+  const quoteIndex = new Date().getDay(); // 0-6 based on day of week
+  const todayQuote = quotes[quoteIndex];
+
   return (
     <div className="space-y-8">
-      {/* Gamification Header */}
-      <div className="grid grid-cols-3 gap-3 md:gap-6 mb-8">
-        <AnimatedCard className="bg-gradient-to-br from-secondary to-orange-400 border-none text-white p-4 flex flex-col items-center justify-center relative overflow-hidden">
-          <Zap className="h-8 w-8 mb-1 fill-white/20 absolute -right-2 -top-2 opacity-50 scale-150" />
-          <span className="text-3xl font-black">3</span>
-          <span className="text-xs font-bold tracking-wider uppercase">Day Streak</span>
-        </AnimatedCard>
-        <AnimatedCard delay={0.1} className="bg-gradient-to-br from-blue-400 to-primary border-none text-white p-4 flex flex-col items-center justify-center relative overflow-hidden">
-          <Star className="h-8 w-8 mb-1 fill-white/20 absolute -right-2 -top-2 opacity-50 scale-150" />
-          <span className="text-3xl font-black">1250</span>
-          <span className="text-xs font-bold tracking-wider uppercase">XP Points</span>
-        </AnimatedCard>
-        <AnimatedCard delay={0.2} className="bg-gradient-to-br from-purple-400 to-pink-500 border-none text-white p-4 flex flex-col items-center justify-center relative overflow-hidden">
-          <Trophy className="h-8 w-8 mb-1 fill-white/20 absolute -right-2 -top-2 opacity-50 scale-150" />
-          <span className="text-3xl font-black">5</span>
-          <span className="text-xs font-bold tracking-wider uppercase">Badges</span>
-        </AnimatedCard>
-      </div>
+      {/* Daily Quote */}
+      <AnimatedCard className="bg-gradient-to-br from-primary to-blue-600 border-none text-white p-6 md:p-8 flex flex-col items-center justify-center text-center mb-8 relative overflow-hidden">
+        <Star className="h-24 w-24 fill-white/10 absolute -right-4 -top-4 opacity-50 rotate-45" />
+        <Star className="h-16 w-16 fill-white/10 absolute -left-4 -bottom-4 opacity-50 -rotate-12" />
+        <h4 className="text-xl md:text-2xl font-black italic mb-3 relative z-10">"{todayQuote.text}"</h4>
+        <p className="text-sm md:text-base font-bold text-white/80 uppercase tracking-widest relative z-10">— {todayQuote.source}</p>
+      </AnimatedCard>
 
       <section>
         <div className="flex items-center justify-between mb-4">
