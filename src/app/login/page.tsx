@@ -140,7 +140,7 @@ export default function LoginPage() {
               className="h-28 md:h-36 object-contain drop-shadow-2xl mb-6"
             />
             <h1 className="text-3xl md:text-4xl font-extrabold text-white drop-shadow-lg leading-tight tracking-tight">
-              Alihsan Academy <br/>
+              AL IHSAN ACADEMY <br/>
               <span className="text-xl md:text-2xl font-medium text-green-400 mt-2 block">of Moral Education</span>
             </h1>
             <div className="w-16 h-1 bg-green-500 rounded-full mt-6 mb-6 opacity-80"></div>
