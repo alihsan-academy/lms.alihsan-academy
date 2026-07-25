@@ -34,6 +34,12 @@ export async function GET() {
         teacher_id,
         registration_number,
         profile_photo,
+        enrolment_status,
+        break_from_date,
+        break_to_date,
+        break_reason,
+        last_class_date,
+        stopped_reason,
         profiles!inner(email)
       `)
       .eq('teacher_id', user.id)
@@ -53,7 +59,13 @@ export async function GET() {
       teacher_id: s.teacher_id,
       registration_number: s.registration_number,
       profile_photo: s.profile_photo,
-      email: s.profiles?.email || null
+      email: s.profiles?.email || null,
+      enrolment_status: s.enrolment_status,
+      break_from_date: s.break_from_date,
+      break_to_date: s.break_to_date,
+      break_reason: s.break_reason,
+      last_class_date: s.last_class_date,
+      stopped_reason: s.stopped_reason
     })) || []
 
     return NextResponse.json({ 

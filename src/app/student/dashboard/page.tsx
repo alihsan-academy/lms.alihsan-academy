@@ -81,8 +81,8 @@ export default function StudentDashboard() {
             timeZone: 'Europe/London'
           })
         return classDateUK === todayUK 
-          && c.status === 'scheduled'
       })
+      todayClasses.sort((a: any, b: any) => (a.status === 'scheduled' ? -1 : 1))
       
       const upcoming = allClasses.filter((c: any) => {
         const classTime = new Date(c.scheduled_at)
@@ -108,7 +108,8 @@ export default function StudentDashboard() {
           date: c.scheduled_at,
           status: status,
           className: c.title || 'Class',
-          teacher_id: c.teacher_id
+          teacher_id: c.teacher_id,
+          recording_url: c.recording_url || null
         }
       }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
@@ -354,7 +355,23 @@ function HomeTab({ studentName, todayClass, upcomingClasses, teachers, onRefresh
                 )
               })()}
             </div>
-            {todayClass.meet_link ? (
+            {todayClass.status === 'completed' && todayClass.recording_url ? (
+              <motion.a 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                href={todayClass.recording_url} 
+                target="_blank" 
+                rel="noreferrer"
+                className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-5 rounded-2xl font-black text-lg transition-all shadow-[0_8px_0_oklch(0.5_0.15_255)] hover:shadow-[0_4px_0_oklch(0.5_0.15_255)] hover:translate-y-1 flex items-center justify-center gap-3 text-center whitespace-nowrap active:shadow-none active:translate-y-2"
+              >
+                <Video className="h-6 w-6" />
+                WATCH RECORDING
+              </motion.a>
+            ) : todayClass.status === 'completed' ? (
+              <div className="bg-muted text-muted-foreground px-6 py-4 rounded-2xl font-bold text-center border-2 border-border border-dashed">
+                Class completed. No recording available.
+              </div>
+            ) : todayClass.meet_link ? (
               <motion.a 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -482,7 +499,13 @@ function AttendanceTab({ data, teachers }: { data: any, teachers: any[] }) {
                         <p className="text-sm text-muted-foreground font-semibold mt-1">{format(parseISO(h.date), "MMMM d, yyyy")}</p>
                       </div>
                     </div>
-                    <div>
+                    <div className="flex items-center gap-3">
+                      {h.recording_url && (
+                        <a href={h.recording_url} target="_blank" rel="noreferrer"
+                           className="inline-flex items-center gap-1 text-xs font-bold text-purple-600 bg-purple-50 border-2 border-purple-200 px-3 py-1 rounded-lg hover:bg-purple-100 transition-colors">
+                          <Video className="h-3 w-3" /> Watch
+                        </a>
+                      )}
                       {h.status === 'Present' ? (
                         <span className="px-5 py-2 bg-green-100 text-green-700 rounded-xl text-sm font-black border-2 border-green-200">Present</span>
                       ) : (

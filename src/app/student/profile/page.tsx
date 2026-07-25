@@ -54,7 +54,13 @@ export default function StudentProfilePage() {
         guardian_mobile: stud?.guardian_mobile || '',
         address: stud?.address || '',
         profile_photo: stud?.profile_photo || '',
-        academy_joined_date: stud?.academy_joined_date ? format(parseISO(stud.academy_joined_date), 'yyyy-MM-dd') : ''
+        academy_joined_date: stud?.academy_joined_date ? format(parseISO(stud.academy_joined_date), 'yyyy-MM-dd') : '',
+        enrolment_status: stud?.enrolment_status || 'ongoing',
+        break_from_date: stud?.break_from_date || '',
+        break_to_date: stud?.break_to_date || '',
+        break_reason: stud?.break_reason || '',
+        last_class_date: stud?.last_class_date || '',
+        stopped_reason: stud?.stopped_reason || ''
       }
       setProfile(combined)
       setCompletion(calculateCompletion(combined))
@@ -234,6 +240,29 @@ export default function StudentProfilePage() {
               <Label className="font-bold text-foreground">Academy Joined Date</Label>
               <Input type="date" name="academy_joined_date" value={profile.academy_joined_date} onChange={handleChange} className="font-medium bg-white" />
             </div>
+
+            <div className="space-y-2 md:col-span-2 mt-2">
+              <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider mb-2">
+                Enrolment Status <Lock className="h-3 w-3" />
+              </Label>
+              <div className="flex flex-col gap-2 bg-white/50 rounded-xl p-4 border-2 border-border/30">
+                <div className="flex items-center">
+                  <StatusBadge status={profile.enrolment_status || 'ongoing'} />
+                </div>
+                {profile.enrolment_status === 'break' && (
+                  <p className="text-sm text-muted-foreground font-semibold mt-1">
+                    Break: {profile.break_from_date} → {profile.break_to_date}
+                    {profile.break_reason && <> · <em className="text-foreground/80">{profile.break_reason}</em></>}
+                  </p>
+                )}
+                {profile.enrolment_status === 'stopped' && (
+                  <p className="text-sm text-muted-foreground font-semibold mt-1">
+                    Last class: {profile.last_class_date}
+                    {profile.stopped_reason && <> · <em className="text-foreground/80">{profile.stopped_reason}</em></>}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -245,5 +274,19 @@ export default function StudentProfilePage() {
         </div>
       </AnimatedCard>
     </div>
+  )
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string, className: string }> = {
+    ongoing:  { label: '✅ Ongoing',   className: 'bg-green-50 text-green-700 border-green-200' },
+    break:    { label: '🕐 On a Break', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+    stopped:  { label: '🛑 Stopped',   className: 'bg-red-50 text-red-700 border-red-200' },
+  }
+  const s = map[status] || map.ongoing
+  return (
+    <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest border-2 ${s.className}`}>
+      {s.label}
+    </span>
   )
 }

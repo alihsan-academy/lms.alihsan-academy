@@ -14,7 +14,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { classId, studentId, status } = await request.json()
+    const { classId, studentId, status, recordingUrl } = await request.json()
     if (!classId || !studentId) {
       return NextResponse.json({ error: 'classId and studentId are required' }, { status: 400 })
     }
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
 
     const { error: updateError } = await supabaseAdmin
       .from('classes')
-      .update({ status: 'completed' })
+      .update({ status: 'completed', recording_url: recordingUrl || null })
       .eq('id', classId)
       .eq('teacher_id', user.id)
 

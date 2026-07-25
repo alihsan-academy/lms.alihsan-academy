@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
 import { AcademyHeader } from '@/components/academy-header'
-import { Calendar, Plus, BarChart3, Loader2, Video, CheckCircle, Clock, User, Globe, AlertCircle, ChevronDown, Users, Copy, Sparkles } from 'lucide-react'
+import { Calendar, Plus, BarChart3, Loader2, Video, CheckCircle, Clock, User, Globe, AlertCircle, ChevronDown, Users, Copy, Sparkles, Pencil, X } from 'lucide-react'
 import { format, parseISO, addWeeks, isAfter, startOfToday } from 'date-fns'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -48,8 +48,34 @@ export default function TeacherDashboard() {
   const [classes, setClasses] = useState<any[]>([])
   const [stats, setStats] = useState<any>({ totalClasses: 0, completed: 0, presentCount: 0, absentCount: 0, studentBreakdown: [] })
 
+  const [pendingCompleteClass, setPendingCompleteClass] = useState<any>(null)
+  const [recordingUrl, setRecordingUrl] = useState('')
+  
+  const [statusEditTarget, setStatusEditTarget] = useState<string | null>(null)
+  const [statusFormData, setStatusFormData] = useState({
+    enrolmentStatus: 'ongoing',
+    breakFromDate: '',
+    breakToDate: '',
+    breakReason: '',
+    lastClassDate: '',
+    stoppedReason: ''
+  })
+  const [isStatusSubmitting, setIsStatusSubmitting] = useState(false)
+
+  const fetchStudentsList = async (tId: string) => {
+    const response = await fetch('/api/teacher/students')
+    const result = await response.json()
+    if (response.ok && result.students) {
+      if (result.teacher?.name) setTeacherName(result.teacher.name)
+      const mappedStudents = result.students.map((s: any) => ({ ...s, id: s.user_id }))
+      setStudents(mappedStudents)
+      return mappedStudents
+    }
+    return []
+  }
+
   useEffect(() => {
-    const fetchStudents = async () => {
+    const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         setIsLoading(false)
@@ -59,33 +85,13 @@ export default function TeacherDashboard() {
       setTeacherId(user.id)
       setTeacherName(user.user_metadata?.full_name || user.user_metadata?.name || user.email)
 
-      const response = await fetch('/api/teacher/students')
-      const result = await response.json()
-      
-      if (!response.ok) {
-        console.error('Teacher students API error:', result?.error)
-        setStudents([])
-        setIsLoading(false)
-        return
-      }
-
-      if (result.teacher?.name) {
-        setTeacherName(result.teacher.name)
-      }
-      
-      const data = result.students
-      
-      if (data && data.length > 0) {
-        const mappedStudents = data.map((s: any) => ({
-          ...s,
-          id: s.user_id
-        }))
-        setStudents(mappedStudents)
+      const mappedStudents = await fetchStudentsList(user.id)
+      if (mappedStudents.length > 0) {
         setSelectedStudentId(mappedStudents[0].id)
       }
       setIsLoading(false)
     }
-    fetchStudents()
+    init()
   }, [])
 
   useEffect(() => {
@@ -148,6 +154,7 @@ export default function TeacherDashboard() {
         name: student?.name || 'Unknown Student',
         profile_photo: student?.profile_photo,
         registration_number: student?.registration_number,
+        enrolment_status: student?.enrolment_status || 'ongoing',
         total: data.total,
         completed: data.completed,
         percentage: data.total === 0 ? 0 : Math.round((data.completed / data.total) * 100)
@@ -157,7 +164,7 @@ export default function TeacherDashboard() {
     setStats({ totalClasses: allTeacherClasses.length, completed, presentCount, absentCount, studentBreakdown: breakdown })
   }
 
-  async function markClassStatus(classObj: any, status: 'present' | 'absent') {
+  async function markClassStatus(classObj: any, status: 'present' | 'absent', recUrl?: string) {
     try {
       const response = await fetch('/api/classes/complete', {
         method: 'POST',
@@ -165,7 +172,8 @@ export default function TeacherDashboard() {
         body: JSON.stringify({
           classId: classObj.id,
           studentId: classObj.student_id,
-          status: status
+          status: status,
+          recordingUrl: recUrl || null
         })
       })
 
@@ -177,11 +185,52 @@ export default function TeacherDashboard() {
       } else {
         toast.success("Student marked as absent.")
       }
+      setPendingCompleteClass(null)
+      setRecordingUrl('')
       await fetchClasses(selectedStudentId)
       await fetchStats()
     } catch (error: any) {
       toast.error(error.message)
     }
+  }
+
+  async function handleUpdateStatus(e: React.FormEvent) {
+    e.preventDefault()
+    if (!statusEditTarget) return
+    setIsStatusSubmitting(true)
+    try {
+      const response = await fetch('/api/student/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentId: statusEditTarget,
+          ...statusFormData
+        })
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error)
+      toast.success("Student status updated successfully!")
+      setStatusEditTarget(null)
+      if (teacherId) {
+        await fetchStudentsList(teacherId)
+      }
+    } catch (error: any) {
+      toast.error(error.message)
+    } finally {
+      setIsStatusSubmitting(false)
+    }
+  }
+
+  const openStatusEdit = (student: any) => {
+    setStatusEditTarget(student.id)
+    setStatusFormData({
+      enrolmentStatus: student.enrolment_status || 'ongoing',
+      breakFromDate: student.break_from_date || '',
+      breakToDate: student.break_to_date || '',
+      breakReason: student.break_reason || '',
+      lastClassDate: student.last_class_date || '',
+      stoppedReason: student.stopped_reason || ''
+    })
   }
 
   if (isLoading) {
@@ -237,20 +286,33 @@ export default function TeacherDashboard() {
                   <h3 className="font-black text-foreground text-xl">My Schedule</h3>
                   <p className="text-muted-foreground font-medium text-sm">Select a student to view their upcoming and past classes.</p>
                 </div>
-                <div className="relative w-full md:w-72">
-                  <select 
-                    className="w-full p-3 border-2 border-border rounded-xl bg-muted/50 font-bold text-foreground focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none appearance-none cursor-pointer"
-                    value={selectedStudentId}
-                    onChange={(e) => setSelectedStudentId(e.target.value)}
-                    disabled={students.length === 0}
-                  >
-                    {students.length > 0 ? (
-                      students.map(s => <option key={s.id} value={s.id}>{s.name} • {s.registration_number || 'No Reg'}</option>)
-                    ) : (
-                      <option value="">No students assigned</option>
-                    )}
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+                <div className="flex flex-col gap-2 w-full md:w-72">
+                  <div className="relative w-full">
+                    <select 
+                      className="w-full p-3 border-2 border-border rounded-xl bg-muted/50 font-bold text-foreground focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none appearance-none cursor-pointer"
+                      value={selectedStudentId}
+                      onChange={(e) => setSelectedStudentId(e.target.value)}
+                      disabled={students.length === 0}
+                    >
+                      {students.length > 0 ? (
+                        students.map(s => <option key={s.id} value={s.id}>{s.name} • {s.registration_number || 'No Reg'}</option>)
+                      ) : (
+                        <option value="">No students assigned</option>
+                      )}
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+                  </div>
+                  {students.length > 0 && selectedStudentId && (() => {
+                    const s = students.find(st => st.id === selectedStudentId)
+                    return s ? (
+                      <div className="flex items-center gap-2 justify-end mt-1">
+                        <StatusBadge status={s.enrolment_status || 'ongoing'} />
+                        <button onClick={() => openStatusEdit(s)} className="p-1.5 hover:bg-muted rounded-full transition-colors">
+                          <Pencil className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      </div>
+                    ) : null
+                  })()}
                 </div>
               </div>
 
@@ -291,15 +353,22 @@ export default function TeacherDashboard() {
                           })()}
                         </div>
                         <div className="flex flex-col md:items-end gap-3 w-full md:w-auto">
-                          <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border-2 ${c.status === 'scheduled' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-green-50 text-green-700 border-green-200'}`}>
-                            {c.status}
-                          </span>
+                          <div className="flex flex-col gap-2 items-end">
+                            <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border-2 ${c.status === 'scheduled' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-green-50 text-green-700 border-green-200'}`}>
+                              {c.status}
+                            </span>
+                            {c.status === 'completed' && c.recording_url && (
+                              <a href={c.recording_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-teal-700 bg-teal-50 border-2 border-teal-200 px-3 py-1 rounded-lg hover:bg-teal-100 transition-colors">
+                                🎬 Watch Recording
+                              </a>
+                            )}
+                          </div>
                           {c.status === 'scheduled' && (
                             <div className="flex flex-wrap gap-2">
                               <BouncyButton 
                                 variant="default"
                                 size="sm"
-                                onClick={() => markClassStatus(c, 'present')} 
+                                onClick={() => setPendingCompleteClass(c)} 
                                 className="bg-green-500 hover:bg-green-600 text-white"
                               >
                                 <CheckCircle className="h-4 w-4 mr-2" /> Mark Completed
@@ -369,6 +438,7 @@ export default function TeacherDashboard() {
                               <p className="font-black text-foreground text-lg">{s.name}</p>
                               <div className="flex items-center gap-2 mt-1">
                                 <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">Reg: {s.registration_number || 'N/A'}</span>
+                                <StatusBadge status={s.enrolment_status || 'ongoing'} />
                                 <p className="text-xs text-muted-foreground font-bold">{s.completed} / {s.total} Classes</p>
                               </div>
                             </div>
@@ -402,6 +472,127 @@ export default function TeacherDashboard() {
             <PageTransition key="profile">
               <TeacherProfilePage />
             </PageTransition>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {pendingCompleteClass && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            >
+              <motion.div 
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white rounded-3xl p-6 max-w-md w-full border-2 border-border shadow-2xl relative"
+              >
+                <button onClick={() => setPendingCompleteClass(null)} className="absolute right-4 top-4 p-2 hover:bg-muted rounded-full transition-colors">
+                  <X className="h-5 w-5 text-muted-foreground" />
+                </button>
+                <h3 className="text-xl font-black mb-4">Complete Class</h3>
+                <p className="text-sm text-muted-foreground font-medium mb-4">You can optionally attach a recording link (e.g., tl;dv, Zoom) for this session.</p>
+                
+                <div className="space-y-4 mb-6">
+                  <div className="space-y-2">
+                    <Label className="text-foreground font-bold">Recording Link (optional)</Label>
+                    <div className="relative">
+                      <Video className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                      <Input 
+                        placeholder="https://tldv.io/app/meetings/..."
+                        value={recordingUrl}
+                        onChange={(e) => setRecordingUrl(e.target.value)}
+                        className="pl-10 h-12 rounded-xl border-2 font-medium"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <BouncyButton variant="ghost" className="flex-1 border-2 border-border" onClick={() => markClassStatus(pendingCompleteClass, 'present')}>
+                    Skip
+                  </BouncyButton>
+                  <BouncyButton variant="default" className="flex-1 bg-green-500 hover:bg-green-600 text-white" onClick={() => markClassStatus(pendingCompleteClass, 'present', recordingUrl)}>
+                    Save & Complete
+                  </BouncyButton>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {statusEditTarget && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            >
+              <motion.div 
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white rounded-3xl p-6 max-w-md w-full border-2 border-border shadow-2xl relative"
+              >
+                <button onClick={() => setStatusEditTarget(null)} className="absolute right-4 top-4 p-2 hover:bg-muted rounded-full transition-colors">
+                  <X className="h-5 w-5 text-muted-foreground" />
+                </button>
+                <h3 className="text-xl font-black mb-4">Edit Student Status</h3>
+                
+                <form onSubmit={handleUpdateStatus} className="space-y-4 mb-6">
+                  <div className="space-y-2">
+                    <Label className="text-foreground font-bold">Enrolment Status</Label>
+                    <select 
+                      className="w-full p-3 border-2 border-border rounded-xl bg-muted/50 font-bold focus:ring-4 focus:border-primary outline-none"
+                      value={statusFormData.enrolmentStatus}
+                      onChange={(e) => setStatusFormData(prev => ({ ...prev, enrolmentStatus: e.target.value }))}
+                    >
+                      <option value="ongoing">✅ Ongoing</option>
+                      <option value="break">🕐 On a Break</option>
+                      <option value="stopped">🛑 Stopped</option>
+                    </select>
+                  </div>
+                  
+                  {statusFormData.enrolmentStatus === 'break' && (
+                    <>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label className="text-foreground font-bold text-xs">From Date</Label>
+                          <Input type="date" required value={statusFormData.breakFromDate} onChange={e => setStatusFormData(prev => ({...prev, breakFromDate: e.target.value}))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-foreground font-bold text-xs">To Date</Label>
+                          <Input type="date" required value={statusFormData.breakToDate} onChange={e => setStatusFormData(prev => ({...prev, breakToDate: e.target.value}))} />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-foreground font-bold text-xs">Reason (optional)</Label>
+                        <Input value={statusFormData.breakReason} onChange={e => setStatusFormData(prev => ({...prev, breakReason: e.target.value}))} />
+                      </div>
+                    </>
+                  )}
+                  
+                  {statusFormData.enrolmentStatus === 'stopped' && (
+                    <>
+                      <div className="space-y-2">
+                        <Label className="text-foreground font-bold text-xs">Last Class Date</Label>
+                        <Input type="date" required value={statusFormData.lastClassDate} onChange={e => setStatusFormData(prev => ({...prev, lastClassDate: e.target.value}))} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-foreground font-bold text-xs">Reason (optional)</Label>
+                        <Input value={statusFormData.stoppedReason} onChange={e => setStatusFormData(prev => ({...prev, stoppedReason: e.target.value}))} />
+                      </div>
+                    </>
+                  )}
+                  
+                  <BouncyButton type="submit" disabled={isStatusSubmitting} variant="default" className="w-full mt-4 h-12">
+                    {isStatusSubmitting ? <Loader2 className="animate-spin h-5 w-5 mr-2" /> : null}
+                    Save Status
+                  </BouncyButton>
+                </form>
+              </motion.div>
+            </motion.div>
           )}
         </AnimatePresence>
       </main>
@@ -632,5 +823,19 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
         </BouncyButton>
       </form>
     </AnimatedCard>
+  )
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string, className: string }> = {
+    ongoing:  { label: '✅ Ongoing',   className: 'bg-green-50 text-green-700 border-green-200' },
+    break:    { label: '🕐 On a Break', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+    stopped:  { label: '🛑 Stopped',   className: 'bg-red-50 text-red-700 border-red-200' },
+  }
+  const s = map[status] || map.ongoing
+  return (
+    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border-2 ${s.className}`}>
+      {s.label}
+    </span>
   )
 }

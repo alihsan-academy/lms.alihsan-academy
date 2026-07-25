@@ -45,6 +45,7 @@ export default function SuperAdminDashboard() {
   
   // UI state
   const [searchQuery, setSearchQuery] = useState('')
+  const [studentStatusFilter, setStudentStatusFilter] = useState('all')
   const [removeAccessSearchQuery, setRemoveAccessSearchQuery] = useState('')
   const [removeAccessRoleFilter, setRemoveAccessRoleFilter] = useState('all')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -80,7 +81,13 @@ export default function SuperAdminDashboard() {
           teacher_id: sp.teacher_id || null,
           registration_number: sp.registration_number || 'N/A',
           profile_photo: sp.profile_photo || null,
-          created_at: sp.joined_date || s.created_at
+          created_at: sp.joined_date || s.created_at,
+          enrolment_status: sp.enrolment_status || 'ongoing',
+          break_from_date: sp.break_from_date || '',
+          break_to_date: sp.break_to_date || '',
+          break_reason: sp.break_reason || '',
+          last_class_date: sp.last_class_date || '',
+          stopped_reason: sp.stopped_reason || ''
         }
       }) || []
 
@@ -202,13 +209,31 @@ export default function SuperAdminDashboard() {
     }
   }
 
+  async function handleUpdateStatus(studentId: string, status: string, payload?: any) {
+    try {
+      const response = await fetch('/api/student/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId, status, payload })
+      })
+      if (!response.ok) throw new Error('Failed to update status')
+      toast.success('Status updated successfully')
+      fetchData()
+      setIsProfileModalOpen(false)
+    } catch(err: any) {
+      toast.error(err.message)
+    }
+  }
+
   const safeLower = (value: unknown) => String(value ?? '').toLowerCase()
 
-  const filteredStudents = students.filter(s => 
-    safeLower(s.name).includes(safeLower(searchQuery)) || 
-    safeLower(s.email).includes(safeLower(searchQuery)) ||
-    safeLower(s.registration_number).includes(safeLower(searchQuery))
-  )
+  const filteredStudents = students.filter(s => {
+    const matchesSearch = safeLower(s.name).includes(safeLower(searchQuery)) || 
+      safeLower(s.email).includes(safeLower(searchQuery)) ||
+      safeLower(s.registration_number).includes(safeLower(searchQuery));
+    const matchesStatus = studentStatusFilter === 'all' || s.enrolment_status === studentStatusFilter;
+    return matchesSearch && matchesStatus;
+  })
 
   const filteredTeachers = teachers.filter(t => 
     safeLower(t.name).includes(safeLower(searchQuery)) || 
@@ -453,14 +478,26 @@ export default function SuperAdminDashboard() {
             <PageTransition key="students" className="space-y-6">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-5 rounded-2xl shadow-sm border-2 border-border">
                 <h3 className="text-2xl font-black text-foreground">All Students <span className="text-primary">({students.length})</span></h3>
-                <div className="relative w-full md:w-80">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Input 
-                    placeholder="Search students..." 
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 border-2 bg-muted/30 font-medium h-12"
-                  />
+                <div className="flex w-full md:w-auto items-center gap-3">
+                  <div className="relative w-full md:w-80">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input 
+                      placeholder="Search students..." 
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 border-2 bg-muted/30 font-medium h-12"
+                    />
+                  </div>
+                  <select
+                    className="p-3 border-2 border-border rounded-xl bg-white font-bold text-foreground focus:ring-4 focus:ring-primary/20 outline-none h-12"
+                    value={studentStatusFilter}
+                    onChange={(e) => setStudentStatusFilter(e.target.value)}
+                  >
+                    <option value="all">All Status</option>
+                    <option value="ongoing">Ongoing</option>
+                    <option value="break">Break</option>
+                    <option value="stopped">Stopped</option>
+                  </select>
                 </div>
               </div>
 
@@ -471,6 +508,7 @@ export default function SuperAdminDashboard() {
                       <tr className="bg-muted border-b-2 border-border">
                         <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Reg No</th>
                         <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Student Name</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Status</th>
                         <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Class</th>
                         <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Assigned Teacher</th>
                         <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Joined Date</th>
@@ -488,6 +526,9 @@ export default function SuperAdminDashboard() {
                                 <p className="font-bold text-foreground">{s.name}</p>
                               </div>
                             </div>
+                          </td>
+                          <td className="p-4">
+                            <StatusBadge status={s.enrolment_status} />
                           </td>
                           <td className="p-4 font-bold text-foreground">
                             <span className="bg-primary/10 text-primary border-2 border-primary/20 px-3 py-1 rounded-xl text-xs uppercase">{s.class_name}</span>
@@ -648,6 +689,7 @@ export default function SuperAdminDashboard() {
                         <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Teacher</th>
                         <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Class Date</th>
                         <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Marked At</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Recording</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y-2 divide-border">
@@ -667,6 +709,14 @@ export default function SuperAdminDashboard() {
                             </td>
                             <td className="p-4 text-sm font-semibold text-muted-foreground">
                               {formatUKTime(a.marked_at)}
+                            </td>
+                            <td className="p-4">
+                              {a.classes?.recording_url ? (
+                                <a href={a.classes.recording_url} target="_blank" rel="noreferrer"
+                                   className="inline-flex items-center gap-1 text-xs font-bold text-purple-600 bg-purple-50 border-2 border-purple-200 px-3 py-1 rounded-lg hover:bg-purple-100 transition-colors">
+                                  Watch
+                                </a>
+                              ) : '-'}
                             </td>
                           </tr>
                         )
@@ -958,6 +1008,57 @@ export default function SuperAdminDashboard() {
                     <ProfileItem label="Address" value={selectedProfile.address} />
                     <ProfileItem label="Academy Joined Date" value={selectedProfile.academy_joined_date ? format(parseISO(selectedProfile.academy_joined_date), 'MMM d, yyyy') : (selectedProfile.created_at ? format(new Date(selectedProfile.created_at), 'MMM d, yyyy') : 'N/A')} />
                     
+                    {/* Status Management */}
+                    <div className="md:col-span-2 mt-4 pt-6 border-t-2 border-border">
+                      <div className="flex items-center justify-between mb-4">
+                        <h5 className="font-black text-foreground text-xl">Enrolment Status</h5>
+                        <StatusBadge status={selectedProfile.enrolment_status} />
+                      </div>
+                      
+                      {selectedProfile.enrolment_status === 'break' && (
+                        <div className="bg-amber-50 p-4 rounded-xl border-2 border-amber-200 text-amber-800 text-sm font-bold mb-4">
+                          On Break: {selectedProfile.break_from_date} to {selectedProfile.break_to_date}
+                          <br/>Reason: {selectedProfile.break_reason || 'N/A'}
+                        </div>
+                      )}
+                      {selectedProfile.enrolment_status === 'stopped' && (
+                        <div className="bg-red-50 p-4 rounded-xl border-2 border-red-200 text-red-800 text-sm font-bold mb-4">
+                          Stopped on: {selectedProfile.last_class_date}
+                          <br/>Reason: {selectedProfile.stopped_reason || 'N/A'}
+                        </div>
+                      )}
+                      
+                      <div className="flex flex-wrap gap-2">
+                        {selectedProfile.enrolment_status !== 'ongoing' && (
+                          <BouncyButton size="sm" onClick={() => handleUpdateStatus(selectedProfile.id, 'ongoing')}>
+                            Set Ongoing
+                          </BouncyButton>
+                        )}
+                        {selectedProfile.enrolment_status !== 'break' && (
+                          <BouncyButton size="sm" variant="outline" onClick={() => {
+                            const from = prompt('Break from (YYYY-MM-DD):')
+                            if(!from) return
+                            const to = prompt('Break to (YYYY-MM-DD):')
+                            if(!to) return
+                            const reason = prompt('Reason (optional):')
+                            handleUpdateStatus(selectedProfile.id, 'break', { from, to, reason: reason || '' })
+                          }}>
+                            Set Break
+                          </BouncyButton>
+                        )}
+                        {selectedProfile.enrolment_status !== 'stopped' && (
+                          <BouncyButton size="sm" variant="destructive" onClick={() => {
+                            const date = prompt('Last class date (YYYY-MM-DD):')
+                            if(!date) return
+                            const reason = prompt('Reason (optional):')
+                            handleUpdateStatus(selectedProfile.id, 'stopped', { lastClassDate: date, reason: reason || '' })
+                          }}>
+                            Set Stopped
+                          </BouncyButton>
+                        )}
+                      </div>
+                    </div>
+                    
                     {/* Attendance Stats */}
                     <div className="md:col-span-2 mt-4 pt-6 border-t-2 border-border">
                       <h5 className="font-black text-foreground text-xl mb-4">Attendance Stats</h5>
@@ -1093,5 +1194,19 @@ function NavBtn({ active, onClick, icon, label }: { active: boolean, onClick: ()
       </div>
       <span className="text-[11px] font-bold">{label}</span>
     </motion.button>
+  )
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string, className: string }> = {
+    ongoing:  { label: '✅ Ongoing',   className: 'bg-green-50 text-green-700 border-green-200' },
+    break:    { label: '🕐 On a Break', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+    stopped:  { label: '🛑 Stopped',   className: 'bg-red-50 text-red-700 border-red-200' },
+  }
+  const s = map[status] || map.ongoing
+  return (
+    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border-2 ${s.className}`}>
+      {s.label}
+    </span>
   )
 }
