@@ -115,34 +115,52 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-white flex items-center justify-center p-4">
-      <motion.div 
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="w-full max-w-md"
-      >
-        <motion.div 
-          initial={{ opacity: 0, y: -30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="bg-gray-900 rounded-t-xl p-6 text-center"
-        >
-          <img 
-            src="/alihsan-logo.png"
-            alt="Al Ihsan Academy"
-            className="h-24 mx-auto object-contain"
-          />
-        </motion.div>
-        <div className="bg-white p-6 pb-2 text-center border-x border-gray-100">
-          <h1 className="text-xl font-bold text-gray-800">
-            AL IHSAN Academy of Moral Education
-          </h1>
-          <p className="text-sm text-gray-500 italic mt-1">
-            "Building a generation for tomorrow"
-          </p>
+    <div className="min-h-screen flex flex-col md:flex-row bg-white">
+      {/* Left side - Image & Branding */}
+      <div className="relative w-full md:w-1/2 h-64 md:h-auto overflow-hidden">
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/madrasa_background.jpg')" }}
+        />
+        {/* Overlay for better contrast */}
+        <div className="absolute inset-0 bg-gray-900/60" />
+        
+        {/* Logo and Text over image */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
+          <div className="bg-white/10 backdrop-blur-sm p-6 rounded-2xl border border-white/20 shadow-2xl">
+            <img 
+              src="/alihsan-logo.png"
+              alt="Al Ihsan Academy"
+              className="h-32 md:h-40 object-contain drop-shadow-xl mx-auto mb-4 bg-gray-900 p-4 rounded-xl"
+            />
+            <h1 className="text-2xl md:text-3xl font-bold text-white drop-shadow-md">
+              AL IHSAN Academy
+            </h1>
+            <p className="text-md md:text-lg text-gray-200 italic mt-2 drop-shadow-md">
+              "Building a generation for tomorrow"
+            </p>
+          </div>
         </div>
-        <div className="bg-white px-6 py-8 rounded-b-xl shadow-lg">
+      </div>
+
+      {/* Right side - Login Form */}
+      <div className="w-full md:w-1/2 flex items-center justify-center p-6 md:p-12 bg-gray-50">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border border-gray-100"
+        >
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-gray-800">
+              Welcome Back
+            </h2>
+            <p className="text-sm text-gray-500 mt-2">
+              Please sign in to your account
+            </p>
+          </div>
+
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Email Address
@@ -151,7 +169,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 transition-shadow"
               placeholder="Enter your email"
             />
           </div>
@@ -163,7 +181,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 transition-shadow"
               placeholder="Enter your password"
             />
           </div>
@@ -190,7 +208,7 @@ export default function LoginPage() {
             {loading ? 'Signing in...' : 'Sign In'}
           </motion.button>
 
-          <div className="mt-4 text-center">
+          <div className="mt-6 text-center">
             <button
               onClick={() => setShowForgotPassword(!showForgotPassword)}
               className="text-sm text-green-700 hover:text-green-800 hover:underline font-medium"
@@ -214,7 +232,7 @@ export default function LoginPage() {
                   type="email"
                   value={resetEmail}
                   onChange={(e) => setResetEmail(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm transition-shadow"
                   placeholder="Enter your email"
                 />
               </div>
@@ -230,14 +248,14 @@ export default function LoginPage() {
                 whileTap={{ scale: 0.98 }}
                 onClick={handleResetPassword}
                 disabled={resetLoading}
-                className="w-full bg-gray-800 text-white py-2 rounded-lg text-sm font-semibold hover:bg-gray-900 disabled:opacity-50 transition-colors"
+                className="w-full bg-gray-900 text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-800 disabled:opacity-50 transition-colors shadow-sm"
               >
                 {resetLoading ? 'Sending...' : 'Send Reset Link'}
               </motion.button>
             </motion.div>
           )}
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
     </div>
   )
 }
