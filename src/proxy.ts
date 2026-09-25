@@ -31,7 +31,7 @@ export default async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const isLoginPage = request.nextUrl.pathname.startsWith('/login') || 
+  const isLoginPage = request.nextUrl.pathname === '/login' || 
                       request.nextUrl.pathname === '/student/login' || 
                       request.nextUrl.pathname === '/teacher/login' || 
                       request.nextUrl.pathname === '/admin/login'
@@ -41,9 +41,8 @@ export default async function proxy(request: NextRequest) {
                            (request.nextUrl.pathname.startsWith('/admin') && request.nextUrl.pathname !== '/admin/login') ||
                            request.nextUrl.pathname.startsWith('/superadmin')
 
-  // Redirect authenticated users away from the login page based on role
+  // Redirect authenticated users away from the login page based on their role
   if (user && isLoginPage) {
-    // Create admin client to bypass RLS loop on profiles
     const supabaseAdmin = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -75,16 +74,24 @@ export default async function proxy(request: NextRequest) {
     }
   }
 
-  // Redirect unauthenticated users away from protected routes to login
+  // Redirect unauthenticated users away from protected routes to their specific login page
   if (!user && isProtectedRoute) {
     const redirectUrl = request.nextUrl.clone()
-    redirectUrl.pathname = '/login'
+    const pathname = request.nextUrl.pathname
+    
+    if (pathname.startsWith('/teacher')) {
+      redirectUrl.pathname = '/teacher/login'
+    } else if (pathname.startsWith('/admin') || pathname.startsWith('/superadmin')) {
+      redirectUrl.pathname = '/admin/login'
+    } else {
+      redirectUrl.pathname = '/student/login'
+    }
+    
     return NextResponse.redirect(redirectUrl)
   }
 
   // Role-based route protection
   if (user && isProtectedRoute) {
-    // Create admin client to bypass RLS loop on profiles
     const supabaseAdmin = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -107,16 +114,16 @@ export default async function proxy(request: NextRequest) {
     const pathname = request.nextUrl.pathname
 
     if (pathname.startsWith('/student') && role !== 'student') {
-      return NextResponse.redirect(new URL('/login', request.url))
+      return NextResponse.redirect(new URL('/student/login', request.url))
     }
     if (pathname.startsWith('/teacher') && role !== 'teacher') {
-      return NextResponse.redirect(new URL('/login', request.url))
+      return NextResponse.redirect(new URL('/teacher/login', request.url))
     }
     if (pathname.startsWith('/admin') && role !== 'admin' && role !== 'superadmin') {
-      return NextResponse.redirect(new URL('/login', request.url))
+      return NextResponse.redirect(new URL('/admin/login', request.url))
     }
     if (pathname.startsWith('/superadmin') && role !== 'superadmin') {
-      return NextResponse.redirect(new URL('/login', request.url))
+      return NextResponse.redirect(new URL('/admin/login', request.url))
     }
   }
 
