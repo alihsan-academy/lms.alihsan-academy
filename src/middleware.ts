@@ -31,10 +31,14 @@ export default async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const isLoginPage = request.nextUrl.pathname.startsWith('/login')
-  const isProtectedRoute = request.nextUrl.pathname.startsWith('/student') ||
-                           request.nextUrl.pathname.startsWith('/teacher') ||
-                           request.nextUrl.pathname.startsWith('/admin') ||
+  const isLoginPage = request.nextUrl.pathname.startsWith('/login') || 
+                      request.nextUrl.pathname === '/student/login' || 
+                      request.nextUrl.pathname === '/teacher/login' || 
+                      request.nextUrl.pathname === '/admin/login'
+
+  const isProtectedRoute = (request.nextUrl.pathname.startsWith('/student') && request.nextUrl.pathname !== '/student/login') ||
+                           (request.nextUrl.pathname.startsWith('/teacher') && request.nextUrl.pathname !== '/teacher/login') ||
+                           (request.nextUrl.pathname.startsWith('/admin') && request.nextUrl.pathname !== '/admin/login') ||
                            request.nextUrl.pathname.startsWith('/superadmin')
 
   // Redirect authenticated users away from the login page based on role
