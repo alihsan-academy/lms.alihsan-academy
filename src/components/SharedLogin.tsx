@@ -298,12 +298,14 @@ export default function SharedLogin({
               <span className={`text-[11px] font-bold uppercase tracking-wider ${theme.accentColor} px-3 py-1 rounded-lg bg-gray-50 border border-gray-200/80`}>
                 {roleLabel}
               </span>
-              <Link 
-                href="/" 
-                className="text-xs text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-1 font-semibold group"
-              >
-                <span className="transform group-hover:-translate-x-0.5 transition-transform">←</span> Portals
-              </Link>
+              {portalType === 'admin' && (
+                <Link 
+                  href="/" 
+                  className="text-xs text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-1 font-semibold group"
+                >
+                  <span className="transform group-hover:-translate-x-0.5 transition-transform">←</span> Portals
+                </Link>
+              )}
             </div>
             
             <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">
@@ -428,38 +430,28 @@ export default function SharedLogin({
             </motion.button>
           </form>
 
-          {/* Quick Switcher for other Roles */}
-          <div className="mt-8 pt-6 border-t border-gray-100 text-center">
-            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-3">
-              Need a different portal?
-            </p>
-            <div className="flex items-center justify-center gap-2.5">
-              {portalType !== 'student' && (
+          {/* Quick Switcher for other Roles - Only on Admin */}
+          {portalType === 'admin' && (
+            <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-3">
+                Need a different portal?
+              </p>
+              <div className="flex items-center justify-center gap-2.5">
                 <Link 
                   href="/student/login" 
                   className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-gray-50 text-gray-600 hover:text-emerald-700 hover:bg-emerald-50 border border-gray-200 transition-colors"
                 >
                   Student Portal
                 </Link>
-              )}
-              {portalType !== 'teacher' && (
                 <Link 
                   href="/teacher/login" 
                   className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-gray-50 text-gray-600 hover:text-indigo-700 hover:bg-indigo-50 border border-gray-200 transition-colors"
                 >
                   Tutor Portal
                 </Link>
-              )}
-              {portalType !== 'admin' && (
-                <Link 
-                  href="/admin/login" 
-                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-gray-50 text-gray-600 hover:text-slate-900 hover:bg-slate-100 border border-gray-200 transition-colors"
-                >
-                  Admin Portal
-                </Link>
-              )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Forgot Password Accordion */}
           <AnimatePresence>
