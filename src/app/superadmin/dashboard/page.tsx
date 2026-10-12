@@ -578,7 +578,7 @@ export default function SuperAdminDashboard() {
                                     setSelectedTeacherId(s.teacher_id || '')
                                   }}
                                 >
-                                  Change
+                                  Change Teacher
                                 </BouncyButton>
                               </div>
                             )}
@@ -595,7 +595,7 @@ export default function SuperAdminDashboard() {
                                 setIsProfileModalOpen(true)
                               }}
                             >
-                              Profile
+                              View Profile
                             </BouncyButton>
                           </td>
                         </tr>
@@ -751,6 +751,7 @@ export default function SuperAdminDashboard() {
                     <div className="space-y-2">
                       <Label className="font-bold text-foreground text-lg">Account Role</Label>
                       <select 
+                        id="create-user-role"
                         className="w-full p-4 border-2 border-border rounded-xl bg-muted/30 focus:ring-4 focus:ring-primary/20 outline-none font-bold text-foreground transition-all"
                         value={newUser.role}
                         onChange={e => setNewUser({...newUser, role: e.target.value})}
@@ -849,9 +850,14 @@ export default function SuperAdminDashboard() {
 
               <AnimatedCard delay={0.2} className="p-6 md:p-8 border-t-8 border-t-destructive bg-destructive/5">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                  <h3 className="text-2xl font-black text-destructive flex items-center gap-3 m-0">
-                    <UserMinus className="h-6 w-6" /> Danger Zone
-                  </h3>
+                  <div>
+                    <h3 className="text-2xl font-black text-destructive flex items-center gap-3 m-0">
+                      <UserMinus className="h-6 w-6" /> Danger Zone: Remove Access
+                    </h3>
+                    <p className="text-sm text-muted-foreground font-semibold mt-1">
+                      Showing {allUsers.length} total users in academy. Revoking access removes their profile permanently.
+                    </p>
+                  </div>
                   <div className="flex w-full sm:w-auto items-center gap-3">
                     <div className="relative w-full sm:w-72">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />

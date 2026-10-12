@@ -327,7 +327,7 @@ function HomeTab({ studentName, todayClass, upcomingClasses, teachers, onRefresh
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-2xl font-black text-foreground flex items-center gap-3">
             <span className="bg-primary/20 p-2 rounded-xl text-primary"><Calendar className="h-6 w-6" /></span>
-            Today's Mission
+            Today's Class
           </h3>
           <button onClick={onRefresh} className="text-sm font-bold text-primary hover:text-primary/80 transition-colors bg-primary/10 px-3 py-1.5 rounded-full">
             ↻ Refresh
@@ -405,14 +405,14 @@ function HomeTab({ studentName, todayClass, upcomingClasses, teachers, onRefresh
       <section>
         <h3 className="text-2xl font-black text-foreground mb-4 flex items-center gap-3">
           <span className="bg-secondary/20 p-2 rounded-xl text-secondary"><Clock className="h-6 w-6" /></span>
-          Coming Up Next
+          Upcoming Classes
         </h3>
         {upcomingClasses.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-2">
             {upcomingClasses.map((c, i) => {
               const teacher = teachers.find(t => t.user_id === c.teacher_id);
               return (
-                <AnimatedCard key={i} delay={0.4 + (i * 0.1)} className="p-5 flex items-center justify-between hover:border-primary/50 cursor-pointer">
+                <AnimatedCard key={i} delay={0.4 + (i * 0.1)} className="p-5 flex items-center justify-between hover:border-primary/50">
                   <div className="flex items-center gap-4">
                     <Avatar photoUrl={teacher?.profile_photo} name={teacher?.name} size="md" />
                     <div>
@@ -423,6 +423,20 @@ function HomeTab({ studentName, todayClass, upcomingClasses, teachers, onRefresh
                       </p>
                     </div>
                   </div>
+                  {c.meet_link && (
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="text-[10px] text-muted-foreground font-mono truncate max-w-[120px]">{c.meet_link}</span>
+                      <a 
+                        href={c.meet_link}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="bg-primary hover:bg-primary/90 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+                      >
+                        <Video className="h-3.5 w-3.5" />
+                        Join Class
+                      </a>
+                    </div>
+                  )}
                 </AnimatedCard>
               )
             })}

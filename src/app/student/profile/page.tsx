@@ -40,14 +40,26 @@ export default function StudentProfilePage() {
       
       const { data: stud } = await supabase
         .from('student_profiles')
-        .select('*, teacher_profiles(name)')
+        .select('*')
         .eq('user_id', user.id)
         .single()
+
+      let teacherName = 'Not Assigned'
+      if (stud?.teacher_id) {
+        const { data: tp } = await supabase
+          .from('teacher_profiles')
+          .select('name')
+          .or(`user_id.eq.${stud.teacher_id},id.eq.${stud.teacher_id}`)
+          .maybeSingle()
+        if (tp?.name) {
+          teacherName = tp.name
+        }
+      }
 
       const combined = {
         registered_email: user.email,
         full_name: stud?.name || user.user_metadata?.full_name || '',
-        assigned_teacher_name: stud?.teacher_profiles?.name || 'Not Assigned',
+        assigned_teacher_name: teacherName,
         registration_number: stud?.registration_number || '',
         dob: stud?.dob ? format(parseISO(stud.dob), 'yyyy-MM-dd') : '',
         guardian_name: stud?.guardian_name || '',
