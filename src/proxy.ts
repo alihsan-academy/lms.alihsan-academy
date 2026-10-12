@@ -41,7 +41,7 @@ export default async function proxy(request: NextRequest) {
                            (request.nextUrl.pathname.startsWith('/admin') && request.nextUrl.pathname !== '/admin/login') ||
                            request.nextUrl.pathname.startsWith('/superadmin')
 
-  // Redirect authenticated users away from the login page based on their role
+  // Redirect authenticated users away from their own login page to their dashboard
   if (user && isLoginPage) {
     const supabaseAdmin = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -62,14 +62,20 @@ export default async function proxy(request: NextRequest) {
       .single()
 
     const role = profile?.role
-    let redirectUrl = request.nextUrl.clone()
-    
-    if (role === 'student') redirectUrl.pathname = '/student/dashboard'
-    else if (role === 'teacher') redirectUrl.pathname = '/teacher/dashboard'
-    else if (role === 'admin') redirectUrl.pathname = '/admin/dashboard'
-    else if (role === 'superadmin') redirectUrl.pathname = '/superadmin/dashboard'
-    
-    if (role) {
+    const pathname = request.nextUrl.pathname
+
+    const isOwnLoginPage = 
+      pathname === '/login' ||
+      (pathname === '/student/login' && role === 'student') ||
+      (pathname === '/teacher/login' && role === 'teacher') ||
+      (pathname === '/admin/login' && (role === 'admin' || role === 'superadmin'))
+
+    if (role && isOwnLoginPage) {
+      let redirectUrl = request.nextUrl.clone()
+      if (role === 'student') redirectUrl.pathname = '/student/dashboard'
+      else if (role === 'teacher') redirectUrl.pathname = '/teacher/dashboard'
+      else if (role === 'admin') redirectUrl.pathname = '/admin/dashboard'
+      else if (role === 'superadmin') redirectUrl.pathname = '/superadmin/dashboard'
       return NextResponse.redirect(redirectUrl)
     }
   }

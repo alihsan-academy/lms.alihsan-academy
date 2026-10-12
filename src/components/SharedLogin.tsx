@@ -103,8 +103,31 @@ export default function SharedLogin({
         return
       }
 
-      // 3. Redirect based on role
+      // 3. Strict Role Validation for Portal
       const role = profileData.role
+      const isRoleAllowed = 
+        (portalType === 'student' && role === 'student') ||
+        (portalType === 'teacher' && role === 'teacher') ||
+        (portalType === 'admin' && (role === 'admin' || role === 'superadmin'))
+
+      if (!isRoleAllowed) {
+        // Sign out immediately so no active session remains
+        await supabase.auth.signOut()
+        
+        if (portalType === 'student') {
+          setError('Access denied: These credentials do not belong to a Student account.')
+        } else if (portalType === 'teacher') {
+          setError('Access denied: These credentials do not belong to a Tutor account.')
+        } else if (portalType === 'admin') {
+          setError('Access denied: These credentials do not have Administrator privileges.')
+        } else {
+          setError('Access denied: Unauthorized role for this portal.')
+        }
+        setLoading(false)
+        return
+      }
+
+      // 4. Redirect authorized users to their dashboard
       if (role === 'student') {
         window.location.href = '/student/dashboard'
       } else if (role === 'teacher') {
