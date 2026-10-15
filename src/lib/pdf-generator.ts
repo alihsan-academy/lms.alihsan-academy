@@ -79,7 +79,7 @@ export function generateStudentAttendancePDF({
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8.5)
   doc.setTextColor(100, 116, 139)
-  doc.text('CURE OF HEARTS & CREATING FUTURE | ACADEMY OF MORAL EDUCATION', 46, 23)
+  doc.text('ACADEMY OF MORAL EDUCATION', 46, 23)
 
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(12)
@@ -303,7 +303,7 @@ export function generateTeacherAttendancePDF({
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8.5)
   doc.setTextColor(100, 116, 139)
-  doc.text('CURE OF HEARTS & CREATING FUTURE | ACADEMY OF MORAL EDUCATION', 46, 23)
+  doc.text('ACADEMY OF MORAL EDUCATION', 46, 23)
 
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(12)
