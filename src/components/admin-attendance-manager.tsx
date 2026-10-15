@@ -42,7 +42,7 @@ interface AdminAttendanceManagerProps {
   allUsers: any[]
 }
 
-type SearchMode = 'teacher' | 'student' | 'all'
+type SearchMode = 'teacher' | 'student' | 'all' | 'filter'
 
 export function AdminAttendanceManager({
   students,
@@ -70,6 +70,19 @@ export function AdminAttendanceManager({
   
   // PDF export loading state
   const [isExportingPDF, setIsExportingPDF] = useState(false)
+
+  // Intelligence Filter state
+  const [enrolmentFilter, setEnrolmentFilter] = useState<'all' | 'ongoing' | 'break' | 'stopped'>('all')
+  const [attendedMin, setAttendedMin] = useState('')
+  const [attendedMax, setAttendedMax] = useState('')
+  const [studentAbsentMin, setStudentAbsentMin] = useState('')
+  const [studentAbsentMax, setStudentAbsentMax] = useState('')
+  const [teacherMissedMin, setTeacherMissedMin] = useState('')
+  const [teacherMissedMax, setTeacherMissedMax] = useState('')
+  const [onBreakMin, setOnBreakMin] = useState('')
+  const [onBreakMax, setOnBreakMax] = useState('')
+  const [rateMin, setRateMin] = useState('')
+  const [rateMax, setRateMax] = useState('')
 
   const dateRange = getDateRange(filterType, customStart, customEnd)
 
@@ -165,6 +178,32 @@ export function AdminAttendanceManager({
   const currentStudentTeacher = currentStudent
     ? teachers.find((t) => t.id === currentStudent.teacher_id)
     : null
+
+  // Intelligence Filter: compute stats for all students, then apply range filters
+  const filteredIntelligenceStudents = searchMode === 'filter' ? students
+    .map((s) => {
+      const sc = classes.filter((c: any) => c.student_id === s.id)
+      const summary = calculateStudentAttendanceSummary(sc, attendance, s, dateRange)
+      return { student: s, summary }
+    })
+    .filter(({ student: s, summary }) => {
+      // Enrolment status filter
+      if (enrolmentFilter !== 'all' && (s.enrolment_status || 'ongoing') !== enrolmentFilter) return false
+
+      const inRange = (val: number, min: string, max: string) => {
+        if (min !== '' && val < Number(min)) return false
+        if (max !== '' && val > Number(max)) return false
+        return true
+      }
+
+      if (!inRange(summary.attendedCount, attendedMin, attendedMax)) return false
+      if (!inRange(summary.studentUnavailableCount, studentAbsentMin, studentAbsentMax)) return false
+      if (!inRange(summary.teacherUnavailableCount, teacherMissedMin, teacherMissedMax)) return false
+      if (!inRange(summary.breakCount, onBreakMin, onBreakMax)) return false
+      if (!inRange(summary.attendanceRate, rateMin, rateMax)) return false
+
+      return true
+    }) : []
 
   // Handler: Export teacher summary PDF
   const handleDownloadTeacherPDF = () => {
@@ -274,6 +313,17 @@ export function AdminAttendanceManager({
             }`}
           >
             <Clock className="h-4 w-4" /> Academy Log
+          </button>
+
+          <button
+            onClick={() => setSearchMode('filter')}
+            className={`px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 ${
+              searchMode === 'filter'
+                ? 'bg-amber-500 text-white shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Sparkles className="h-4 w-4" /> Smart Filter
           </button>
         </div>
       </div>
@@ -761,6 +811,251 @@ export function AdminAttendanceManager({
               </tbody>
             </table>
           </div>
+        </AnimatedCard>
+      )}
+
+      {/* MODE 4: Smart Filter — filter students by attendance stats */}
+      {searchMode === 'filter' && (
+        <AnimatedCard className="p-6 space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-lg font-black text-foreground flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-amber-500" />
+                Student Attendance Intelligence Filter
+              </h4>
+              <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                Filter all students academy-wide by their attendance outcomes within the selected date range.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setEnrolmentFilter('all')
+                setAttendedMin(''); setAttendedMax('')
+                setStudentAbsentMin(''); setStudentAbsentMax('')
+                setTeacherMissedMin(''); setTeacherMissedMax('')
+                setOnBreakMin(''); setOnBreakMax('')
+                setRateMin(''); setRateMax('')
+              }}
+              className="text-xs font-bold text-muted-foreground hover:text-foreground border border-border px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Reset Filters
+            </button>
+          </div>
+
+          {/* Filter Controls Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {/* Enrolment Status */}
+            <div className="bg-muted/40 rounded-2xl p-4 space-y-2 border border-border">
+              <label className="text-[11px] font-black uppercase text-muted-foreground tracking-wide">Enrolment Status</label>
+              <div className="flex flex-wrap gap-1.5">
+                {(['all', 'ongoing', 'break', 'stopped'] as const).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setEnrolmentFilter(s)}
+                    className={`px-3 py-1 rounded-full text-[11px] font-black capitalize transition-all ${
+                      enrolmentFilter === s
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-white border border-border text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ✅ Attended (Class Completed) */}
+            <div className="bg-green-50 rounded-2xl p-4 space-y-2 border border-green-200">
+              <label className="text-[11px] font-black uppercase text-green-700 tracking-wide flex items-center gap-1">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Attended (Class Completed)
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number" min="0" placeholder="Min"
+                  value={attendedMin}
+                  onChange={(e) => setAttendedMin(e.target.value)}
+                  className="w-full border border-green-200 rounded-lg px-2 py-1.5 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-green-300"
+                />
+                <span className="text-xs text-muted-foreground font-bold">—</span>
+                <input
+                  type="number" min="0" placeholder="Max"
+                  value={attendedMax}
+                  onChange={(e) => setAttendedMax(e.target.value)}
+                  className="w-full border border-green-200 rounded-lg px-2 py-1.5 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-green-300"
+                />
+              </div>
+            </div>
+
+            {/* ⚠️ Student Absent */}
+            <div className="bg-orange-50 rounded-2xl p-4 space-y-2 border border-orange-200">
+              <label className="text-[11px] font-black uppercase text-orange-700 tracking-wide flex items-center gap-1">
+                <AlertCircle className="h-3.5 w-3.5" /> Student Absent (Unavailable)
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number" min="0" placeholder="Min"
+                  value={studentAbsentMin}
+                  onChange={(e) => setStudentAbsentMin(e.target.value)}
+                  className="w-full border border-orange-200 rounded-lg px-2 py-1.5 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-orange-300"
+                />
+                <span className="text-xs text-muted-foreground font-bold">—</span>
+                <input
+                  type="number" min="0" placeholder="Max"
+                  value={studentAbsentMax}
+                  onChange={(e) => setStudentAbsentMax(e.target.value)}
+                  className="w-full border border-orange-200 rounded-lg px-2 py-1.5 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-orange-300"
+                />
+              </div>
+            </div>
+
+            {/* ❌ Teacher Missed */}
+            <div className="bg-red-50 rounded-2xl p-4 space-y-2 border border-red-200">
+              <label className="text-[11px] font-black uppercase text-red-700 tracking-wide flex items-center gap-1">
+                <XCircle className="h-3.5 w-3.5" /> Teacher Missed (Unavailable)
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number" min="0" placeholder="Min"
+                  value={teacherMissedMin}
+                  onChange={(e) => setTeacherMissedMin(e.target.value)}
+                  className="w-full border border-red-200 rounded-lg px-2 py-1.5 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-red-300"
+                />
+                <span className="text-xs text-muted-foreground font-bold">—</span>
+                <input
+                  type="number" min="0" placeholder="Max"
+                  value={teacherMissedMax}
+                  onChange={(e) => setTeacherMissedMax(e.target.value)}
+                  className="w-full border border-red-200 rounded-lg px-2 py-1.5 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-red-300"
+                />
+              </div>
+            </div>
+
+            {/* 🕐 On Break */}
+            <div className="bg-yellow-50 rounded-2xl p-4 space-y-2 border border-yellow-200">
+              <label className="text-[11px] font-black uppercase text-yellow-700 tracking-wide flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" /> On Break (Approved Leave)
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number" min="0" placeholder="Min"
+                  value={onBreakMin}
+                  onChange={(e) => setOnBreakMin(e.target.value)}
+                  className="w-full border border-yellow-200 rounded-lg px-2 py-1.5 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-yellow-300"
+                />
+                <span className="text-xs text-muted-foreground font-bold">—</span>
+                <input
+                  type="number" min="0" placeholder="Max"
+                  value={onBreakMax}
+                  onChange={(e) => setOnBreakMax(e.target.value)}
+                  className="w-full border border-yellow-200 rounded-lg px-2 py-1.5 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-yellow-300"
+                />
+              </div>
+            </div>
+
+            {/* 📊 Attendance Rate % */}
+            <div className="bg-blue-50 rounded-2xl p-4 space-y-2 border border-blue-200">
+              <label className="text-[11px] font-black uppercase text-blue-700 tracking-wide flex items-center gap-1">
+                <FileText className="h-3.5 w-3.5" /> Attendance Rate (%)
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number" min="0" max="100" placeholder="Min %"
+                  value={rateMin}
+                  onChange={(e) => setRateMin(e.target.value)}
+                  className="w-full border border-blue-200 rounded-lg px-2 py-1.5 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+                />
+                <span className="text-xs text-muted-foreground font-bold">—</span>
+                <input
+                  type="number" min="0" max="100" placeholder="Max %"
+                  value={rateMax}
+                  onChange={(e) => setRateMax(e.target.value)}
+                  className="w-full border border-blue-200 rounded-lg px-2 py-1.5 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Results Summary Bar */}
+          <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
+            <Users className="h-4 w-4 text-amber-600 shrink-0" />
+            <span className="text-sm font-black text-amber-800">
+              {filteredIntelligenceStudents.length} student{filteredIntelligenceStudents.length !== 1 ? 's' : ''} matched
+            </span>
+            <span className="text-xs text-amber-600 font-medium">· {dateRange.label}</span>
+          </div>
+
+          {/* Results Table */}
+          {filteredIntelligenceStudents.length > 0 ? (
+            <div className="overflow-x-auto rounded-2xl border-2 border-border">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-muted/60">
+                    <th className="p-3 text-left text-xs font-black text-muted-foreground uppercase">Student</th>
+                    <th className="p-3 text-left text-xs font-black text-muted-foreground uppercase">Reg No</th>
+                    <th className="p-3 text-center text-xs font-black text-green-700 uppercase">Attended ✅</th>
+                    <th className="p-3 text-center text-xs font-black text-orange-700 uppercase">Stu. Absent ⚠️</th>
+                    <th className="p-3 text-center text-xs font-black text-red-700 uppercase">Tchr. Missed ❌</th>
+                    <th className="p-3 text-center text-xs font-black text-yellow-700 uppercase">On Break 🕐</th>
+                    <th className="p-3 text-center text-xs font-black text-blue-700 uppercase">Rate %</th>
+                    <th className="p-3 text-center text-xs font-black text-muted-foreground uppercase">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredIntelligenceStudents.map(({ student: s, summary }, idx) => (
+                    <tr key={s.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-muted/20'}>
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          <Avatar photoUrl={s.profile_photo} name={s.name} size="sm" />
+                          <div>
+                            <p className="text-xs font-black text-foreground">{s.name}</p>
+                            <p className="text-[10px] text-muted-foreground">{teachers.find((t) => t.id === s.teacher_id)?.name || '—'}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-3 text-xs font-bold text-muted-foreground">{s.registration_number || '—'}</td>
+                      <td className="p-3 text-center">
+                        <span className="inline-block bg-green-100 text-green-800 font-black text-xs px-2.5 py-0.5 rounded-full">{summary.attendedCount}</span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className="inline-block bg-orange-100 text-orange-800 font-black text-xs px-2.5 py-0.5 rounded-full">{summary.studentUnavailableCount}</span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className="inline-block bg-red-100 text-red-800 font-black text-xs px-2.5 py-0.5 rounded-full">{summary.teacherUnavailableCount}</span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className="inline-block bg-yellow-100 text-yellow-800 font-black text-xs px-2.5 py-0.5 rounded-full">{summary.breakCount}</span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className={`inline-block font-black text-xs px-2.5 py-0.5 rounded-full ${
+                          summary.attendanceRate >= 80 ? 'bg-green-100 text-green-800'
+                          : summary.attendanceRate >= 50 ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
+                        }`}>
+                          {summary.attendanceRate}%
+                        </span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full capitalize ${
+                          (s.enrolment_status || 'ongoing') === 'ongoing' ? 'bg-emerald-100 text-emerald-800'
+                          : (s.enrolment_status || 'ongoing') === 'break' ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
+                        }`}>
+                          {s.enrolment_status || 'ongoing'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              <Sparkles className="h-10 w-10 mx-auto mb-3 text-amber-300" />
+              <p className="font-black text-foreground">No students matched the filters.</p>
+              <p className="text-sm font-medium mt-1">Adjust the range inputs or change the date period above.</p>
+            </div>
+          )}
         </AnimatedCard>
       )}
 
