@@ -52,9 +52,9 @@ export async function GET(request: Request) {
       .eq('id', user.id)
       .single()
 
-    if (!profile || profile.role !== 'superadmin') {
+    if (!profile || (profile.role !== 'superadmin' && profile.role !== 'admin')) {
       return NextResponse.json(
-        { error: 'Forbidden - Superadmin only' }, 
+        { error: 'Forbidden - Admin only' }, 
         { status: 403 }
       )
     }

@@ -1,115 +1,119 @@
 "use client"
 
+import { useState, useEffect } from 'react'
 import { LogoutButton } from '@/components/logout-button'
 import { AcademyHeader } from '@/components/academy-header'
-import { ShieldCheck, Megaphone, FileText, BookOpen, GraduationCap } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
+import { ShieldCheck, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { AdminAttendanceManager } from '@/components/admin-attendance-manager'
+import { toast } from 'sonner'
 
 export default function AdminDashboard() {
+  const [isLoading, setIsLoading] = useState(true)
+  const [students, setStudents] = useState<any[]>([])
+  const [teachers, setTeachers] = useState<any[]>([])
+  const [classes, setClasses] = useState<any[]>([])
+  const [attendanceRecords, setAttendanceRecords] = useState<any[]>([])
+  const [allUsers, setAllUsers] = useState<any[]>([])
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  async function fetchData() {
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/admin/data', { cache: 'no-store' })
+      const data = await response.json()
+      
+      if (!response.ok) throw new Error(data.error || "Failed to fetch data")
+
+      const mappedStudents = data.students?.map((s: any) => {
+        const sp = s.student_profiles?.[0] || {}
+        return {
+          ...s,
+          name: sp.name || s.email,
+          class_name: sp.class_name || 'N/A',
+          teacher_id: sp.teacher_id || null,
+          registration_number: sp.registration_number || 'N/A',
+          profile_photo: sp.profile_photo || null,
+          created_at: sp.joined_date || s.created_at,
+          enrolment_status: sp.enrolment_status || 'ongoing',
+          break_from_date: sp.break_from_date || '',
+          break_to_date: sp.break_to_date || '',
+          break_reason: sp.break_reason || '',
+          last_class_date: sp.last_class_date || '',
+          stopped_reason: sp.stopped_reason || ''
+        }
+      }) || []
+
+      const mappedTeachers = data.teachers?.map((t: any) => {
+        const tp = t.teacher_profiles?.[0] || {}
+        return {
+          ...t,
+          name: tp.name || t.email,
+          profile_photo: tp.profile_photo || null,
+          mobile_number: tp.mobile_number || tp.mobile || null,
+          date_of_joining: tp.date_of_joining || tp.doj || null,
+        }
+      }) || []
+
+      const mappedAllUsers = data.allUsers?.map((u: any) => {
+        let name = u.email
+        if (u.role === 'student' && u.student_profiles?.[0]?.name) {
+          name = u.student_profiles[0].name
+        } else if (u.role === 'teacher' && u.teacher_profiles?.[0]?.name) {
+          name = u.teacher_profiles[0].name
+        }
+        return { ...u, name }
+      }) || []
+
+      setAllUsers(mappedAllUsers)
+      setStudents(mappedStudents)
+      setTeachers(mappedTeachers)
+      setAttendanceRecords(data.attendance || [])
+      setClasses(data.classes || [])
+    } catch (error: any) {
+      console.error("Error fetching admin data:", error)
+      toast.error("Failed to load dashboard data.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-gradient-to-br from-green-50 to-white flex flex-col"
+      className="min-h-screen bg-background flex flex-col font-sans selection:bg-primary/20"
     >
-      <header className="bg-white border-b border-green-100 p-4 flex justify-between items-center shadow-sm sticky top-0 z-10">
+      <header className="bg-white border-b-2 border-border p-3 md:p-4 flex justify-between items-center sticky top-0 z-50 shadow-sm backdrop-blur-md bg-white/90">
         <div className="flex items-center gap-3">
-          <AcademyHeader size="sm" showTagline={true} />
-          <div className="flex items-center gap-2 border-l border-gray-200 pl-3 ml-3 hidden sm:flex">
+          <AcademyHeader size="sm" showTagline={false} />
+          <div className="flex items-center gap-2 border-l-2 border-border pl-3 ml-2 hidden sm:flex">
              <ShieldCheck className="h-5 w-5 text-green-600" />
-             <span className="font-bold text-green-800 text-xl">Admin Portal</span>
+             <span className="font-extrabold text-foreground text-lg">Admin Portal</span>
           </div>
         </div>
         <LogoutButton />
       </header>
 
-      <main className="flex-1 w-full max-w-4xl mx-auto p-4 md:p-8 flex flex-col items-center justify-center">
-        
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
-        >
-          <motion.div 
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
-            className="bg-green-100 p-4 rounded-full inline-block mb-4 shadow-inner"
-          >
-            <ShieldCheck className="h-12 w-12 text-green-700" />
-          </motion.div>
-          <h1 className="text-4xl font-extrabold text-green-900 mb-4 tracking-tight">Admin Portal</h1>
-          <p className="text-xl text-gray-600 bg-white inline-block px-6 py-2 rounded-full shadow-sm border border-green-100">
-            Admin features coming in Version 2
-          </p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.3 }}
-          className="w-full"
-        >
-          <Card className="w-full bg-white shadow-xl border-green-100 overflow-hidden">
-            <div className="bg-green-700 p-6 text-center">
-              <h3 className="text-2xl font-bold text-white">Upcoming Features</h3>
-              <p className="text-green-100 mt-2">We are actively building these tools for you.</p>
-            </div>
-            <CardContent className="p-8">
-              <ul className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FeatureItem 
-                  index={0}
-                  icon={<Megaphone className="h-6 w-6 text-blue-500" />} 
-                  title="Class-wise Announcements" 
-                  desc="Broadcast messages to specific classes or batches easily."
-                />
-                <FeatureItem 
-                  index={1}
-                  icon={<FileText className="h-6 w-6 text-purple-500" />} 
-                  title="Exam Form Management" 
-                  desc="Create, distribute, and collect examination forms digitally."
-                />
-                <FeatureItem 
-                  index={2}
-                  icon={<BookOpen className="h-6 w-6 text-orange-500" />} 
-                  title="Classroom Study Materials" 
-                  desc="Upload and organize resources for teachers and students."
-                />
-                <FeatureItem 
-                  index={3}
-                  icon={<GraduationCap className="h-6 w-6 text-green-600" />} 
-                  title="Syllabus & Curriculum" 
-                  desc="Manage and track syllabus completion across all courses."
-                />
-              </ul>
-            </CardContent>
-          </Card>
-        </motion.div>
-
+      <main className="flex-1 w-full max-w-6xl mx-auto p-4 md:p-8">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center p-20 gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm font-bold text-muted-foreground">Loading attendance records & analytics...</p>
+          </div>
+        ) : (
+          <AdminAttendanceManager
+            students={students}
+            teachers={teachers}
+            classes={classes}
+            attendance={attendanceRecords}
+            allUsers={allUsers}
+          />
+        )}
       </main>
     </motion.div>
   )
 }
-
-function FeatureItem({ icon, title, desc, index }: { icon: React.ReactNode, title: string, desc: string, index: number }) {
-  return (
-    <motion.li 
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: 0.5 + (index * 0.1) }}
-      whileHover={{ scale: 1.02 }}
-      className="flex items-start gap-4 p-4 rounded-xl hover:bg-green-50 transition-colors border border-transparent hover:border-green-100 cursor-default"
-    >
-      <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-100">
-        {icon}
-      </div>
-      <div>
-        <h4 className="font-bold text-gray-900 text-lg">{title}</h4>
-        <p className="text-sm text-gray-500 mt-1">{desc}</p>
-      </div>
-    </motion.li>
-  )
-}
-

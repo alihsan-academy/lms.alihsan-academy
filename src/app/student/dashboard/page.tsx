@@ -5,14 +5,18 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
 import { AcademyHeader } from '@/components/academy-header'
-import { Home, BarChart3, User, Loader2, Calendar, Clock, Video, Award, Zap, Star, Trophy } from 'lucide-react'
-import { format, isToday, isFuture, parseISO } from 'date-fns'
+import { Home, BarChart3, User, Loader2, Calendar, Clock, Video, Award, Zap, Star, Trophy, Download, AlertCircle, FileText, CheckCircle2, XCircle } from 'lucide-react'
+import { format, parseISO } from 'date-fns'
 import { Avatar } from '@/components/avatar'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Skeleton } from '@/components/skeleton'
 import { AnimatedCard } from '@/components/animated-card'
 import { BouncyButton } from '@/components/bouncy-button'
 import { PageTransition } from '@/components/page-transition'
+import { DateRangeFilter } from '@/components/date-range-filter'
+import { DateFilterType, getDateRange, calculateStudentAttendanceSummary, formatUKDateTime } from '@/lib/attendance-utils'
+import { generateStudentAttendancePDF } from '@/lib/pdf-generator'
+import { toast } from 'sonner'
 
 import StudentProfilePage from '@/app/student/profile/page'
 
@@ -27,16 +31,12 @@ export default function StudentDashboard() {
   // State data
   const [todayClass, setTodayClass] = useState<any>(null)
   const [upcomingClasses, setUpcomingClasses] = useState<any[]>([])
-  const [attendanceData, setAttendanceData] = useState<{
-    totalClasses: number
-    presentCount: number
-    absentCount: number
-    percentage: number
-    history: any[]
-  }>({ totalClasses: 0, presentCount: 0, absentCount: 0, percentage: 0, history: [] })
+  const [allClasses, setAllClasses] = useState<any[]>([])
+  const [attendanceRecords, setAttendanceRecords] = useState<any[]>([])
+  const [studentProfile, setStudentProfile] = useState<any>(null)
   const [profileData, setProfileData] = useState<any>(null)
   const [teachers, setTeachers] = useState<any[]>([])
-  
+
   const fetchClasses = async () => {
     setIsLoading(true)
     try {
@@ -50,70 +50,48 @@ export default function StudentDashboard() {
         throw new Error(data.error || 'Failed to fetch dashboard data')
       }
 
-      const studentProfile = data.studentProfile
+      const sp = data.studentProfile
       const profile = data.profile
-      const allClasses = data.classes || []
+      const classesData = data.classes || []
       const attendance = data.attendance || []
       const teacherProfiles = data.teachers || []
 
-      const resolvedName = studentProfile?.name || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Student'
-      const resolvedReg = studentProfile?.registration_number || ''
+      setStudentProfile(sp)
+      setAllClasses(classesData)
+      setAttendanceRecords(attendance)
+      setTeachers(teacherProfiles)
+
+      const resolvedName = sp?.name || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Student'
+      const resolvedReg = sp?.registration_number || ''
       setStudentName(resolvedName)
       setRegistrationNumber(resolvedReg)
 
       setProfileData({
         email: user.email,
         name: resolvedName,
-        photo_url: studentProfile?.profile_photo || studentProfile?.photo_url || null,
-        class_name: studentProfile?.class_name || 'Unassigned',
+        photo_url: sp?.profile_photo || sp?.photo_url || null,
+        class_name: sp?.class_name || 'Unassigned',
         date_joined: profile?.created_at || user.created_at
       })
 
       const now = new Date()
-      
-      const todayUK = now.toLocaleDateString('en-GB', { 
-        timeZone: 'Europe/London'
-      })
-      
-      const todayClasses = allClasses.filter((c: any) => {
-        const classDateUK = new Date(c.scheduled_at)
-          .toLocaleDateString('en-GB', { 
-            timeZone: 'Europe/London'
-          })
+      const todayUK = now.toLocaleDateString('en-GB', { timeZone: 'Europe/London' })
+
+      const todayClasses = classesData.filter((c: any) => {
+        const classDateUK = new Date(c.scheduled_at).toLocaleDateString('en-GB', { timeZone: 'Europe/London' })
         return classDateUK === todayUK 
       })
       todayClasses.sort((a: any, b: any) => (a.status === 'scheduled' ? -1 : 1))
-      
-      const upcoming = allClasses.filter((c: any) => {
+
+      const upcoming = classesData.filter((c: any) => {
         const classTime = new Date(c.scheduled_at)
         return classTime > now 
           && c.status === 'scheduled'
           && !todayClasses.find((tc: any) => tc.id === c.id)
       })
-      
-      setTeachers(teacherProfiles)
+
       setTodayClass(todayClasses[0] || null)
       setUpcomingClasses(upcoming)
-
-      const completedClasses = allClasses.filter((c: any) => c.status === 'completed')
-      const totalClasses = completedClasses.length
-      const presentCount = attendance?.filter((a: any) => a.status === 'present' || !a.status).length || 0 
-      const absentCount = attendance?.filter((a: any) => a.status === 'absent').length || 0
-      const percentage = totalClasses === 0 ? 0 : Math.round((presentCount / totalClasses) * 100)
-
-      const history = completedClasses.map((c: any) => {
-        const att = attendance?.find((a: any) => a.class_id === c.id)
-        const status = att && att.status === 'absent' ? 'Absent' : 'Present'
-        return {
-          date: c.scheduled_at,
-          status: status,
-          className: c.title || 'Class',
-          teacher_id: c.teacher_id,
-          recording_url: c.recording_url || null
-        }
-      }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
-
-      setAttendanceData({ totalClasses, presentCount, absentCount, percentage, history })
 
     } catch (err) {
       console.error("Error fetching data:", err)
@@ -210,7 +188,14 @@ export default function StudentDashboard() {
           )}
           {activeTab === 'attendance' && (
             <PageTransition key="attendance">
-              <AttendanceTab data={attendanceData} teachers={teachers} />
+              <AttendanceTab 
+                studentProfile={studentProfile}
+                classes={allClasses}
+                attendance={attendanceRecords}
+                teachers={teachers}
+                studentName={studentName}
+                registrationNumber={registrationNumber}
+              />
             </PageTransition>
           )}
           {activeTab === 'profile' && (
@@ -296,7 +281,6 @@ function HomeTab({ studentName, todayClass, upcomingClasses, teachers, onRefresh
     { text: "My mercy encompasses all things.", source: "Quran 7:156" },
     { text: "Be mindful of Allah, and you will find Him in front of you.", source: "Al-Tirmidhi" },
     { text: "O you who have believed, seek help through patience and prayer.", source: "Quran 2:153" },
-    { text: "No fatigue, nor disease, nor sorrow, nor sadness, nor hurt, nor distress befalls a Muslim, even if it were the prick he receives from a thorn, but that Allah expiates some of his sins for that.", source: "Sahih al-Bukhari" },
     { text: "Trust in Allah, but tie your camel.", source: "Prophet Muhammad (PBUH)" },
     { text: "The richest of the rich is the one who is not a prisoner to greed.", source: "Ali ibn Abi Talib" },
     { text: "And whoever turns away from My remembrance - indeed, he will have a depressed life.", source: "Quran 20:124" },
@@ -310,7 +294,6 @@ function HomeTab({ studentName, todayClass, upcomingClasses, teachers, onRefresh
   const diff = now.getTime() - start.getTime();
   const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
   const quoteIndex = dayOfYear % quotes.length;
-  
   const todayQuote = quotes[quoteIndex];
 
   return (
@@ -369,7 +352,7 @@ function HomeTab({ studentName, todayClass, upcomingClasses, teachers, onRefresh
               </motion.a>
             ) : todayClass.status === 'completed' ? (
               <div className="bg-muted text-muted-foreground px-6 py-4 rounded-2xl font-bold text-center border-2 border-border border-dashed">
-                Class completed. No recording available.
+                Class completed.
               </div>
             ) : todayClass.meet_link ? (
               <motion.a 
@@ -425,7 +408,6 @@ function HomeTab({ studentName, todayClass, upcomingClasses, teachers, onRefresh
                   </div>
                   {c.meet_link && (
                     <div className="flex flex-col items-end gap-1">
-                      <span className="text-[10px] text-muted-foreground font-mono truncate max-w-[120px]">{c.meet_link}</span>
                       <a 
                         href={c.meet_link}
                         target="_blank"
@@ -451,79 +433,247 @@ function HomeTab({ studentName, todayClass, upcomingClasses, teachers, onRefresh
   )
 }
 
-function AttendanceTab({ data, teachers }: { data: any, teachers: any[] }) {
+function AttendanceTab({
+  studentProfile,
+  classes,
+  attendance,
+  teachers,
+  studentName,
+  registrationNumber,
+}: {
+  studentProfile: any
+  classes: any[]
+  attendance: any[]
+  teachers: any[]
+  studentName: string
+  registrationNumber: string
+}) {
+  const [filterType, setFilterType] = useState<DateFilterType>('all_time')
+  const [customStart, setCustomStart] = useState('')
+  const [customEnd, setCustomEnd] = useState('')
+  const [isExporting, setIsExporting] = useState(false)
+
+  const dateRange = getDateRange(filterType, customStart, customEnd)
+  const summary = calculateStudentAttendanceSummary(classes, attendance, studentProfile, dateRange)
+
+  // Assigned teacher name
+  const assignedTeacher = teachers.find(t => t.user_id === studentProfile?.teacher_id)
+
+  const handleDownloadPDF = () => {
+    try {
+      setIsExporting(true)
+      generateStudentAttendancePDF({
+        student: {
+          name: studentName,
+          registration_number: registrationNumber,
+          class_name: studentProfile?.class_name,
+          enrolment_status: studentProfile?.enrolment_status || 'ongoing',
+          teacher_name: assignedTeacher?.name || 'Assigned Educator',
+        },
+        periodLabel: dateRange.label,
+        summary: summary,
+      })
+      toast.success('Attendance transcript downloaded! 📄')
+    } catch (e: any) {
+      console.error('PDF export error:', e)
+      toast.error('Failed to generate PDF: ' + e.message)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   let barColor = "bg-destructive"
-  if (data.percentage > 50 && data.percentage <= 75) barColor = "bg-secondary"
-  if (data.percentage > 75) barColor = "bg-green-500"
+  if (summary.attendanceRate > 50 && summary.attendanceRate <= 75) barColor = "bg-secondary"
+  if (summary.attendanceRate > 75) barColor = "bg-green-500"
 
   return (
-    <div className="space-y-8">
-      <h3 className="text-3xl font-black text-foreground mb-2">Your Progress Tracker 🚀</h3>
-      <p className="text-muted-foreground font-medium mb-8">Keep up the great work and watch your stats grow!</p>
-      
+    <div className="space-y-6">
+      {/* Header and Download Button */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h3 className="text-3xl font-black text-foreground">Attendance & Progress 📊</h3>
+          <p className="text-muted-foreground font-medium text-sm mt-1">
+            Real-time track record of your classes, attendances, and scheduled sessions.
+          </p>
+        </div>
+
+        <BouncyButton
+          onClick={handleDownloadPDF}
+          disabled={isExporting}
+          variant="default"
+          className="bg-primary hover:bg-primary/90 text-white font-black flex items-center gap-2 self-start md:self-auto shadow-md"
+        >
+          {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          Download PDF Report
+        </BouncyButton>
+      </div>
+
+      {/* Date Range Filter Bar */}
+      <DateRangeFilter
+        currentFilter={filterType}
+        customStart={customStart}
+        customEnd={customEnd}
+        onFilterChange={(f, start, end) => {
+          setFilterType(f)
+          if (start) setCustomStart(start)
+          if (end) setCustomEnd(end)
+        }}
+        resolvedRange={dateRange}
+      />
+
+      {/* Break Alert if student is on break */}
+      {summary.isOnBreak && summary.breakDetails && (
+        <div className="bg-amber-50 border-2 border-amber-300 p-4 rounded-2xl flex items-start gap-3 text-amber-900">
+          <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <h4 className="font-bold text-sm">Approved Break Notice</h4>
+            <p className="text-xs text-amber-800 mt-0.5">
+              You are on an approved leave from <strong>{summary.breakDetails.from}</strong> to <strong>{summary.breakDetails.to}</strong>.
+              Reason: <em>{summary.breakDetails.reason}</em>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Primary KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <AnimatedCard delay={0.1} className="bg-primary border-none text-white p-6 text-center flex flex-col items-center justify-center">
-          <p className="text-primary-foreground/80 text-xs font-bold tracking-widest uppercase mb-2">Total Classes</p>
-          <p className="text-4xl md:text-5xl font-black">{data.totalClasses}</p>
+        <AnimatedCard delay={0.1} className="bg-primary border-none text-white p-5 text-center flex flex-col items-center justify-center">
+          <p className="text-primary-foreground/80 text-xs font-bold tracking-widest uppercase mb-1">Scheduled</p>
+          <p className="text-3xl md:text-5xl font-black">{summary.totalScheduled}</p>
+          <span className="text-[10px] text-white/70 mt-1">Total in period</span>
         </AnimatedCard>
-        <AnimatedCard delay={0.2} className="bg-green-500 border-none text-white p-6 text-center flex flex-col items-center justify-center">
-          <p className="text-green-100 text-xs font-bold tracking-widest uppercase mb-2">Present</p>
-          <p className="text-4xl md:text-5xl font-black">{data.presentCount}</p>
+
+        <AnimatedCard delay={0.2} className="bg-green-600 border-none text-white p-5 text-center flex flex-col items-center justify-center">
+          <p className="text-green-100 text-xs font-bold tracking-widest uppercase mb-1">Attended</p>
+          <p className="text-3xl md:text-5xl font-black">{summary.attendedCount}</p>
+          <span className="text-[10px] text-green-100/80 mt-1">Classes completed</span>
         </AnimatedCard>
-        <AnimatedCard delay={0.3} className="bg-destructive border-none text-white p-6 text-center flex flex-col items-center justify-center">
-          <p className="text-destructive-foreground/80 text-xs font-bold tracking-widest uppercase mb-2">Absent</p>
-          <p className="text-4xl md:text-5xl font-black">{data.absentCount}</p>
+
+        <AnimatedCard delay={0.3} className="bg-destructive border-none text-white p-5 text-center flex flex-col items-center justify-center">
+          <p className="text-destructive-foreground/80 text-xs font-bold tracking-widest uppercase mb-1">Not Attended</p>
+          <p className="text-3xl md:text-5xl font-black">{summary.notAttendedCount}</p>
+          <span className="text-[10px] text-white/70 mt-1">Absent / Missed</span>
         </AnimatedCard>
-        <AnimatedCard delay={0.4} className="bg-secondary border-none text-secondary-foreground p-6 text-center flex flex-col items-center justify-center">
-          <p className="text-secondary-foreground/70 text-xs font-bold tracking-widest uppercase mb-2">Score</p>
-          <p className="text-4xl md:text-5xl font-black">{data.percentage}%</p>
+
+        <AnimatedCard delay={0.4} className="bg-secondary border-none text-secondary-foreground p-5 text-center flex flex-col items-center justify-center">
+          <p className="text-secondary-foreground/70 text-xs font-bold tracking-widest uppercase mb-1">Score</p>
+          <p className="text-3xl md:text-5xl font-black">{summary.attendanceRate}%</p>
+          <span className="text-[10px] text-secondary-foreground/70 mt-1">Mastery level</span>
         </AnimatedCard>
       </div>
 
-      <AnimatedCard delay={0.5} className="p-8">
-        <div className="flex justify-between items-end mb-4">
-          <span className="font-bold text-foreground text-lg">Mastery Meter</span>
-          <span className="font-black text-3xl text-foreground">{data.percentage}%</span>
+      {/* Secondary Metrics Breakdown Banner */}
+      <div className="bg-white p-4 rounded-2xl border-2 border-border shadow-sm grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+        <div className="p-3 bg-red-50 rounded-xl border border-red-100">
+          <span className="text-[11px] font-bold text-red-700 block uppercase">Teacher Unavailable</span>
+          <span className="text-xl font-black text-red-900">{summary.teacherUnavailableCount}</span>
         </div>
-        <div className="w-full bg-muted rounded-full h-6 overflow-hidden border-2 border-border p-0.5">
+        <div className="p-3 bg-orange-50 rounded-xl border border-orange-100">
+          <span className="text-[11px] font-bold text-orange-700 block uppercase">Student Unavailable</span>
+          <span className="text-xl font-black text-orange-900">{summary.studentUnavailableCount}</span>
+        </div>
+        <div className="p-3 bg-amber-50 rounded-xl border border-amber-100">
+          <span className="text-[11px] font-bold text-amber-700 block uppercase">On Break</span>
+          <span className="text-xl font-black text-amber-900">{summary.breakCount}</span>
+        </div>
+        <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
+          <span className="text-[11px] font-bold text-blue-700 block uppercase">Upcoming Scheduled</span>
+          <span className="text-xl font-black text-blue-900">{summary.scheduledUpcomingCount}</span>
+        </div>
+      </div>
+
+      {/* Mastery Meter */}
+      <AnimatedCard delay={0.45} className="p-6">
+        <div className="flex justify-between items-end mb-3">
+          <span className="font-bold text-foreground text-base">Attendance Meter</span>
+          <span className="font-black text-2xl text-foreground">{summary.attendanceRate}%</span>
+        </div>
+        <div className="w-full bg-muted rounded-full h-5 overflow-hidden border-2 border-border p-0.5">
           <motion.div 
             initial={{ width: 0 }}
-            animate={{ width: data.percentage + "%" }}
-            transition={{ duration: 1.5, type: "spring", bounce: 0.4 }}
+            animate={{ width: `${Math.min(summary.attendanceRate, 100)}%` }}
+            transition={{ duration: 1.2, type: "spring", bounce: 0.3 }}
             className={`${barColor} h-full rounded-full`}
-          ></motion.div>
+          />
         </div>
-        <p className="text-sm font-bold text-muted-foreground mt-4 text-center">Aim for 75% or higher to unlock the next level! 🏆</p>
+        <p className="text-xs font-bold text-muted-foreground mt-3 text-center">Aim for 75% or higher to unlock the next level! 🏆</p>
       </AnimatedCard>
 
-      <div className="mt-10">
-        <h4 className="font-black text-foreground mb-4 text-2xl">Quest History</h4>
-        <AnimatedCard delay={0.6} className="overflow-hidden">
-          {data.history.length > 0 ? (
+      {/* Class History for Selected Period */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h4 className="font-black text-foreground text-xl">
+            Class Sessions <span className="text-primary text-base font-bold">({summary.filteredClasses.length})</span>
+          </h4>
+          <span className="text-xs font-semibold text-muted-foreground">{dateRange.label}</span>
+        </div>
+
+        <AnimatedCard delay={0.5} className="overflow-hidden p-0 border-2 border-border">
+          {summary.filteredClasses.length > 0 ? (
             <div className="divide-y-2 divide-border">
-              {data.history.map((h: any, i: number) => {
-                const teacher = teachers.find(t => t.user_id === h.teacher_id);
+              {summary.filteredClasses.map((item, i) => {
+                const teacher = teachers.find(t => t.user_id === item.teacher_id);
                 return (
-                  <div key={i} className="p-5 flex justify-between items-center hover:bg-muted/30 transition-colors">
-                    <div className="flex items-center gap-4">
+                  <div key={item.id || i} className="p-4 md:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-muted/20 transition-colors">
+                    <div className="flex items-start md:items-center gap-4">
                       <Avatar photoUrl={teacher?.profile_photo} name={teacher?.name} size="md" />
                       <div>
-                        <p className="font-black text-foreground text-lg">{h.className}</p>
-                        <p className="text-xs font-bold text-primary">{teacher?.name || 'Teacher'}</p>
-                        <p className="text-sm text-muted-foreground font-semibold mt-1">{format(parseISO(h.date), "MMMM d, yyyy")}</p>
+                        <p className="font-black text-foreground text-base md:text-lg">{item.title}</p>
+                        <p className="text-xs font-bold text-primary">Teacher {teacher?.name || 'Educator'}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground font-semibold mt-1">
+                          <Clock className="h-3.5 w-3.5" />
+                          <span>{formatUKDateTime(item.scheduled_at)} (UK Time)</span>
+                        </div>
+                        {item.remarks && (
+                          <p className="text-xs font-medium bg-muted/60 text-foreground px-2.5 py-1 rounded-lg mt-2 inline-block border border-border/50">
+                            <strong>Note:</strong> {item.remarks}
+                          </p>
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      {h.recording_url && (
-                        <a href={h.recording_url} target="_blank" rel="noreferrer"
-                           className="inline-flex items-center gap-1 text-xs font-bold text-purple-600 bg-purple-50 border-2 border-purple-200 px-3 py-1 rounded-lg hover:bg-purple-100 transition-colors">
-                          <Video className="h-3 w-3" /> Watch
+
+                    <div className="flex items-center gap-3 self-end md:self-center">
+                      {item.recording_url && (
+                        <a 
+                          href={item.recording_url} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-700 bg-purple-50 border-2 border-purple-200 px-3 py-1.5 rounded-xl hover:bg-purple-100 transition-colors"
+                        >
+                          <Video className="h-3.5 w-3.5" /> Watch Recording
                         </a>
                       )}
-                      {h.status === 'Present' ? (
-                        <span className="px-5 py-2 bg-green-100 text-green-700 rounded-xl text-sm font-black border-2 border-green-200">Present</span>
-                      ) : (
-                        <span className="px-5 py-2 bg-destructive/10 text-destructive rounded-xl text-sm font-black border-2 border-destructive/20">Absent</span>
+
+                      {/* Status Badges */}
+                      {item.badgeVariant === 'present' && (
+                        <span className="px-3.5 py-1.5 bg-green-100 text-green-800 rounded-xl text-xs font-black border-2 border-green-200 flex items-center gap-1">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-green-600" /> Attended
+                        </span>
+                      )}
+                      {item.badgeVariant === 'teacher_unavailable' && (
+                        <span className="px-3.5 py-1.5 bg-red-100 text-red-800 rounded-xl text-xs font-black border-2 border-red-200 flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5 text-red-600" /> Teacher Unavailable
+                        </span>
+                      )}
+                      {item.badgeVariant === 'student_unavailable' && (
+                        <span className="px-3.5 py-1.5 bg-orange-100 text-orange-800 rounded-xl text-xs font-black border-2 border-orange-200 flex items-center gap-1">
+                          <XCircle className="h-3.5 w-3.5 text-orange-600" /> Student Unavailable
+                        </span>
+                      )}
+                      {item.badgeVariant === 'break' && (
+                        <span className="px-3.5 py-1.5 bg-amber-100 text-amber-800 rounded-xl text-xs font-black border-2 border-amber-200">
+                          ⏸️ On Break
+                        </span>
+                      )}
+                      {item.badgeVariant === 'absent' && (
+                        <span className="px-3.5 py-1.5 bg-destructive/10 text-destructive rounded-xl text-xs font-black border-2 border-destructive/20 flex items-center gap-1">
+                          <XCircle className="h-3.5 w-3.5 text-destructive" /> Not Attended
+                        </span>
+                      )}
+                      {item.badgeVariant === 'scheduled' && (
+                        <span className="px-3.5 py-1.5 bg-blue-100 text-blue-800 rounded-xl text-xs font-black border-2 border-blue-200">
+                          Upcoming
+                        </span>
                       )}
                     </div>
                   </div>
@@ -532,8 +682,9 @@ function AttendanceTab({ data, teachers }: { data: any, teachers: any[] }) {
             </div>
           ) : (
             <div className="p-12 text-center flex flex-col items-center">
-              <Award className="h-16 w-16 text-muted-foreground/30 mb-4" />
-              <p className="text-muted-foreground font-bold text-lg">Your quest history will appear here once you attend classes.</p>
+              <Award className="h-14 w-14 text-muted-foreground/30 mb-3" />
+              <p className="text-muted-foreground font-bold text-base">No classes found in this period.</p>
+              <p className="text-xs text-muted-foreground mt-1">Try changing the date filter above.</p>
             </div>
           )}
         </AnimatedCard>

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
 import { AcademyHeader } from '@/components/academy-header'
-import { Calendar, Plus, BarChart3, Loader2, Video, CheckCircle, Clock, User, Globe, AlertCircle, ChevronDown, Users, Copy, Sparkles, Pencil, X } from 'lucide-react'
+import { Calendar, Plus, BarChart3, Loader2, Video, CheckCircle, Clock, User, Globe, AlertCircle, ChevronDown, Users, Copy, Sparkles, Pencil, X, Download, FileText, CheckCircle2, XCircle, Search } from 'lucide-react'
 import { format, parseISO, addWeeks, isAfter, startOfToday } from 'date-fns'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,6 +16,9 @@ import { Skeleton } from '@/components/skeleton'
 import { AnimatedCard } from '@/components/animated-card'
 import { BouncyButton } from '@/components/bouncy-button'
 import { PageTransition } from '@/components/page-transition'
+import { DateRangeFilter } from '@/components/date-range-filter'
+import { DateFilterType, getDateRange, calculateStudentAttendanceSummary, formatUKDateTime, isDateWithinRange, parseClassMetadata } from '@/lib/attendance-utils'
+import { generateStudentAttendancePDF, generateTeacherAttendancePDF } from '@/lib/pdf-generator'
 
 import TeacherProfilePage from '@/app/teacher/profile/page'
 
@@ -40,17 +43,24 @@ export default function TeacherDashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [teacherId, setTeacherId] = useState<string | null>(null)
   const [teacherName, setTeacherName] = useState<string>('')
+  const [teacherEmail, setTeacherEmail] = useState<string>('')
   const supabase = createClient()
 
   // Data state
   const [students, setStudents] = useState<any[]>([])
   const [selectedStudentId, setSelectedStudentId] = useState<string>('')
   const [classes, setClasses] = useState<any[]>([])
-  const [stats, setStats] = useState<any>({ totalClasses: 0, completed: 0, presentCount: 0, absentCount: 0, studentBreakdown: [] })
+  const [allTeacherClasses, setAllTeacherClasses] = useState<any[]>([])
+  const [allAttendance, setAllAttendance] = useState<any[]>([])
 
+  // Modal for completing/marking class
   const [pendingCompleteClass, setPendingCompleteClass] = useState<any>(null)
+  const [completionStatus, setCompletionStatus] = useState<'present' | 'absent' | 'teacher_unavailable' | 'student_unavailable' | 'break'>('present')
   const [recordingUrl, setRecordingUrl] = useState('')
+  const [classRemarks, setClassRemarks] = useState('')
+  const [isCompleting, setIsCompleting] = useState(false)
   
+  // Modal for editing student enrolment status
   const [statusEditTarget, setStatusEditTarget] = useState<string | null>(null)
   const [statusFormData, setStatusFormData] = useState({
     enrolmentStatus: 'ongoing',
@@ -62,11 +72,20 @@ export default function TeacherDashboard() {
   })
   const [isStatusSubmitting, setIsStatusSubmitting] = useState(false)
 
+  // Filter state for Stats / Attendance Tab
+  const [statsFilter, setStatsFilter] = useState<DateFilterType>('all_time')
+  const [customStart, setCustomStart] = useState('')
+  const [customEnd, setCustomEnd] = useState('')
+  const [viewingStudentDetail, setViewingStudentDetail] = useState<any>(null)
+  const [isExportingSummary, setIsExportingSummary] = useState(false)
+  const [isExportingStudentPDF, setIsExportingStudentPDF] = useState(false)
+
   const fetchStudentsList = async (tId: string) => {
     const response = await fetch('/api/teacher/students')
     const result = await response.json()
     if (response.ok && result.students) {
       if (result.teacher?.name) setTeacherName(result.teacher.name)
+      if (result.teacher?.email) setTeacherEmail(result.teacher.email)
       const mappedStudents = result.students.map((s: any) => ({ ...s, id: s.user_id }))
       setStudents(mappedStudents)
       return mappedStudents
@@ -83,12 +102,14 @@ export default function TeacherDashboard() {
         return
       }
       setTeacherId(user.id)
+      setTeacherEmail(user.email || '')
       setTeacherName(user.user_metadata?.full_name || user.user_metadata?.name || user.email)
 
       const mappedStudents = await fetchStudentsList(user.id)
       if (mappedStudents.length > 0) {
         setSelectedStudentId(mappedStudents[0].id)
       }
+      await fetchAllTeacherData()
       setIsLoading(false)
     }
     init()
@@ -102,95 +123,68 @@ export default function TeacherDashboard() {
 
   useEffect(() => {
     if (teacherId && activeTab === 'stats') {
-      fetchStats()
+      fetchAllTeacherData()
     }
   }, [teacherId, activeTab])
 
   async function fetchClasses(studentId: string) {
     if (!studentId) return
-
     const response = await fetch(`/api/classes/teacher?studentId=${encodeURIComponent(studentId)}`)
     const result = await response.json()
     if (!response.ok) {
       setClasses([])
       return
     }
-
     setClasses(result.classes || [])
   }
 
-  async function fetchStats() {
+  async function fetchAllTeacherData() {
     if (!teacherId) return
-    
-    const response = await fetch('/api/teacher/stats')
-    const result = await response.json()
-    
-    if (!response.ok) {
-      return
+    try {
+      const response = await fetch('/api/teacher/stats')
+      const result = await response.json()
+      if (response.ok) {
+        setAllTeacherClasses(result.classes || [])
+        setAllAttendance(result.attendance || [])
+      }
+    } catch (e) {
+      console.error('Error fetching teacher stats data:', e)
     }
-
-    const allTeacherClasses = result.classes || []
-    const allAttendance = result.attendance || []
-
-    const completed = allTeacherClasses.filter((c: any) => c.status === 'completed').length
-    const presentCount = allAttendance?.filter((a: any) => a.status === 'present' || !a.status).length || 0
-    const absentCount = allAttendance?.filter((a: any) => a.status === 'absent').length || 0
-
-    // Breakdown
-    const breakdownMap = new Map()
-    allTeacherClasses.forEach((c: any) => {
-      if (!breakdownMap.has(c.student_id)) {
-        breakdownMap.set(c.student_id, { total: 0, completed: 0 })
-      }
-      const s = breakdownMap.get(c.student_id)
-      s.total++
-      if (c.status === 'completed') s.completed++
-    })
-
-    const breakdown = Array.from(breakdownMap.entries()).map(([sid, data]) => {
-      const student = students.find(st => st.id === sid)
-      return {
-        id: sid,
-        name: student?.name || 'Unknown Student',
-        profile_photo: student?.profile_photo,
-        registration_number: student?.registration_number,
-        enrolment_status: student?.enrolment_status || 'ongoing',
-        total: data.total,
-        completed: data.completed,
-        percentage: data.total === 0 ? 0 : Math.round((data.completed / data.total) * 100)
-      }
-    })
-
-    setStats({ totalClasses: allTeacherClasses.length, completed, presentCount, absentCount, studentBreakdown: breakdown })
   }
 
-  async function markClassStatus(classObj: any, status: 'present' | 'absent', recUrl?: string) {
+  async function handleCompleteClassSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!pendingCompleteClass) return
+
+    setIsCompleting(true)
     try {
       const response = await fetch('/api/classes/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          classId: classObj.id,
-          studentId: classObj.student_id,
-          status: status,
-          recordingUrl: recUrl || null
+          classId: pendingCompleteClass.id,
+          studentId: pendingCompleteClass.student_id,
+          status: completionStatus,
+          recordingUrl: recordingUrl.trim() || null,
+          remarks: classRemarks.trim() || null,
         })
       })
 
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || "Failed to mark class status")
 
-      if (status === 'present') {
-        toast.success("Great! Class marked as completed. 🎉")
-      } else {
-        toast.success("Student marked as absent.")
-      }
+      toast.success("Class status updated successfully! 🎉")
       setPendingCompleteClass(null)
       setRecordingUrl('')
+      setClassRemarks('')
+      setCompletionStatus('present')
+      
       await fetchClasses(selectedStudentId)
-      await fetchStats()
+      await fetchAllTeacherData()
     } catch (error: any) {
       toast.error(error.message)
+    } finally {
+      setIsCompleting(false)
     }
   }
 
@@ -233,6 +227,124 @@ export default function TeacherDashboard() {
     })
   }
 
+  // Calculate filtered stats for Stats tab
+  const resolvedDateRange = getDateRange(statsFilter, customStart, customEnd)
+
+  const filteredTeacherClasses = allTeacherClasses.filter((c: any) => 
+    isDateWithinRange(c.scheduled_at, resolvedDateRange)
+  )
+
+  // Compute breakdown for all students under this teacher
+  let overallScheduled = 0
+  let overallAttended = 0
+  let overallAbsent = 0
+  let overallTeacherUnavailable = 0
+  let overallStudentUnavailable = 0
+  let overallBreak = 0
+
+  const studentBreakdownList = students.map((s) => {
+    const studentClasses = allTeacherClasses.filter((c: any) => c.student_id === s.id)
+    const studentSummary = calculateStudentAttendanceSummary(
+      studentClasses,
+      allAttendance,
+      s,
+      resolvedDateRange
+    )
+
+    overallScheduled += studentSummary.totalScheduled
+    overallAttended += studentSummary.attendedCount
+    overallAbsent += (studentSummary.notAttendedCount - studentSummary.teacherUnavailableCount - studentSummary.studentUnavailableCount - studentSummary.breakCount)
+    overallTeacherUnavailable += studentSummary.teacherUnavailableCount
+    overallStudentUnavailable += studentSummary.studentUnavailableCount
+    overallBreak += studentSummary.breakCount
+
+    let remarks = ''
+    if (s.enrolment_status === 'break' && s.break_reason) {
+      remarks = `Break: ${s.break_reason}`
+    } else if (studentSummary.teacherUnavailableCount > 0) {
+      remarks = `${studentSummary.teacherUnavailableCount} Teacher Missed`
+    } else if (studentSummary.studentUnavailableCount > 0) {
+      remarks = `${studentSummary.studentUnavailableCount} Student Missed`
+    }
+
+    return {
+      student: s,
+      registration_number: s.registration_number || 'N/A',
+      name: s.name,
+      enrolment_status: s.enrolment_status || 'ongoing',
+      scheduled: studentSummary.totalScheduled,
+      attended: studentSummary.attendedCount,
+      notAttended: studentSummary.notAttendedCount,
+      remarks,
+      percentage: studentSummary.attendanceRate,
+      summary: studentSummary,
+    }
+  })
+
+  const overallNotAttended = overallAbsent + overallTeacherUnavailable + overallStudentUnavailable + overallBreak
+  const completedOrMissed = overallAttended + overallNotAttended
+  const overallPercentage = completedOrMissed > 0 ? Math.round((overallAttended / completedOrMissed) * 100) : 0
+
+  const handleDownloadTeacherSummaryPDF = () => {
+    try {
+      setIsExportingSummary(true)
+      generateTeacherAttendancePDF({
+        teacher: {
+          name: teacherName,
+          email: teacherEmail,
+          total_students: students.length,
+        },
+        periodLabel: resolvedDateRange.label,
+        summaryStats: {
+          totalStudents: students.length,
+          totalScheduled: overallScheduled,
+          totalAttended: overallAttended,
+          totalNotAttended: overallNotAttended,
+          totalTeacherUnavailable: overallTeacherUnavailable,
+          totalStudentUnavailable: overallStudentUnavailable,
+          overallPercentage: overallPercentage,
+        },
+        studentsData: studentBreakdownList.map((item) => ({
+          registration_number: item.registration_number,
+          name: item.name,
+          enrolment_status: item.enrolment_status,
+          scheduled: item.scheduled,
+          attended: item.attended,
+          notAttended: item.notAttended,
+          remarks: item.remarks,
+          percentage: item.percentage,
+        })),
+      })
+      toast.success('Teacher summary report downloaded! 📄')
+    } catch (e: any) {
+      toast.error('Failed to generate PDF: ' + e.message)
+    } finally {
+      setIsExportingSummary(false)
+    }
+  }
+
+  const handleDownloadSingleStudentPDF = (studentItem: any) => {
+    try {
+      setIsExportingStudentPDF(true)
+      generateStudentAttendancePDF({
+        student: {
+          name: studentItem.name,
+          registration_number: studentItem.registration_number,
+          class_name: studentItem.student?.class_name,
+          enrolment_status: studentItem.enrolment_status,
+          teacher_name: teacherName,
+        },
+        periodLabel: resolvedDateRange.label,
+        summary: studentItem.summary,
+      })
+      toast.success(`PDF downloaded for ${studentItem.name}! 📄`)
+    } catch (e: any) {
+      toast.error('Failed to generate PDF: ' + e.message)
+    } finally {
+      setIsExportingStudentPDF(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
@@ -272,7 +384,7 @@ export default function TeacherDashboard() {
         <nav className="flex space-x-2 max-w-5xl mx-auto py-2">
           <BouncyButton variant={activeTab === 'classes' ? 'default' : 'ghost'} onClick={() => setActiveTab('classes')} className="gap-2"><Calendar className="h-5 w-5" /> Schedule</BouncyButton>
           <BouncyButton variant={activeTab === 'create' ? 'default' : 'ghost'} onClick={() => setActiveTab('create')} className="gap-2"><Plus className="h-5 w-5" /> New Class</BouncyButton>
-          <BouncyButton variant={activeTab === 'stats' ? 'default' : 'ghost'} onClick={() => setActiveTab('stats')} className="gap-2"><BarChart3 className="h-5 w-5" /> Statistics</BouncyButton>
+          <BouncyButton variant={activeTab === 'stats' ? 'default' : 'ghost'} onClick={() => setActiveTab('stats')} className="gap-2"><BarChart3 className="h-5 w-5" /> Attendance & Stats</BouncyButton>
           <BouncyButton variant={activeTab === 'profile' ? 'default' : 'ghost'} onClick={() => setActiveTab('profile')} className="gap-2"><User className="h-5 w-5" /> Profile</BouncyButton>
         </nav>
       </div>
@@ -307,7 +419,7 @@ export default function TeacherDashboard() {
                     return s ? (
                       <div className="flex items-center gap-2 justify-end mt-1">
                         <StatusBadge status={s.enrolment_status || 'ongoing'} />
-                        <button onClick={() => openStatusEdit(s)} className="p-1.5 hover:bg-muted rounded-full transition-colors">
+                        <button onClick={() => openStatusEdit(s)} className="p-1.5 hover:bg-muted rounded-full transition-colors" title="Edit Student Status">
                           <Pencil className="h-4 w-4 text-muted-foreground" />
                         </button>
                       </div>
@@ -326,66 +438,76 @@ export default function TeacherDashboard() {
                     <p className="text-muted-foreground font-medium">Please contact the administration to assign students to you.</p>
                   </AnimatedCard>
                 ) : classes.length > 0 ? (
-                  classes.map((c, index) => (
-                    <AnimatedCard key={c.id} delay={index * 0.05} className="p-0 overflow-hidden hover:border-primary/50 transition-colors">
-                      <div className="p-5 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                        <div className="flex items-center gap-5">
-                          {(() => {
-                            const student = students.find(s => s.id === c.student_id);
-                            return (
-                              <>
-                                <Avatar photoUrl={student?.profile_photo} name={student?.name} size="lg" />
-                                <div className="space-y-1">
-                                  <h4 className="font-black text-foreground text-xl">{student?.name || 'Unknown Student'}</h4>
-                                  <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                                    <Clock className="h-4 w-4" />
-                                    <span>{formatUKTime(c.scheduled_at)} (UK Time)</span>
-                                  </div>
-                                  {c.meet_link && (
-                                    <a href={c.meet_link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors mt-2">
-                                      <Video className="h-4 w-4" />
-                                      Join Meeting Link
-                                    </a>
-                                  )}
-                                </div>
-                              </>
-                            )
-                          })()}
-                        </div>
-                        <div className="flex flex-col md:items-end gap-3 w-full md:w-auto">
-                          <div className="flex flex-col gap-2 items-end">
-                            <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border-2 ${c.status === 'scheduled' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-green-50 text-green-700 border-green-200'}`}>
-                              {c.status}
-                            </span>
-                            {c.status === 'completed' && c.recording_url && (
-                              <a href={c.recording_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-teal-700 bg-teal-50 border-2 border-teal-200 px-3 py-1 rounded-lg hover:bg-teal-100 transition-colors">
-                                🎬 Watch Recording
-                              </a>
-                            )}
+                  classes.map((c, index) => {
+                    const parsed = parseClassMetadata(c, allAttendance.find(a => a.class_id === c.id), students.find(s => s.id === c.student_id))
+                    const student = students.find(s => s.id === c.student_id)
+                    return (
+                      <AnimatedCard key={c.id} delay={index * 0.05} className="p-0 overflow-hidden hover:border-primary/50 transition-colors">
+                        <div className="p-5 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                          <div className="flex items-center gap-5">
+                            <Avatar photoUrl={student?.profile_photo} name={student?.name} size="lg" />
+                            <div className="space-y-1">
+                              <h4 className="font-black text-foreground text-xl">{student?.name || 'Unknown Student'}</h4>
+                              <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                                <Clock className="h-4 w-4" />
+                                <span>{formatUKTime(c.scheduled_at)} (UK Time)</span>
+                              </div>
+                              {parsed.remarks && (
+                                <p className="text-xs bg-muted/70 text-foreground px-2 py-0.5 rounded font-medium inline-block">
+                                  <strong>Note:</strong> {parsed.remarks}
+                                </p>
+                              )}
+                              {c.meet_link && (
+                                <a href={c.meet_link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors mt-2">
+                                  <Video className="h-4 w-4" />
+                                  Join Meeting Link
+                                </a>
+                              )}
+                            </div>
                           </div>
-                          {c.status === 'scheduled' && (
+
+                          <div className="flex flex-col md:items-end gap-3 w-full md:w-auto">
+                            <div className="flex flex-col gap-2 items-end">
+                              <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border-2 ${
+                                parsed.status === 'present'
+                                  ? 'bg-green-50 text-green-700 border-green-200'
+                                  : parsed.status === 'teacher_unavailable' || parsed.status === 'student_unavailable' || parsed.status === 'absent'
+                                  ? 'bg-red-50 text-red-700 border-red-200'
+                                  : parsed.status === 'break'
+                                  ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                  : 'bg-blue-50 text-blue-700 border-blue-200'
+                              }`}>
+                                {parsed.statusLabel}
+                              </span>
+
+                              {parsed.recording_url && (
+                                <a href={parsed.recording_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-teal-700 bg-teal-50 border-2 border-teal-200 px-3 py-1 rounded-lg hover:bg-teal-100 transition-colors">
+                                  🎬 Watch Recording
+                                </a>
+                              )}
+                            </div>
+
                             <div className="flex flex-wrap gap-2">
                               <BouncyButton 
                                 variant="default"
                                 size="sm"
-                                onClick={() => setPendingCompleteClass(c)} 
-                                className="bg-green-500 hover:bg-green-600 text-white"
+                                onClick={() => {
+                                  setPendingCompleteClass(c)
+                                  setCompletionStatus(c.status === 'completed' && parsed.status !== 'present' && parsed.status !== 'scheduled' ? parsed.status : 'present')
+                                  setRecordingUrl(parsed.recording_url || '')
+                                  setClassRemarks(parsed.remarks || '')
+                                }} 
+                                className="bg-primary hover:bg-primary/90 text-white"
                               >
-                                <CheckCircle className="h-4 w-4 mr-2" /> Mark Completed
-                              </BouncyButton>
-                              <BouncyButton 
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => markClassStatus(c, 'absent')} 
-                              >
-                                <AlertCircle className="h-4 w-4 mr-2" /> Mark Absent
+                                <CheckCircle className="h-4 w-4 mr-1.5" />
+                                {c.status === 'completed' ? 'Update Status' : 'Mark Attendance'}
                               </BouncyButton>
                             </div>
-                          )}
+                          </div>
                         </div>
-                      </div>
-                    </AnimatedCard>
-                  ))
+                      </AnimatedCard>
+                    )
+                  })
                 ) : (
                   <AnimatedCard delay={0.1} className="text-center p-12 border-dashed shadow-none bg-transparent flex flex-col items-center">
                     <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4">
@@ -408,59 +530,137 @@ export default function TeacherDashboard() {
                   setSelectedStudentId(studentId)
                   setActiveTab('classes')
                   fetchClasses(studentId)
+                  fetchAllTeacherData()
                 }}
               />
             </PageTransition>
           )}
 
           {activeTab === 'stats' && (
-            <PageTransition key="stats" className="space-y-8">
-              <div>
-                <h3 className="font-black text-foreground text-2xl mb-4">Your Impact 🌟</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <StatCard title="Total Classes" value={stats.totalClasses} index={0} gradient="from-purple-500 to-indigo-600" />
-                  <StatCard title="Completed" value={stats.completed} index={1} gradient="from-blue-500 to-cyan-500" />
-                  <StatCard title="Total Present" value={stats.presentCount} index={2} gradient="from-green-500 to-emerald-600" />
-                  <StatCard title="Total Absent" value={stats.absentCount} index={3} gradient="from-orange-500 to-red-500" />
+            <PageTransition key="stats" className="space-y-6">
+              {/* Header and Download Summary Button */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-black text-foreground text-2xl">Teacher Attendance & Performance 🌟</h3>
+                  <p className="text-sm font-medium text-muted-foreground mt-0.5">
+                    Track overall student turnout, individual student logs, and export summary transcripts.
+                  </p>
+                </div>
+
+                <BouncyButton
+                  onClick={handleDownloadTeacherSummaryPDF}
+                  disabled={isExportingSummary}
+                  variant="default"
+                  className="bg-primary hover:bg-primary/90 text-white font-black flex items-center gap-2 self-start md:self-auto shadow-md"
+                >
+                  {isExportingSummary ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  Download Summary PDF
+                </BouncyButton>
+              </div>
+
+              {/* Date Filter Bar */}
+              <DateRangeFilter
+                currentFilter={statsFilter}
+                customStart={customStart}
+                customEnd={customEnd}
+                onFilterChange={(f, s, e) => {
+                  setStatsFilter(f)
+                  if (s) setCustomStart(s)
+                  if (e) setCustomEnd(e)
+                }}
+                resolvedRange={resolvedDateRange}
+              />
+
+              {/* Overall KPI Cards for chosen period */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <StatCard title="Total Scheduled" value={overallScheduled} index={0} gradient="from-purple-600 to-indigo-700" subtitle="In this period" />
+                <StatCard title="Completed / Attended" value={overallAttended} index={1} gradient="from-emerald-600 to-teal-700" subtitle="Classes held" />
+                <StatCard title="Not Attended" value={overallNotAttended} index={2} gradient="from-rose-600 to-red-700" subtitle="Absent / Missed" />
+                <StatCard title="Turnout Rate" value={`${overallPercentage}%`} index={3} gradient="from-blue-600 to-cyan-700" subtitle="Average score" />
+              </div>
+
+              {/* Secondary Metrics Ribbon */}
+              <div className="bg-white p-4 rounded-2xl border-2 border-border shadow-sm grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                <div className="p-3 bg-red-50 rounded-xl border border-red-100">
+                  <span className="text-[11px] font-bold text-red-700 block uppercase">Teacher Unavailable</span>
+                  <span className="text-xl font-black text-red-900">{overallTeacherUnavailable}</span>
+                </div>
+                <div className="p-3 bg-orange-50 rounded-xl border border-orange-100">
+                  <span className="text-[11px] font-bold text-orange-700 block uppercase">Student Unavailable</span>
+                  <span className="text-xl font-black text-orange-900">{overallStudentUnavailable}</span>
+                </div>
+                <div className="p-3 bg-amber-50 rounded-xl border border-amber-100">
+                  <span className="text-[11px] font-bold text-amber-700 block uppercase">On Break</span>
+                  <span className="text-xl font-black text-amber-900">{overallBreak}</span>
+                </div>
+                <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
+                  <span className="text-[11px] font-bold text-blue-700 block uppercase">Assigned Students</span>
+                  <span className="text-xl font-black text-blue-900">{students.length}</span>
                 </div>
               </div>
 
-              <AnimatedCard delay={0.3} className="p-6 md:p-8">
-                <h3 className="font-black text-foreground text-xl mb-6">Student Breakdown</h3>
-                <div className="space-y-6">
-                  {stats.studentBreakdown.length > 0 ? (
-                    stats.studentBreakdown.map((s: any, i: number) => (
-                      <div key={i} className="space-y-3 bg-muted/30 p-4 rounded-2xl border-2 border-border/50">
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-4">
-                            <Avatar photoUrl={s.profile_photo} name={s.name} size="md" />
-                            <div>
-                              <p className="font-black text-foreground text-lg">{s.name}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">Reg: {s.registration_number || 'N/A'}</span>
-                                <StatusBadge status={s.enrolment_status || 'ongoing'} />
-                                <p className="text-xs text-muted-foreground font-bold">{s.completed} / {s.total} Classes</p>
-                              </div>
+              {/* Student Breakdown Section */}
+              <AnimatedCard delay={0.2} className="p-6 md:p-8">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                  <div>
+                    <h3 className="font-black text-foreground text-xl">Assigned Students Attendance</h3>
+                    <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                      Breakdown for <strong>{resolvedDateRange.label}</strong>
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full w-max">
+                    {students.length} Students Total
+                  </span>
+                </div>
+
+                <div className="space-y-4">
+                  {studentBreakdownList.length > 0 ? (
+                    studentBreakdownList.map((item, i) => (
+                      <div key={item.student.id || i} className="bg-muted/30 p-4 md:p-5 rounded-2xl border-2 border-border/60 hover:border-primary/40 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <Avatar photoUrl={item.student.profile_photo} name={item.name} size="md" />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-black text-foreground text-lg">{item.name}</h4>
+                              <StatusBadge status={item.enrolment_status} />
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">
+                                Reg: #{item.registration_number}
+                              </span>
+                              <span className="text-xs text-muted-foreground font-semibold">
+                                {item.attended} / {item.scheduled} Classes Attended
+                              </span>
+                              {item.remarks && (
+                                <span className="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded font-bold">
+                                  {item.remarks}
+                                </span>
+                              )}
                             </div>
                           </div>
-                          <div className="text-right">
-                            <span className="font-black text-2xl text-foreground">{s.percentage}%</span>
-                          </div>
                         </div>
-                        <div className="w-full bg-muted rounded-full h-3 overflow-hidden border-2 border-border p-0.5">
-                          <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: `${s.percentage}%` }}
-                            transition={{ duration: 1, delay: i * 0.1 + 0.5 }}
-                            className="bg-primary h-full rounded-full" 
-                          />
+
+                        <div className="flex items-center gap-4 self-end md:self-center">
+                          <div className="text-right">
+                            <span className="font-black text-2xl text-foreground">{item.percentage}%</span>
+                            <span className="block text-[10px] text-muted-foreground font-bold uppercase">Rate</span>
+                          </div>
+
+                          <BouncyButton
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setViewingStudentDetail(item)}
+                            className="text-xs font-bold border-2 flex items-center gap-1.5"
+                          >
+                            <FileText className="h-3.5 w-3.5" /> View Details & PDF
+                          </BouncyButton>
                         </div>
                       </div>
                     ))
                   ) : (
                     <div className="text-center py-10">
                       <BarChart3 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-                      <p className="text-muted-foreground font-bold">No data available yet. Start teaching to see your stats!</p>
+                      <p className="text-muted-foreground font-bold">No students assigned to your profile.</p>
                     </div>
                   )}
                 </div>
@@ -475,53 +675,252 @@ export default function TeacherDashboard() {
           )}
         </AnimatePresence>
 
+        {/* Modal: Mark Attendance / Complete Class */}
         <AnimatePresence>
           {pendingCompleteClass && (
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto"
             >
               <motion.div 
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-white rounded-3xl p-6 max-w-md w-full border-2 border-border shadow-2xl relative"
+                className="bg-white rounded-3xl p-6 max-w-lg w-full border-2 border-border shadow-2xl relative my-8"
               >
-                <button onClick={() => setPendingCompleteClass(null)} className="absolute right-4 top-4 p-2 hover:bg-muted rounded-full transition-colors">
+                <button 
+                  onClick={() => setPendingCompleteClass(null)} 
+                  className="absolute right-4 top-4 p-2 hover:bg-muted rounded-full transition-colors"
+                >
                   <X className="h-5 w-5 text-muted-foreground" />
                 </button>
-                <h3 className="text-xl font-black mb-4">Complete Class</h3>
-                <p className="text-sm text-muted-foreground font-medium mb-4">You can optionally attach a recording link (e.g., tl;dv, Zoom) for this session.</p>
-                
-                <div className="space-y-4 mb-6">
+
+                <h3 className="text-xl font-black mb-1">Mark Class Attendance</h3>
+                <p className="text-xs text-muted-foreground font-medium mb-5">
+                  Record attendance outcome, attach recording links, and provide notes.
+                </p>
+
+                <form onSubmit={handleCompleteClassSubmit} className="space-y-4">
+                  {/* Status Selection */}
                   <div className="space-y-2">
-                    <Label className="text-foreground font-bold">Recording Link (optional)</Label>
+                    <Label className="text-foreground font-bold">Attendance Outcome *</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setCompletionStatus('present')}
+                        className={`p-3 rounded-xl border-2 text-left font-bold text-xs transition-all flex items-center gap-2 ${
+                          completionStatus === 'present'
+                            ? 'border-green-500 bg-green-50 text-green-800 shadow-sm'
+                            : 'border-border bg-white text-muted-foreground hover:bg-muted/30'
+                        }`}
+                      >
+                        <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                        <div>
+                          <span>✅ Attended</span>
+                          <span className="block text-[10px] font-normal text-green-700">Class completed</span>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setCompletionStatus('student_unavailable')}
+                        className={`p-3 rounded-xl border-2 text-left font-bold text-xs transition-all flex items-center gap-2 ${
+                          completionStatus === 'student_unavailable'
+                            ? 'border-orange-500 bg-orange-50 text-orange-800 shadow-sm'
+                            : 'border-border bg-white text-muted-foreground hover:bg-muted/30'
+                        }`}
+                      >
+                        <XCircle className="h-4 w-4 text-orange-600 flex-shrink-0" />
+                        <div>
+                          <span>⚠️ Student Absent</span>
+                          <span className="block text-[10px] font-normal text-orange-700">Student unavailable</span>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setCompletionStatus('teacher_unavailable')}
+                        className={`p-3 rounded-xl border-2 text-left font-bold text-xs transition-all flex items-center gap-2 ${
+                          completionStatus === 'teacher_unavailable'
+                            ? 'border-red-500 bg-red-50 text-red-800 shadow-sm'
+                            : 'border-border bg-white text-muted-foreground hover:bg-muted/30'
+                        }`}
+                      >
+                        <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
+                        <div>
+                          <span>🚫 Teacher Missed</span>
+                          <span className="block text-[10px] font-normal text-red-700">Teacher unavailable</span>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setCompletionStatus('break')}
+                        className={`p-3 rounded-xl border-2 text-left font-bold text-xs transition-all flex items-center gap-2 ${
+                          completionStatus === 'break'
+                            ? 'border-amber-500 bg-amber-50 text-amber-800 shadow-sm'
+                            : 'border-border bg-white text-muted-foreground hover:bg-muted/30'
+                        }`}
+                      >
+                        <Clock className="h-4 w-4 text-amber-600 flex-shrink-0" />
+                        <div>
+                          <span>⏸️ On Break</span>
+                          <span className="block text-[10px] font-normal text-amber-700">Approved leave</span>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Recording Link */}
+                  <div className="space-y-1.5">
+                    <Label className="text-foreground font-bold text-xs">Recording Link (optional)</Label>
                     <div className="relative">
-                      <Video className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                      <Video className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input 
-                        placeholder="https://tldv.io/app/meetings/..."
+                        placeholder="https://tldv.io/app/meetings/... or Zoom link"
                         value={recordingUrl}
                         onChange={(e) => setRecordingUrl(e.target.value)}
-                        className="pl-10 h-12 rounded-xl border-2 font-medium"
+                        className="pl-9 h-11 rounded-xl border-2 font-medium text-xs"
                       />
+                    </div>
+                  </div>
+
+                  {/* Remarks / Reason */}
+                  <div className="space-y-1.5">
+                    <Label className="text-foreground font-bold text-xs">Remarks / Reason (optional)</Label>
+                    <Input 
+                      placeholder="e.g. Completed Surah Al-Mulk, internet connectivity issue, etc."
+                      value={classRemarks}
+                      onChange={(e) => setClassRemarks(e.target.value)}
+                      className="h-11 rounded-xl border-2 font-medium text-xs"
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-3">
+                    <BouncyButton 
+                      type="button"
+                      variant="ghost" 
+                      className="flex-1 border-2 border-border" 
+                      onClick={() => setPendingCompleteClass(null)}
+                    >
+                      Cancel
+                    </BouncyButton>
+                    <BouncyButton 
+                      type="submit" 
+                      disabled={isCompleting}
+                      variant="default" 
+                      className="flex-1 bg-primary hover:bg-primary/90 text-white font-black"
+                    >
+                      {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : null}
+                      Save Attendance
+                    </BouncyButton>
+                  </div>
+                </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Modal: View Single Student Logs & PDF */}
+        <AnimatePresence>
+          {viewingStudentDetail && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto"
+            >
+              <motion.div 
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white rounded-3xl p-6 max-w-2xl w-full border-2 border-border shadow-2xl relative my-8 max-h-[90vh] flex flex-col"
+              >
+                <div className="flex items-center justify-between pb-4 border-b-2 border-border">
+                  <div className="flex items-center gap-3">
+                    <Avatar photoUrl={viewingStudentDetail.student?.profile_photo} name={viewingStudentDetail.name} size="md" />
+                    <div>
+                      <h3 className="text-xl font-black text-foreground">{viewingStudentDetail.name}</h3>
+                      <p className="text-xs text-muted-foreground font-bold">
+                        Reg: #{viewingStudentDetail.registration_number} • Period: {resolvedDateRange.label}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => setViewingStudentDetail(null)} 
+                    className="p-2 hover:bg-muted rounded-full transition-colors"
+                  >
+                    <X className="h-5 w-5 text-muted-foreground" />
+                  </button>
+                </div>
+
+                <div className="overflow-y-auto py-4 space-y-4 flex-1">
+                  {/* KPI Mini-cards */}
+                  <div className="grid grid-cols-4 gap-2 text-center">
+                    <div className="p-2.5 bg-muted/40 rounded-xl border border-border">
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground block">Scheduled</span>
+                      <span className="text-lg font-black text-foreground">{viewingStudentDetail.summary.totalScheduled}</span>
+                    </div>
+                    <div className="p-2.5 bg-green-50 rounded-xl border border-green-200">
+                      <span className="text-[10px] uppercase font-bold text-green-700 block">Attended</span>
+                      <span className="text-lg font-black text-green-800">{viewingStudentDetail.summary.attendedCount}</span>
+                    </div>
+                    <div className="p-2.5 bg-red-50 rounded-xl border border-red-200">
+                      <span className="text-[10px] uppercase font-bold text-red-700 block">Not Attended</span>
+                      <span className="text-lg font-black text-red-800">{viewingStudentDetail.summary.notAttendedCount}</span>
+                    </div>
+                    <div className="p-2.5 bg-blue-50 rounded-xl border border-blue-200">
+                      <span className="text-[10px] uppercase font-bold text-blue-700 block">Score</span>
+                      <span className="text-lg font-black text-blue-800">{viewingStudentDetail.summary.attendanceRate}%</span>
+                    </div>
+                  </div>
+
+                  {/* Sessions list */}
+                  <div className="space-y-2">
+                    <h5 className="font-bold text-sm text-foreground">Class Sessions ({viewingStudentDetail.summary.filteredClasses.length})</h5>
+                    <div className="divide-y border-2 border-border rounded-xl overflow-hidden max-h-60 overflow-y-auto">
+                      {viewingStudentDetail.summary.filteredClasses.length > 0 ? (
+                        viewingStudentDetail.summary.filteredClasses.map((item: any, idx: number) => (
+                          <div key={idx} className="p-3 text-xs flex items-center justify-between hover:bg-muted/20">
+                            <div>
+                              <span className="font-bold text-foreground block">{formatUKDateTime(item.scheduled_at)}</span>
+                              {item.remarks && <span className="text-[11px] text-muted-foreground">{item.remarks}</span>}
+                            </div>
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
+                              item.status === 'present' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {item.statusLabel}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-6 text-center text-xs text-muted-foreground font-semibold">No classes in this period.</div>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                <div className="flex gap-3">
-                  <BouncyButton variant="ghost" className="flex-1 border-2 border-border" onClick={() => markClassStatus(pendingCompleteClass, 'present')}>
-                    Skip
-                  </BouncyButton>
-                  <BouncyButton variant="default" className="flex-1 bg-green-500 hover:bg-green-600 text-white" onClick={() => markClassStatus(pendingCompleteClass, 'present', recordingUrl)}>
-                    Save & Complete
+                <div className="pt-4 border-t-2 border-border flex gap-3">
+                  <BouncyButton
+                    onClick={() => handleDownloadSingleStudentPDF(viewingStudentDetail)}
+                    disabled={isExportingStudentPDF}
+                    variant="default"
+                    className="w-full bg-primary hover:bg-primary/90 text-white font-black flex items-center justify-center gap-2"
+                  >
+                    {isExportingStudentPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                    Download Student Attendance PDF
                   </BouncyButton>
                 </div>
               </motion.div>
             </motion.div>
           )}
+        </AnimatePresence>
 
+        {/* Modal: Edit Student Status */}
+        <AnimatePresence>
           {statusEditTarget && (
             <motion.div 
               initial={{ opacity: 0 }}
@@ -608,12 +1007,13 @@ export default function TeacherDashboard() {
   )
 }
 
-function StatCard({ title, value, index, gradient }: { title: string, value: any, index: number, gradient: string }) {
+function StatCard({ title, value, index, gradient, subtitle }: { title: string, value: any, index: number, gradient: string, subtitle?: string }) {
   return (
-    <AnimatedCard delay={index * 0.1} className={`border-none text-white p-6 relative overflow-hidden bg-gradient-to-br ${gradient}`}>
+    <AnimatedCard delay={index * 0.1} className={`border-none text-white p-5 relative overflow-hidden bg-gradient-to-br ${gradient}`}>
       <Sparkles className="absolute -right-2 -top-2 w-16 h-16 opacity-20" />
       <p className="text-white/80 text-xs font-bold tracking-widest uppercase mb-1">{title}</p>
-      <p className="text-4xl md:text-5xl font-black">{value}</p>
+      <p className="text-3xl md:text-5xl font-black">{value}</p>
+      {subtitle && <span className="text-[10px] text-white/70 mt-1 block">{subtitle}</span>}
     </AnimatedCard>
   )
 }
@@ -637,7 +1037,6 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
   const [formData, setFormData] = useState({ studentId: '', meetLink: '', date: '', time: '', repeatWeekly: false })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const supabase = createClient()
 
   useEffect(() => {
     if (students.length > 0) setFormData(prev => ({ ...prev, studentId: students[0].id }))

@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/skeleton'
 import { AnimatedCard } from '@/components/animated-card'
 import { BouncyButton } from '@/components/bouncy-button'
 import { PageTransition } from '@/components/page-transition'
+import { AdminAttendanceManager } from '@/components/admin-attendance-manager'
 
 type Tab = 'statistics' | 'students' | 'teachers' | 'attendance' | 'manage'
 
@@ -677,56 +678,14 @@ export default function SuperAdminDashboard() {
           )}
 
           {activeTab === 'attendance' && (
-            <PageTransition key="attendance" className="space-y-6">
-              <h3 className="text-2xl font-black text-foreground mb-4">Academy Attendance Records</h3>
-              
-              <AnimatedCard delay={0.1} className="p-0 overflow-hidden border-2 border-border">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-muted border-b-2 border-border">
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Student</th>
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Teacher</th>
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Class Date</th>
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Marked At</th>
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Recording</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y-2 divide-border">
-                      {attendanceRecords.length > 0 ? attendanceRecords.map((a) => {
-                        const studentName = allUsers.find(u => u.id === a.student_id)?.name || 'Unknown'
-                        const teacherName = allUsers.find(u => u.id === a.teacher_id)?.name || 'Unknown'
-                        return (
-                          <tr key={a.id} className="hover:bg-muted/30 transition-colors">
-                            <td className="p-4">
-                              <p className="font-bold text-foreground text-lg">{studentName}</p>
-                            </td>
-                            <td className="p-4">
-                              <p className="font-bold text-foreground">{teacherName}</p>
-                            </td>
-                            <td className="p-4 text-sm font-bold text-muted-foreground">
-                              {a.classes?.scheduled_at ? formatUKTime(a.classes.scheduled_at) : 'N/A'}
-                            </td>
-                            <td className="p-4 text-sm font-semibold text-muted-foreground">
-                              {formatUKTime(a.marked_at)}
-                            </td>
-                            <td className="p-4">
-                              {a.classes?.recording_url ? (
-                                <a href={a.classes.recording_url} target="_blank" rel="noreferrer"
-                                   className="inline-flex items-center gap-1 text-xs font-bold text-purple-600 bg-purple-50 border-2 border-purple-200 px-3 py-1 rounded-lg hover:bg-purple-100 transition-colors">
-                                  Watch
-                                </a>
-                              ) : '-'}
-                            </td>
-                          </tr>
-                        )
-                      }) : (
-                        <tr><td colSpan={4} className="p-8 text-center text-muted-foreground font-bold">No attendance records found.</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </AnimatedCard>
+            <PageTransition key="attendance">
+              <AdminAttendanceManager
+                students={students}
+                teachers={teachers}
+                classes={classes}
+                attendance={attendanceRecords}
+                allUsers={allUsers}
+              />
             </PageTransition>
           )}
 
