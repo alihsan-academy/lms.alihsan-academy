@@ -1,8 +1,11 @@
-'use client'
-
 import SharedLogin from '@/components/SharedLogin'
+import { getDailyQuote } from '@/lib/daily-quotes'
 
-export default function StudentLoginPage() {
+export const dynamic = 'force-dynamic'
+
+export default async function StudentLoginPage() {
+  const quote = await getDailyQuote('student')
+
   return (
     <SharedLogin
       portalType="student"
@@ -19,6 +22,7 @@ export default function StudentLoginPage() {
         badgeText: 'text-emerald-300',
         shadowColor: 'shadow-emerald-900/25',
       }}
+      quote={quote}
     />
   )
 }

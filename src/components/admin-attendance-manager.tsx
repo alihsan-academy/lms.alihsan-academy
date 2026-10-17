@@ -30,7 +30,7 @@ import {
   isDateWithinRange, 
   parseClassMetadata 
 } from '@/lib/attendance-utils'
-import { generateStudentAttendancePDF, generateTeacherAttendancePDF } from '@/lib/pdf-generator'
+import { generateStudentAttendancePDF, generateTeacherAttendancePDF, generateIntelligenceFilterPDF } from '@/lib/pdf-generator'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -263,6 +263,45 @@ export function AdminAttendanceManager({
         summary: summaryObj,
       })
       toast.success(`PDF downloaded for ${studentObj.name}! 📄`)
+    } catch (e: any) {
+      toast.error('Failed to generate PDF: ' + e.message)
+    } finally {
+      setIsExportingPDF(false)
+    }
+  }
+
+  // Handler: Export Smart Filter results as PDF
+  const handleDownloadFilterPDF = () => {
+    if (filteredIntelligenceStudents.length === 0) return
+    try {
+      setIsExportingPDF(true)
+
+      // Build a human-readable filter summary for the PDF subtitle
+      const parts: string[] = []
+      if (enrolmentFilter !== 'all') parts.push(`Enrolment: ${enrolmentFilter}`)
+      if (attendedMin || attendedMax) parts.push(`Attended: ${attendedMin || '0'}–${attendedMax || '∞'}`)
+      if (studentAbsentMin || studentAbsentMax) parts.push(`Stu. Absent: ${studentAbsentMin || '0'}–${studentAbsentMax || '∞'}`)
+      if (teacherMissedMin || teacherMissedMax) parts.push(`Tchr. Missed: ${teacherMissedMin || '0'}–${teacherMissedMax || '∞'}`)
+      if (onBreakMin || onBreakMax) parts.push(`On Break: ${onBreakMin || '0'}–${onBreakMax || '∞'}`)
+      if (rateMin || rateMax) parts.push(`Rate: ${rateMin || '0'}%–${rateMax || '100'}%`)
+
+      generateIntelligenceFilterPDF({
+        periodLabel: dateRange.label,
+        filterSummary: parts.join('  |  '),
+        totalMatched: filteredIntelligenceStudents.length,
+        studentsData: filteredIntelligenceStudents.map(({ student: s, summary }) => ({
+          name: s.name,
+          registration_number: s.registration_number,
+          teacher_name: teachers.find((t) => t.id === s.teacher_id)?.name || '—',
+          enrolment_status: s.enrolment_status || 'ongoing',
+          attended: summary.attendedCount,
+          studentAbsent: summary.studentUnavailableCount,
+          teacherMissed: summary.teacherUnavailableCount,
+          onBreak: summary.breakCount,
+          rate: summary.attendanceRate,
+        })),
+      })
+      toast.success(`Smart Filter PDF downloaded (${filteredIntelligenceStudents.length} students)! 📄`)
     } catch (e: any) {
       toast.error('Failed to generate PDF: ' + e.message)
     } finally {
@@ -983,6 +1022,17 @@ export function AdminAttendanceManager({
               {filteredIntelligenceStudents.length} student{filteredIntelligenceStudents.length !== 1 ? 's' : ''} matched
             </span>
             <span className="text-xs text-amber-600 font-medium">· {dateRange.label}</span>
+            <div className="ml-auto">
+              <BouncyButton
+                onClick={handleDownloadFilterPDF}
+                disabled={isExportingPDF || filteredIntelligenceStudents.length === 0}
+                variant="default"
+                className="bg-amber-500 hover:bg-amber-600 text-white font-black text-xs px-4 py-2 flex items-center gap-1.5 disabled:opacity-40"
+              >
+                {isExportingPDF ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                Download PDF
+              </BouncyButton>
+            </div>
           </div>
 
           {/* Results Table */}

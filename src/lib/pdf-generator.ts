@@ -452,3 +452,193 @@ export function generateTeacherAttendancePDF({
   const fileName = `Al_Ihsan_TeacherSummary_${sanitizedTeacherName}_${format(now, 'yyyyMMdd')}.pdf`
   doc.save(fileName)
 }
+
+// ─── Smart Filter PDF ──────────────────────────────────────────────────────────
+
+interface IntelligenceFilterPDFProps {
+  periodLabel: string
+  filterSummary: string
+  totalMatched: number
+  studentsData: Array<{
+    name: string
+    registration_number?: string
+    teacher_name?: string
+    enrolment_status?: string
+    attended: number
+    studentAbsent: number
+    teacherMissed: number
+    onBreak: number
+    rate: number
+  }>
+}
+
+export function generateIntelligenceFilterPDF({
+  periodLabel,
+  filterSummary,
+  totalMatched,
+  studentsData,
+}: IntelligenceFilterPDFProps) {
+  const doc = new jsPDF({
+    orientation: 'landscape',
+    unit: 'mm',
+    format: 'a4',
+  })
+
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const now = new Date()
+  const createdDate = format(now, 'dd MMMM yyyy, hh:mm a')
+
+  // Top decorative bar (amber — Smart Filter brand colour)
+  doc.setFillColor(217, 119, 6)
+  doc.rect(0, 0, pageWidth, 5, 'F')
+
+  // Logo
+  try {
+    doc.addImage(AL_IHSAN_LOGO_BASE64, 'PNG', 14, 10, 24, 18)
+  } catch (e) {
+    console.error('Error adding logo to PDF:', e)
+  }
+
+  // Header texts
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(17)
+  doc.setTextColor(16, 120, 70)
+  doc.text('AL IHSAN ACADEMY', 42, 17)
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8)
+  doc.setTextColor(100, 116, 139)
+  doc.text('ACADEMY OF MORAL EDUCATION', 42, 22)
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(11)
+  doc.setTextColor(30, 41, 59)
+  doc.text('STUDENT ATTENDANCE — SMART FILTER REPORT', 42, 28)
+
+  // Right-side metadata
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8)
+  doc.setTextColor(100, 116, 139)
+  doc.text(`Generated: ${createdDate}`, pageWidth - 14, 17, { align: 'right' })
+  doc.text(`Period: ${periodLabel}`, pageWidth - 14, 22, { align: 'right' })
+  doc.text(`Matched: ${totalMatched} student${totalMatched !== 1 ? 's' : ''}`, pageWidth - 14, 27, { align: 'right' })
+
+  // Divider
+  doc.setDrawColor(226, 232, 240)
+  doc.setLineWidth(0.5)
+  doc.line(14, 32, pageWidth - 14, 32)
+
+  // Active filters subtitle bar
+  doc.setFillColor(255, 251, 235)
+  doc.roundedRect(14, 34, pageWidth - 28, 10, 2, 2, 'F')
+  doc.setDrawColor(253, 230, 138)
+  doc.roundedRect(14, 34, pageWidth - 28, 10, 2, 2, 'D')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(7.5)
+  doc.setTextColor(146, 64, 14)
+  doc.text('ACTIVE FILTERS:', 18, 40)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(92, 36, 6)
+  const filterText = filterSummary || 'No specific filters applied — showing all students'
+  doc.text(filterText, 50, 40)
+
+  // Build table rows
+  const tableData = studentsData.map((s, index) => [
+    index + 1,
+    s.registration_number || 'N/A',
+    s.name,
+    s.teacher_name || '—',
+    (s.enrolment_status || 'ongoing').toUpperCase(),
+    s.attended,
+    s.studentAbsent,
+    s.teacherMissed,
+    s.onBreak,
+    `${s.rate}%`,
+  ])
+
+  // Totals + average row
+  const totals = studentsData.reduce(
+    (acc, s) => ({
+      attended: acc.attended + s.attended,
+      studentAbsent: acc.studentAbsent + s.studentAbsent,
+      teacherMissed: acc.teacherMissed + s.teacherMissed,
+      onBreak: acc.onBreak + s.onBreak,
+    }),
+    { attended: 0, studentAbsent: 0, teacherMissed: 0, onBreak: 0 }
+  )
+  const avgRate =
+    studentsData.length > 0
+      ? Math.round(studentsData.reduce((acc, s) => acc + s.rate, 0) / studentsData.length)
+      : 0
+
+  const bodyRows =
+    tableData.length > 0
+      ? [
+          ...tableData,
+          ['', '', 'TOTALS / AVERAGE', '', '', totals.attended, totals.studentAbsent, totals.teacherMissed, totals.onBreak, `${avgRate}%`],
+        ]
+      : [['-', '-', 'No matching students', '-', '-', '0', '0', '0', '0', '0%']]
+
+  autoTable(doc, {
+    startY: 47,
+    head: [['#', 'Reg No', 'Student Name', 'Teacher', 'Status', 'Attended ✓', 'Stu. Absent', 'Tchr. Missed', 'On Break', 'Rate %']],
+    body: bodyRows,
+    theme: 'grid',
+    styles: {
+      font: 'helvetica',
+      fontSize: 8,
+      cellPadding: 2.5,
+      textColor: [30, 41, 59],
+      valign: 'middle',
+    },
+    headStyles: {
+      fillColor: [217, 119, 6],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+    },
+    alternateRowStyles: {
+      fillColor: [255, 251, 235],
+    },
+    columnStyles: {
+      0: { cellWidth: 8, halign: 'center' },
+      1: { cellWidth: 22, fontStyle: 'bold' },
+      2: { cellWidth: 50 },
+      3: { cellWidth: 42 },
+      4: { cellWidth: 20, halign: 'center' },
+      5: { cellWidth: 22, halign: 'center', textColor: [16, 120, 70], fontStyle: 'bold' },
+      6: { cellWidth: 22, halign: 'center', textColor: [234, 88, 12] },
+      7: { cellWidth: 22, halign: 'center', textColor: [220, 38, 38] },
+      8: { cellWidth: 22, halign: 'center', textColor: [161, 98, 7] },
+      9: { cellWidth: 18, halign: 'center', fontStyle: 'bold' },
+    },
+    didParseCell: (data) => {
+      // Bold amber background for totals row
+      if (data.section === 'body' && data.row.index === studentsData.length) {
+        data.cell.styles.fillColor = [254, 243, 199]
+        data.cell.styles.fontStyle = 'bold'
+        data.cell.styles.textColor = [120, 53, 15]
+      }
+      // Colour-code rate % column
+      if (data.section === 'body' && data.column.index === 9 && data.row.index < studentsData.length) {
+        const rate = studentsData[data.row.index]?.rate ?? 0
+        data.cell.styles.textColor = rate >= 80 ? [16, 120, 70] : rate >= 50 ? [161, 98, 7] : [220, 38, 38]
+      }
+    },
+    margin: { left: 14, right: 14, bottom: 20 },
+  })
+
+  // Footer on each page
+  const pageCount = (doc as any).internal.getNumberOfPages()
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7.5)
+    doc.setTextColor(148, 163, 184)
+    doc.line(14, doc.internal.pageSize.getHeight() - 12, pageWidth - 14, doc.internal.pageSize.getHeight() - 12)
+    doc.text('Al-Ihsan Academy | Smart Filter Attendance Report | Confidential', 14, doc.internal.pageSize.getHeight() - 7)
+    doc.text(`Page ${i} of ${pageCount}`, pageWidth - 14, doc.internal.pageSize.getHeight() - 7, { align: 'right' })
+  }
+
+  const fileName = `Al_Ihsan_SmartFilter_${format(now, 'yyyyMMdd_HHmm')}.pdf`
+  doc.save(fileName)
+}

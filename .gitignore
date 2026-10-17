@@ -41,3 +41,12 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+
+# local scratch and test files
+chrome_session/
+scratch/
+screenshots/
+*.log
+find_users.js
+reset_superadmin_password.js
+test_results.json

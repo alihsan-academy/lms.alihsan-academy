@@ -1,8 +1,11 @@
-'use client'
-
 import SharedLogin from '@/components/SharedLogin'
+import { getDailyQuote } from '@/lib/daily-quotes'
 
-export default function TeacherLoginPage() {
+export const dynamic = 'force-dynamic'
+
+export default async function TeacherLoginPage() {
+  const quote = await getDailyQuote('teacher')
+
   return (
     <SharedLogin
       portalType="teacher"
@@ -19,11 +22,7 @@ export default function TeacherLoginPage() {
         badgeText: 'text-indigo-300',
         shadowColor: 'shadow-indigo-950/30',
       }}
-      quote={{
-        arabic: 'خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ',
-        text: 'The best among you are those who learn the Quran and teach it.',
-        author: 'Prophet Muhammad (ﷺ) — Sahih al-Bukhari',
-      }}
+      quote={quote}
     />
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
@@ -23,7 +23,10 @@ interface SharedLoginProps {
   quote?: {
     arabic?: string
     text: string
-    author: string
+    author?: string
+    source?: string
+    type?: 'quran' | 'hadith' | 'reminder' | string
+    category?: string
   }
 }
 
@@ -34,6 +37,21 @@ export default function SharedLogin({
   theme,
   quote
 }: SharedLoginProps) {
+  const [currentQuote, setCurrentQuote] = useState(quote)
+
+  useEffect(() => {
+    if (quote) {
+      setCurrentQuote(quote)
+    } else if (portalType === 'student' || portalType === 'teacher') {
+      fetch(`/api/quotes/daily?portal=${portalType}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.quote) setCurrentQuote(data.quote)
+        })
+        .catch((err) => console.error('Failed to load daily quote:', err))
+    }
+  }, [quote, portalType])
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -242,29 +260,38 @@ export default function SharedLogin({
 
         {/* Center Section: Islamic Quote or Academy Mission */}
         <div className="relative z-10 my-8 md:my-auto">
-          {quote ? (
+          {currentQuote ? (
             <motion.div 
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6, delay: 0.2 }}
               className="bg-white/[0.08] backdrop-blur-xl rounded-3xl p-7 lg:p-8 border border-white/15 max-w-lg shadow-2xl relative overflow-hidden"
             >
-              <div className="absolute top-0 left-0 w-1.5 h-full bg-indigo-400 rounded-l-3xl" />
+              <div className={`absolute top-0 left-0 w-1.5 h-full ${theme.accentBg} rounded-l-3xl`} />
               
-              {quote.arabic && (
+              {currentQuote.type && (
+                <div className="flex items-center justify-between gap-2 mb-3.5">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-white/15 text-white/90 border border-white/10 backdrop-blur-sm">
+                    {currentQuote.type === 'quran' ? 'Noble Quran' : currentQuote.type === 'hadith' ? 'Prophetic Hadith' : 'Islamic Reminder'}
+                  </span>
+                  <span className="text-[11px] text-white/50 font-medium">Daily Reflection</span>
+                </div>
+              )}
+
+              {currentQuote.arabic && (
                 <p className="text-xl md:text-2xl font-serif text-right text-white/95 mb-4 leading-relaxed tracking-wide" dir="rtl">
-                  {quote.arabic}
+                  {currentQuote.arabic}
                 </p>
               )}
               
               <p className="text-base md:text-lg text-white/90 italic font-light leading-relaxed">
-                "{quote.text}"
+                "{currentQuote.text}"
               </p>
               
               <div className="flex items-center gap-3 mt-5 pt-4 border-t border-white/10">
                 <div className={`h-[2px] w-6 ${theme.accentBg}`} />
                 <p className={`text-xs uppercase tracking-widest font-bold ${theme.accentColor}`}>
-                  {quote.author}
+                  {currentQuote.author || currentQuote.source}
                 </p>
               </div>
             </motion.div>
