@@ -104,10 +104,11 @@ export default function SharedLogin({
 
       if (authError) {
         const msg = authError.message || ''
+        console.error('Supabase Auth Error:', authError)
         if (isNetworkAuthError(msg)) {
           setError('Network issue connecting to server. Please check your internet connection.')
         } else {
-          setError('Invalid email or password. Please try again.')
+          setError(msg || 'Invalid email or password. Please try again.')
         }
         setLoading(false)
         return
