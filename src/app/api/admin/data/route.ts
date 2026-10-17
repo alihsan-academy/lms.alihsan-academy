@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,8 +11,8 @@ export async function GET(request: Request) {
     
     // 1. Auth Client
     const supabaseAuth = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY,
       {
         cookies: {
           getAll() { return cookieStore.getAll() },
@@ -35,8 +36,8 @@ export async function GET(request: Request) {
 
     // 2. Admin Client for fetching data
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!, // Bypasses RLS issues
+      SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY, // Bypasses RLS issues
       {
         cookies: {
           get(name: string) { return undefined },

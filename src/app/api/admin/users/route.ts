@@ -1,46 +1,19 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/admin'
 
 function getAdminClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!supabaseUrl) {
-    return {
-      errorResponse: NextResponse.json(
-        { error: 'NEXT_PUBLIC_SUPABASE_URL not configured' },
-        { status: 500 }
-      ),
-      supabaseAdmin: null,
-    }
-  }
-
-  if (!serviceRoleKey) {
-    return {
-      errorResponse: NextResponse.json(
-        { error: 'SUPABASE_SERVICE_ROLE_KEY not configured' },
-        { status: 500 }
-      ),
-      supabaseAdmin: null,
-    }
-  }
-
-  const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
     },
   })
-
-  return { supabaseAdmin, errorResponse: null }
 }
 
 export async function POST(request: Request) {
   try {
-    const { supabaseAdmin, errorResponse } = getAdminClient()
-    if (errorResponse || !supabaseAdmin) {
-      return errorResponse
-    }
+    const supabaseAdmin = getAdminClient()
 
     const body = await request.json()
     const { 
@@ -152,10 +125,7 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const { supabaseAdmin, errorResponse } = getAdminClient()
-    if (errorResponse || !supabaseAdmin) {
-      return errorResponse
-    }
+    const supabaseAdmin = getAdminClient()
 
     const { userId } = await request.json()
     
@@ -232,10 +202,7 @@ export async function DELETE(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const { supabaseAdmin, errorResponse } = getAdminClient()
-    if (errorResponse || !supabaseAdmin) {
-      return errorResponse
-    }
+    const supabaseAdmin = getAdminClient()
 
     const body = await request.json()
     const studentId = body.userId || body.studentId

@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { getAdminClient } from '@/lib/supabase/admin'
 import { createClient as createServerSupabaseClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
@@ -33,16 +33,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid enrolmentStatus' }, { status: 400 })
     }
 
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    )
+    const supabaseAdmin = getAdminClient()
 
     // Verify role to ensure only teacher or superadmin can update
     const { data: profile } = await supabaseAdmin
