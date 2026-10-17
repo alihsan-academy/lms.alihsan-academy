@@ -165,26 +165,26 @@ export default function TeacherProfilePage() {
       </AnimatedCard>
 
       {/* Profile Card Section */}
-      <AnimatedCard delay={0.2} className="bg-gradient-to-br from-purple-500 to-indigo-600 p-8 flex flex-col items-center text-center relative overflow-hidden border-none text-white">
-        <div className="absolute top-0 right-0 p-4 opacity-20">
-          <GraduationCap className="h-32 w-32" />
+      <AnimatedCard delay={0.2} className="bg-[#1E293B] p-6 flex flex-col items-center text-center relative overflow-hidden border border-[#334155] text-white rounded-xl shadow-sm">
+        <div className="absolute top-0 right-0 p-4 opacity-10">
+          <GraduationCap className="h-24 w-24" />
         </div>
-        <div className="relative mb-6 z-10">
-          <div className="w-36 h-36 rounded-full bg-white flex items-center justify-center overflow-hidden border-8 border-white/20 shadow-xl">
+        <div className="relative mb-4 z-10">
+          <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center overflow-hidden border-4 border-white/20 shadow-md">
             {profile.profile_photo ? (
               <img src={profile.profile_photo} alt="Profile" className="w-full h-full object-cover" />
             ) : (
-              <span className="text-6xl font-black text-primary">{profile.full_name?.charAt(0) || 'U'}</span>
+              <span className="text-3xl font-bold text-[#1E293B]">{profile.full_name?.charAt(0) || 'U'}</span>
             )}
           </div>
-          <label className="absolute bottom-0 right-0 p-3 bg-secondary rounded-full text-white cursor-pointer hover:bg-orange-500 transition-colors shadow-lg border-4 border-white active:scale-95">
-            <Upload className="h-5 w-5" />
+          <label className="absolute bottom-0 right-0 p-2 bg-[#E8A020] rounded-full text-white cursor-pointer hover:bg-[#D97706] transition-colors shadow-sm border-2 border-white">
+            <Upload className="h-3.5 w-3.5" />
             <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={saving} />
           </label>
         </div>
         
-        <h3 className="text-3xl font-black z-10">{profile.full_name || 'Your Name'}</h3>
-        <p className="mt-2 text-white/80 font-bold text-lg">Islamic Online Academy Educator</p>
+        <h3 className="text-xl font-bold z-10">{profile.full_name || 'Your Name'}</h3>
+        <p className="mt-1 text-white/70 font-medium text-xs">Islamic Online Academy Educator</p>
       </AnimatedCard>
 
       <AnimatedCard delay={0.3} className="p-8 space-y-8">

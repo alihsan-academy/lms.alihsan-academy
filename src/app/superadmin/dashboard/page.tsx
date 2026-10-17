@@ -292,8 +292,8 @@ export default function SuperAdminDashboard() {
       </header>
 
       {/* Desktop Navigation */}
-      <div className="hidden md:block bg-white border-b-2 border-border px-8">
-        <nav className="flex space-x-2 max-w-6xl mx-auto py-2">
+      <div className="hidden md:block bg-white border-b border-border px-8">
+        <nav className="flex space-x-1.5 max-w-6xl mx-auto py-2">
           <NavTab active={activeTab === 'statistics'} onClick={() => setActiveTab('statistics')} icon={<BarChart3 />} label="Statistics" />
           <NavTab active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<GraduationCap />} label="Students" />
           <NavTab active={activeTab === 'teachers'} onClick={() => setActiveTab('teachers')} icon={<BookOpen />} label="Teachers" />
@@ -1137,28 +1137,31 @@ function ModalStatCard({ label, value, color = 'text-foreground' }: { label: str
 
 function NavTab({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: any, label: string }) {
   return (
-    <BouncyButton 
-      variant={active ? 'default' : 'ghost'} 
+    <button 
       onClick={onClick} 
-      className={`gap-2 ${active ? 'shadow-md' : ''}`}
+      className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 border ${
+        active 
+          ? 'bg-[#6B1E2E] text-white border-[#6B1E2E] shadow-sm' 
+          : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
+      }`}
     >
-      {icon} {label}
-    </BouncyButton>
+      <span className="[&_svg]:size-4">{icon}</span>
+      <span>{label}</span>
+    </button>
   )
 }
 
 function NavBtn({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: any, label: string }) {
   return (
-    <motion.button 
-      whileTap={{ scale: 0.85 }}
+    <button 
       onClick={onClick} 
-      className={`flex flex-col items-center p-2 w-full transition-all ${active ? 'text-primary scale-110' : 'text-muted-foreground'}`}
+      className={`flex flex-col items-center p-1.5 w-full transition-colors ${active ? 'text-primary font-bold' : 'text-muted-foreground'}`}
     >
-      <div className={`p-2 rounded-2xl mb-1 ${active ? 'bg-primary/10' : ''}`}>
+      <div className={`p-1 rounded-md mb-0.5 ${active ? 'bg-primary/10' : ''}`}>
         {icon}
       </div>
-      <span className="text-[11px] font-bold">{label}</span>
-    </motion.button>
+      <span className="text-[10px]">{label}</span>
+    </button>
   )
 }
 

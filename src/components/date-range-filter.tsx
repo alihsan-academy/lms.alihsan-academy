@@ -70,9 +70,9 @@ export function DateRangeFilter({
                     onFilterChange(opt.id)
                   }
                 }}
-                className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all ${
+                className={`text-xs font-semibold px-3 py-1.5 rounded-md transition-colors ${
                   isActive
-                    ? 'bg-primary text-white shadow-sm scale-105'
+                    ? 'bg-primary text-white shadow-sm'
                     : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
               >

@@ -12,17 +12,14 @@ interface AnimatedCardProps extends HTMLMotionProps<"div"> {
 export function AnimatedCard({ className, children, delay = 0, ...props }: AnimatedCardProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ 
-        type: "spring", 
-        stiffness: 300, 
-        damping: 24, 
+        duration: 0.15,
         delay 
       }}
-      whileHover={{ y: -4, scale: 1.01 }}
       className={cn(
-        "rounded-2xl border-2 bg-card text-card-foreground shadow-sm transition-all hover:shadow-md",
+        "rounded-xl border border-border bg-card text-card-foreground shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-colors",
         className
       )}
       {...props}

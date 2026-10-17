@@ -380,12 +380,48 @@ export default function TeacherDashboard() {
       </header>
 
       {/* Desktop Navigation */}
-      <div className="hidden md:block bg-white border-b-2 border-border px-8">
-        <nav className="flex space-x-2 max-w-5xl mx-auto py-2">
-          <BouncyButton variant={activeTab === 'classes' ? 'default' : 'ghost'} onClick={() => setActiveTab('classes')} className="gap-2"><Calendar className="h-5 w-5" /> Schedule</BouncyButton>
-          <BouncyButton variant={activeTab === 'create' ? 'default' : 'ghost'} onClick={() => setActiveTab('create')} className="gap-2"><Plus className="h-5 w-5" /> New Class</BouncyButton>
-          <BouncyButton variant={activeTab === 'stats' ? 'default' : 'ghost'} onClick={() => setActiveTab('stats')} className="gap-2"><BarChart3 className="h-5 w-5" /> Attendance & Stats</BouncyButton>
-          <BouncyButton variant={activeTab === 'profile' ? 'default' : 'ghost'} onClick={() => setActiveTab('profile')} className="gap-2"><User className="h-5 w-5" /> Profile</BouncyButton>
+      <div className="hidden md:block bg-white border-b border-border px-8">
+        <nav className="flex space-x-1.5 max-w-5xl mx-auto py-2">
+          <button 
+            onClick={() => setActiveTab('classes')} 
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 border ${
+              activeTab === 'classes' 
+                ? 'bg-[#1E293B] text-white border-[#1E293B] shadow-sm' 
+                : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
+            }`}
+          >
+            <Calendar className="h-4 w-4" /> Schedule
+          </button>
+          <button 
+            onClick={() => setActiveTab('create')} 
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 border ${
+              activeTab === 'create' 
+                ? 'bg-[#1E293B] text-white border-[#1E293B] shadow-sm' 
+                : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
+            }`}
+          >
+            <Plus className="h-4 w-4" /> New Class
+          </button>
+          <button 
+            onClick={() => setActiveTab('stats')} 
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 border ${
+              activeTab === 'stats' 
+                ? 'bg-[#1E293B] text-white border-[#1E293B] shadow-sm' 
+                : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
+            }`}
+          >
+            <BarChart3 className="h-4 w-4" /> Attendance & Stats
+          </button>
+          <button 
+            onClick={() => setActiveTab('profile')} 
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 border ${
+              activeTab === 'profile' 
+                ? 'bg-[#1E293B] text-white border-[#1E293B] shadow-sm' 
+                : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
+            }`}
+          >
+            <User className="h-4 w-4" /> Profile
+          </button>
         </nav>
       </div>
 
@@ -1020,16 +1056,15 @@ function StatCard({ title, value, index, gradient, subtitle }: { title: string, 
 
 function NavBtn({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: any, label: string }) {
   return (
-    <motion.button 
-      whileTap={{ scale: 0.85 }}
+    <button 
       onClick={onClick} 
-      className={`flex flex-col items-center p-2 w-full transition-all ${active ? 'text-primary scale-110' : 'text-muted-foreground'}`}
+      className={`flex flex-col items-center p-1.5 w-full transition-colors ${active ? 'text-primary font-bold' : 'text-muted-foreground'}`}
     >
-      <div className={`p-2 rounded-2xl mb-1 ${active ? 'bg-primary/10' : ''}`}>
+      <div className={`p-1 rounded-md mb-0.5 ${active ? 'bg-primary/10' : ''}`}>
         {icon}
       </div>
-      <span className="text-[11px] font-bold">{label}</span>
-    </motion.button>
+      <span className="text-[10px]">{label}</span>
+    </button>
   )
 }
 

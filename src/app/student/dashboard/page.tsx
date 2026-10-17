@@ -153,29 +153,38 @@ export default function StudentDashboard() {
       </header>
 
       {/* Desktop Navigation */}
-      <div className="hidden md:block bg-white border-b-2 border-border px-8">
-        <nav className="flex space-x-2 max-w-5xl mx-auto py-2">
-          <BouncyButton 
-            variant={activeTab === 'home' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('home')}
-            className={`gap-2 ${activeTab === 'home' ? 'shadow-md' : ''}`}
+      <div className="hidden md:block bg-white border-b border-border px-8">
+        <nav className="flex space-x-1.5 max-w-5xl mx-auto py-2">
+          <button 
+            onClick={() => setActiveTab('home')} 
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 border ${
+              activeTab === 'home' 
+                ? 'bg-[#0D4A47] text-white border-[#0D4A47] shadow-sm' 
+                : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
+            }`}
           >
-            <Home className="h-5 w-5" /> Home
-          </BouncyButton>
-          <BouncyButton 
-            variant={activeTab === 'attendance' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('attendance')}
-            className={`gap-2 ${activeTab === 'attendance' ? 'bg-primary text-primary-foreground shadow-md' : ''}`}
+            <Home className="h-4 w-4" /> Home
+          </button>
+          <button 
+            onClick={() => setActiveTab('attendance')} 
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 border ${
+              activeTab === 'attendance' 
+                ? 'bg-[#0D4A47] text-white border-[#0D4A47] shadow-sm' 
+                : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
+            }`}
           >
-            <BarChart3 className="h-5 w-5" /> Attendance
-          </BouncyButton>
-          <BouncyButton 
-            variant={activeTab === 'profile' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('profile')}
-            className={`gap-2 ${activeTab === 'profile' ? 'bg-primary text-primary-foreground shadow-md' : ''}`}
+            <BarChart3 className="h-4 w-4" /> Attendance
+          </button>
+          <button 
+            onClick={() => setActiveTab('profile')} 
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 border ${
+              activeTab === 'profile' 
+                ? 'bg-[#0D4A47] text-white border-[#0D4A47] shadow-sm' 
+                : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
+            }`}
           >
-            <User className="h-5 w-5" /> Profile
-          </BouncyButton>
+            <User className="h-4 w-4" /> Profile
+          </button>
         </nav>
       </div>
 
@@ -207,37 +216,34 @@ export default function StudentDashboard() {
       </main>
 
       {/* Bottom Navigation for Mobile */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-border flex justify-around p-3 z-50 md:hidden pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.08)] rounded-t-3xl">
-        <motion.button 
-          whileTap={{ scale: 0.85 }}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-border flex justify-around p-2 z-50 md:hidden pb-safe shadow-sm">
+        <button 
           onClick={() => setActiveTab('home')} 
-          className={`flex flex-col items-center p-2 w-full transition-all ${activeTab === 'home' ? 'text-primary scale-110' : 'text-muted-foreground'}`}
+          className={`flex flex-col items-center p-1.5 w-full transition-colors ${activeTab === 'home' ? 'text-primary font-bold' : 'text-muted-foreground'}`}
         >
-          <div className={`p-2 rounded-2xl mb-1 ${activeTab === 'home' ? 'bg-primary/10' : ''}`}>
-            <Home className={`h-6 w-6 ${activeTab === 'home' ? 'fill-primary/20' : ''}`} />
+          <div className={`p-1 rounded-md mb-0.5 ${activeTab === 'home' ? 'bg-primary/10' : ''}`}>
+            <Home className="h-5 w-5" />
           </div>
-          <span className="text-[11px] font-bold">Home</span>
-        </motion.button>
-        <motion.button 
-          whileTap={{ scale: 0.85 }}
+          <span className="text-[10px]">Home</span>
+        </button>
+        <button 
           onClick={() => setActiveTab('attendance')} 
-          className={`flex flex-col items-center p-2 w-full transition-all ${activeTab === 'attendance' ? 'text-primary scale-110' : 'text-muted-foreground'}`}
+          className={`flex flex-col items-center p-1.5 w-full transition-colors ${activeTab === 'attendance' ? 'text-primary font-bold' : 'text-muted-foreground'}`}
         >
-          <div className={`p-2 rounded-2xl mb-1 ${activeTab === 'attendance' ? 'bg-primary/10' : ''}`}>
-            <BarChart3 className={`h-6 w-6 ${activeTab === 'attendance' ? 'fill-primary/20' : ''}`} />
+          <div className={`p-1 rounded-md mb-0.5 ${activeTab === 'attendance' ? 'bg-primary/10' : ''}`}>
+            <BarChart3 className="h-5 w-5" />
           </div>
-          <span className="text-[11px] font-bold">Progress</span>
-        </motion.button>
-        <motion.button 
-          whileTap={{ scale: 0.85 }}
+          <span className="text-[10px]">Attendance</span>
+        </button>
+        <button 
           onClick={() => setActiveTab('profile')} 
-          className={`flex flex-col items-center p-2 w-full transition-all ${activeTab === 'profile' ? 'text-primary scale-110' : 'text-muted-foreground'}`}
+          className={`flex flex-col items-center p-1.5 w-full transition-colors ${activeTab === 'profile' ? 'text-primary font-bold' : 'text-muted-foreground'}`}
         >
-          <div className={`p-2 rounded-2xl mb-1 ${activeTab === 'profile' ? 'bg-primary/10' : ''}`}>
-            <User className={`h-6 w-6 ${activeTab === 'profile' ? 'fill-primary/20' : ''}`} />
+          <div className={`p-1 rounded-md mb-0.5 ${activeTab === 'profile' ? 'bg-primary/10' : ''}`}>
+            <User className="h-5 w-5" />
           </div>
-          <span className="text-[11px] font-bold">Profile</span>
-        </motion.button>
+          <span className="text-[10px]">Profile</span>
+        </button>
       </nav>
     </div>
   )
@@ -339,37 +345,31 @@ function HomeTab({ studentName, todayClass, upcomingClasses, teachers, onRefresh
               })()}
             </div>
             {todayClass.status === 'completed' && todayClass.recording_url ? (
-              <motion.a 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <a 
                 href={todayClass.recording_url} 
                 target="_blank" 
                 rel="noreferrer"
-                className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-5 rounded-2xl font-black text-lg transition-all shadow-[0_8px_0_oklch(0.5_0.15_255)] hover:shadow-[0_4px_0_oklch(0.5_0.15_255)] hover:translate-y-1 flex items-center justify-center gap-3 text-center whitespace-nowrap active:shadow-none active:translate-y-2"
+                className="bg-[#1E293B] hover:bg-[#0F172A] text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2 text-center whitespace-nowrap"
               >
-                <Video className="h-6 w-6" />
-                WATCH RECORDING
-              </motion.a>
+                <Video className="h-4 w-4" />
+                Watch Recording
+              </a>
             ) : todayClass.status === 'completed' ? (
-              <div className="bg-muted text-muted-foreground px-6 py-4 rounded-2xl font-bold text-center border-2 border-border border-dashed">
+              <div className="bg-muted text-muted-foreground px-4 py-2 rounded-lg font-medium text-xs text-center border border-border">
                 Class completed.
               </div>
             ) : todayClass.meet_link ? (
-              <motion.a 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                animate={{ scale: [1, 1.05, 1] }}
-                transition={{ repeat: Infinity, duration: 2.5 }}
+              <a 
                 href={todayClass.meet_link} 
                 target="_blank" 
                 rel="noreferrer"
-                className="bg-primary hover:bg-primary/90 text-white px-8 py-5 rounded-2xl font-black text-lg transition-all shadow-[0_8px_0_oklch(0.5_0.15_255)] hover:shadow-[0_4px_0_oklch(0.5_0.15_255)] hover:translate-y-1 flex items-center justify-center gap-3 text-center whitespace-nowrap active:shadow-none active:translate-y-2"
+                className="bg-[#0D4A47] hover:bg-[#083836] text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2 text-center whitespace-nowrap shadow-sm"
               >
-                <Video className="h-6 w-6" />
-                JOIN CLASS NOW
-              </motion.a>
+                <Video className="h-4 w-4" />
+                Join Class
+              </a>
             ) : (
-              <div className="bg-muted text-muted-foreground px-6 py-4 rounded-2xl font-bold text-center border-2 border-border border-dashed">
+              <div className="bg-muted text-muted-foreground px-4 py-2 rounded-lg font-medium text-xs text-center border border-border">
                 Link arriving soon...
               </div>
             )}

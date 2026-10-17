@@ -12,21 +12,16 @@ interface BouncyButtonProps extends React.ComponentProps<typeof Button> {
 export const BouncyButton = React.forwardRef<HTMLButtonElement, BouncyButtonProps>(
   ({ className, ...props }, ref) => {
     return (
-      <motion.div
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.98 }}
-        transition={{ duration: 0.12 }}
-        className="inline-block"
-      >
+      <div className="inline-block">
         <Button 
           ref={ref}
           className={cn(
-            "rounded-lg font-semibold shadow-none border transition-colors",
+            "rounded-md font-medium shadow-none border transition-colors",
             className
           )} 
           {...props} 
         />
-      </motion.div>
+      </div>
     )
   }
 )

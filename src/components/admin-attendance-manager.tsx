@@ -320,49 +320,49 @@ export function AdminAttendanceManager({
           </p>
         </div>
 
-        <div className="flex bg-muted p-1 rounded-xl gap-1 self-start md:self-auto">
+        <div className="flex bg-muted p-1 rounded-lg gap-1 self-start md:self-auto border border-border">
           <button
             onClick={() => setSearchMode('teacher')}
-            className={`px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 ${
               searchMode === 'teacher'
-                ? 'bg-primary text-white shadow-sm'
+                ? 'bg-[#1A6B4A] text-white shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <UserCheck className="h-4 w-4" /> By Teacher Name
+            <UserCheck className="h-3.5 w-3.5" /> By Teacher
           </button>
 
           <button
             onClick={() => setSearchMode('student')}
-            className={`px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 ${
               searchMode === 'student'
-                ? 'bg-primary text-white shadow-sm'
+                ? 'bg-[#1A6B4A] text-white shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <GraduationCap className="h-4 w-4" /> By Student Reg No
+            <GraduationCap className="h-3.5 w-3.5" /> By Student
           </button>
 
           <button
             onClick={() => setSearchMode('all')}
-            className={`px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 ${
               searchMode === 'all'
-                ? 'bg-primary text-white shadow-sm'
+                ? 'bg-[#1A6B4A] text-white shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <Clock className="h-4 w-4" /> Academy Log
+            <Clock className="h-3.5 w-3.5" /> Academy Log
           </button>
 
           <button
             onClick={() => setSearchMode('filter')}
-            className={`px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 ${
               searchMode === 'filter'
-                ? 'bg-amber-500 text-white shadow-sm'
+                ? 'bg-[#D97706] text-white shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <Sparkles className="h-4 w-4" /> Smart Filter
+            <Sparkles className="h-3.5 w-3.5" /> Smart Filter
           </button>
         </div>
       </div>
@@ -404,9 +404,9 @@ export function AdminAttendanceManager({
                   <button
                     key={t.id}
                     onClick={() => setSelectedTeacherId(t.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border-2 ${
+                    className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-2 border ${
                       isSelected
-                        ? 'border-primary bg-primary/10 text-primary scale-105'
+                        ? 'border-primary bg-primary/10 text-primary'
                         : 'border-border bg-white text-muted-foreground hover:border-primary/40'
                     }`}
                   >
@@ -598,9 +598,9 @@ export function AdminAttendanceManager({
                   <button
                     key={s.id}
                     onClick={() => setSelectedStudentId(s.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border-2 ${
+                    className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-2 border ${
                       isSelected
-                        ? 'border-primary bg-primary/10 text-primary scale-105'
+                        ? 'border-primary bg-primary/10 text-primary'
                         : 'border-border bg-white text-muted-foreground hover:border-primary/40'
                     }`}
                   >
