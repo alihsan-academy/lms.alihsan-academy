@@ -2,62 +2,63 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 
-interface SharedLoginProps {
+export interface SharedLoginProps {
   portalType: 'student' | 'teacher' | 'admin'
   portalTitle: string
+  portalSubtitle: string
+  portalTagline: string
   roleLabel: string
-  theme: {
-    bgGradient: string
-    accentColor: string
-    accentBg: string
-    buttonBg: string
-    buttonHover: string
-    ringColor: string
-    badgeBg: string
-    badgeText: string
-    shadowColor: string
-  }
-  quote?: {
-    arabic?: string
-    text: string
-    author?: string
-    source?: string
-    type?: 'quran' | 'hadith' | 'reminder' | string
-    category?: string
-  }
+  inputPlaceholder: string
+  accentColor: string
+  accentHover: string
+  accentBorder: string
+  pillClass: string
+  btnClass: string
+  leftThemeClass: string
+  quoteBorderColor: string
+  quoteCitationColor: string
 }
 
 export default function SharedLogin({
   portalType,
   portalTitle,
+  portalSubtitle,
+  portalTagline,
   roleLabel,
-  theme,
-  quote
+  inputPlaceholder,
+  accentColor,
+  accentHover,
+  accentBorder,
+  pillClass,
+  btnClass,
+  leftThemeClass,
+  quoteBorderColor,
+  quoteCitationColor,
 }: SharedLoginProps) {
-  const [currentQuote, setCurrentQuote] = useState(quote)
+  const [currentQuote, setCurrentQuote] = useState<{
+    arabic?: string
+    text: string
+    source?: string
+    author?: string
+    type?: string
+  } | null>(null)
 
   useEffect(() => {
-    if (quote) {
-      setCurrentQuote(quote)
-    } else if (portalType === 'student' || portalType === 'teacher') {
-      fetch(`/api/quotes/daily?portal=${portalType}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data?.quote) setCurrentQuote(data.quote)
-        })
-        .catch((err) => console.error('Failed to load daily quote:', err))
-    }
-  }, [quote, portalType])
+    fetch(`/api/quotes/daily?portal=${portalType === 'admin' ? 'student' : portalType}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.quote) setCurrentQuote(data.quote)
+      })
+      .catch((err) => console.error('Failed to load daily quote:', err))
+  }, [portalType])
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  
+
   // Forgot Password State
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [resetEmail, setResetEmail] = useState('')
@@ -121,31 +122,31 @@ export default function SharedLogin({
         return
       }
 
-      // 3. Strict Role Validation for Portal
       const role = profileData.role
-      const isRoleAllowed = 
-        (portalType === 'student' && role === 'student') ||
-        (portalType === 'teacher' && role === 'teacher') ||
-        (portalType === 'admin' && (role === 'admin' || role === 'superadmin'))
 
-      if (!isRoleAllowed) {
-        // Sign out immediately so no active session remains
+      // 3. Strict Portal Access Security
+      if (portalType === 'student' && role !== 'student') {
         await supabase.auth.signOut()
-        
-        if (portalType === 'student') {
-          setError('Access denied: These credentials do not belong to a Student account.')
-        } else if (portalType === 'teacher') {
-          setError('Access denied: These credentials do not belong to a Tutor account.')
-        } else if (portalType === 'admin') {
-          setError('Access denied: These credentials do not have Administrator privileges.')
-        } else {
-          setError('Access denied: Unauthorized role for this portal.')
-        }
+        setError('This portal is exclusively for students. Tutors and Admins must use their respective login portals.')
         setLoading(false)
         return
       }
 
-      // 4. Redirect authorized users to their dashboard
+      if (portalType === 'teacher' && role !== 'teacher') {
+        await supabase.auth.signOut()
+        setError('This portal is exclusively for tutors and faculty. Students must use the Student Portal.')
+        setLoading(false)
+        return
+      }
+
+      if (portalType === 'admin' && role !== 'admin' && role !== 'superadmin') {
+        await supabase.auth.signOut()
+        setError('Access denied: Unauthorized role for Administration Portal.')
+        setLoading(false)
+        return
+      }
+
+      // 4. Role-Based Redirection
       if (role === 'student') {
         window.location.href = '/student/dashboard'
       } else if (role === 'teacher') {
@@ -155,13 +156,15 @@ export default function SharedLogin({
       } else if (role === 'superadmin') {
         window.location.href = '/superadmin/dashboard'
       } else {
-        setError('Unknown user role.')
+        window.location.href = '/login'
       }
-
-    } catch (err) {
-      setError('An unexpected error occurred. Please try again.')
-      console.error(err)
-    } finally {
+    } catch (err: any) {
+      const msg = err?.message || ''
+      if (isNetworkAuthError(msg)) {
+        setError('Network connectivity issue. Please check your connection and try again.')
+      } else {
+        setError('An unexpected error occurred. Please try again.')
+      }
       setLoading(false)
     }
   }
@@ -173,19 +176,19 @@ export default function SharedLogin({
       setResetMessage({ type: 'error', text: 'Please enter your email address' })
       return
     }
-    
+
     setResetLoading(true)
     try {
       const supabase = createClient()
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail.trim())
-      
+
       if (error) {
         setResetMessage({ type: 'error', text: error.message })
       } else {
         setResetMessage({ type: 'success', text: 'Password reset link sent to your email!' })
         setResetEmail('')
       }
-    } catch (err) {
+    } catch {
       setResetMessage({ type: 'error', text: 'An unexpected error occurred. Please try again.' })
     } finally {
       setResetLoading(false)
@@ -193,278 +196,161 @@ export default function SharedLogin({
   }
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-[#0c121e] font-sans antialiased text-gray-900 selection:bg-emerald-500 selection:text-white">
-      
-      {/* Left side - Minimalist Islamic Motif & Branding (No Photos) */}
-      <div className={`relative w-full md:w-1/2 min-h-[420px] md:min-h-screen overflow-hidden ${theme.bgGradient} flex flex-col justify-between p-8 md:p-14 lg:p-16 text-white select-none`}>
-        
-        {/* Subtle Geometric Islamic Vector Pattern */}
-        <div className="absolute inset-0 opacity-[0.08] pointer-events-none">
-          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
-            <defs>
-              <pattern id={`islamic-art-${portalType}`} width="80" height="80" patternUnits="userSpaceOnUse">
-                {/* 8-Pointed Star (Khatim) geometry */}
-                <rect x="25" y="25" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="0.8" />
-                <rect x="25" y="25" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="0.8" transform="rotate(45 40 40)" />
-                <circle cx="40" cy="40" r="28" fill="none" stroke="currentColor" strokeWidth="0.5" />
-                <circle cx="40" cy="40" r="14" fill="none" stroke="currentColor" strokeWidth="0.5" />
-                <line x1="0" y1="40" x2="80" y2="40" stroke="currentColor" strokeWidth="0.4" />
-                <line x1="40" y1="0" x2="40" y2="80" stroke="currentColor" strokeWidth="0.4" />
-                <line x1="0" y1="0" x2="80" y2="80" stroke="currentColor" strokeWidth="0.4" />
-                <line x1="80" y1="0" x2="0" y2="80" stroke="currentColor" strokeWidth="0.4" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill={`url(#islamic-art-${portalType})`} />
-          </svg>
-        </div>
+    <div className="min-h-screen flex flex-col md:flex-row bg-[#F8F9FA] font-sans antialiased text-[#112221]">
+      {/* LEFT SIDE - APPROVED DIRECTION B MINIMALIST ISLAMIC PORTAL */}
+      <div
+        className={`w-full md:w-[45%] min-h-[460px] md:min-h-screen p-8 sm:p-12 md:p-14 flex flex-col justify-between relative overflow-hidden text-white select-none ${leftThemeClass}`}
+      >
+        {/* Islamic Geometry Background Overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.08] pointer-events-none"
+          style={{
+            backgroundImage: `
+              radial-gradient(circle at 40px 40px, rgba(255,255,255,0.4) 1px, transparent 1px),
+              linear-gradient(45deg, transparent 48%, rgba(255,255,255,0.2) 49%, rgba(255,255,255,0.2) 51%, transparent 52%),
+              linear-gradient(-45deg, transparent 48%, rgba(255,255,255,0.2) 49%, rgba(255,255,255,0.2) 51%, transparent 52%)
+            `,
+            backgroundSize: '80px 80px',
+          }}
+        />
 
-        {/* Ambient Radial Glow */}
-        <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-white/10 blur-[120px] pointer-events-none" />
-        <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-black/30 blur-[120px] pointer-events-none" />
-
-        {/* Top Header & Branding */}
+        {/* Top Branding with Official Academy Minaret Geometric Logo */}
         <div className="relative z-10">
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="flex items-center gap-3.5 mb-6"
-          >
-            <div className="bg-white/10 backdrop-blur-md p-2.5 rounded-2xl border border-white/20 shadow-sm flex items-center justify-center">
-              <img 
-                src="/alihsan-logo.png"
-                alt="Al Ihsan Academy"
-                className="h-10 w-auto object-contain brightness-0 invert drop-shadow-sm"
-              />
-            </div>
+          <div className="inline-flex items-center gap-3.5 mb-7">
+            <svg
+              className="w-11 h-12 flex-shrink-0"
+              viewBox="0 0 100 120"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M50 5 L65 30 L35 30 Z" fill="#D97706" />
+              <path d="M30 35 C55 33, 70 38, 75 42 L72 50 C55 46, 40 45, 27 48 Z" fill="#FFFFFF" />
+              <path d="M24 53 C55 50, 75 55, 80 60 L77 68 C55 64, 38 63, 21 66 Z" fill="#FFFFFF" />
+              <path d="M18 71 C55 67, 80 73, 85 78 L81 86 C55 81, 35 80, 15 84 Z" fill="#FFFFFF" />
+              <rect x="25" y="90" width="8" height="8" fill="#D97706" />
+            </svg>
             <div>
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase ${theme.badgeBg} ${theme.badgeText} border border-white/15 backdrop-blur-md shadow-sm`}>
-                {portalTitle}
-              </span>
+              <div className="text-2xl font-bold text-white tracking-tight leading-tight">
+                al <span className="font-extrabold">ihsan</span>{' '}
+                <span className="text-base font-medium opacity-90">academy</span>
+              </div>
+              <div className="text-[10px] text-white/70 font-semibold tracking-widest uppercase mt-0.5">
+                Building a generation for tomorrow
+              </div>
             </div>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: -5 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <h1 className="text-3xl lg:text-4xl font-black tracking-tight text-white leading-tight">
-              AL IHSAN ACADEMY
-            </h1>
-            <p className="text-white/70 text-sm md:text-base font-light tracking-wide mt-1">
-              of Moral Education
-            </p>
-          </motion.div>
+          <div className="text-[16px] font-semibold text-white/95 mb-1">{portalSubtitle}</div>
+          <div className="text-[13px] text-white/70">{portalTagline}</div>
         </div>
 
-        {/* Center Section: Islamic Quote or Academy Mission */}
-        <div className="relative z-10 my-8 md:my-auto">
-          {currentQuote ? (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="bg-white/[0.08] backdrop-blur-xl rounded-3xl p-7 lg:p-8 border border-white/15 max-w-lg shadow-2xl relative overflow-hidden"
-            >
-              <div className={`absolute top-0 left-0 w-1.5 h-full ${theme.accentBg} rounded-l-3xl`} />
-              
-              {currentQuote.type && (
-                <div className="flex items-center justify-between gap-2 mb-3.5">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-white/15 text-white/90 border border-white/10 backdrop-blur-sm">
-                    {currentQuote.type === 'quran' ? 'Noble Quran' : currentQuote.type === 'hadith' ? 'Prophetic Hadith' : 'Islamic Reminder'}
-                  </span>
-                  <span className="text-[11px] text-white/50 font-medium">Daily Reflection</span>
-                </div>
-              )}
-
-              {currentQuote.arabic && (
-                <p className="text-xl md:text-2xl font-serif text-right text-white/95 mb-4 leading-relaxed tracking-wide" dir="rtl">
-                  {currentQuote.arabic}
-                </p>
-              )}
-              
-              <p className="text-base md:text-lg text-white/90 italic font-light leading-relaxed">
-                "{currentQuote.text}"
-              </p>
-              
-              <div className="flex items-center gap-3 mt-5 pt-4 border-t border-white/10">
-                <div className={`h-[2px] w-6 ${theme.accentBg}`} />
-                <p className={`text-xs uppercase tracking-widest font-bold ${theme.accentColor}`}>
-                  {currentQuote.author || currentQuote.source}
-                </p>
-              </div>
-            </motion.div>
+        {/* Center: Daily Islamic Quote Reflection Card */}
+        <div
+          className="my-8 md:my-auto bg-white/[0.07] backdrop-blur-md rounded-xl p-6 sm:p-7 border border-white/[0.14] relative z-10 shadow-lg"
+          style={{ borderLeftWidth: '3px', borderLeftColor: quoteBorderColor }}
+        >
+          {currentQuote?.arabic ? (
+            <div className="text-xl sm:text-2xl font-serif text-right text-white leading-relaxed mb-2.5" dir="rtl">
+              {currentQuote.arabic}
+            </div>
           ) : (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="bg-white/[0.06] backdrop-blur-xl rounded-3xl p-7 lg:p-8 border border-white/15 max-w-lg shadow-xl"
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                <span className="text-xs uppercase tracking-widest text-white/70 font-semibold">Student Learning Space</span>
-              </div>
-              <p className="text-base md:text-lg text-white/90 font-light leading-relaxed">
-                "Building a generation for tomorrow through authentic knowledge, discipline, and moral excellence."
-              </p>
-              <div className="mt-4 flex items-center gap-2 text-xs text-white/50 font-medium">
-                <span>Interactive Classes</span>
-                <span>•</span>
-                <span>Quran & Islamic Studies</span>
-              </div>
-            </motion.div>
+            <div className="text-xl sm:text-2xl font-serif text-right text-white leading-relaxed mb-2.5" dir="rtl">
+              {portalType === 'teacher'
+                ? 'خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ'
+                : 'وَقُل رَّبِّ زِدۡنِي عِلۡمٗا'}
+            </div>
           )}
+
+          <div className="text-[13.5px] text-white/90 italic leading-relaxed">
+            "{currentQuote?.text || (portalType === 'teacher' ? 'The best among you are those who learn the Quran and teach it.' : 'And say: My Lord, increase me in knowledge.')}"
+          </div>
+
+          <div
+            className="text-[11px] font-bold uppercase tracking-wider mt-3"
+            style={{ color: quoteCitationColor }}
+          >
+            {currentQuote?.source || currentQuote?.author || (portalType === 'teacher' ? 'Sahih al-Bukhari 5027' : 'Surah Ta-Ha (20:114)')}
+          </div>
         </div>
 
         {/* Footer info & Domain */}
-        <div className="relative z-10 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-white/70">
-          <div className="flex items-center gap-2">
-            <svg className="w-4 h-4 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-            </svg>
-            <span className="font-mono tracking-wider font-semibold text-white">alihsanacademy.uk</span>
-          </div>
-          <div className="flex items-center gap-3 text-white/50">
-            <span>Encrypted Connection</span>
-            <span>•</span>
-            <span>2026</span>
-          </div>
+        <div className="relative z-10 text-[11px] text-white/60 flex items-center justify-between border-t border-white/10 pt-4">
+          <span className="font-mono tracking-wider font-medium text-white/80">alihsanacademy.uk</span>
+          <span>{portalTitle}</span>
         </div>
       </div>
 
-      {/* Right side - Clean & High UX Login Form */}
-      <div className="w-full md:w-1/2 flex items-center justify-center p-6 md:p-12 lg:p-16 bg-gray-50/70">
-        <motion.div 
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-md bg-white p-8 md:p-10 rounded-[28px] shadow-2xl shadow-gray-200/60 border border-gray-100"
-        >
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-3.5">
-              <span className={`text-[11px] font-bold uppercase tracking-wider ${theme.accentColor} px-3 py-1 rounded-lg bg-gray-50 border border-gray-200/80`}>
-                {roleLabel}
-              </span>
-              {portalType === 'admin' && (
-                <Link 
-                  href="/" 
-                  className="text-xs text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-1 font-semibold group"
-                >
-                  <span className="transform group-hover:-translate-x-0.5 transition-transform">←</span> Portals
-                </Link>
-              )}
-            </div>
-            
-            <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">
-              Sign In
-            </h2>
-            <p className="text-sm text-gray-500 mt-1.5 font-normal">
-              Enter your login details to continue to your dashboard.
-            </p>
+      {/* RIGHT SIDE - CLEAN PREMIUM EDUCATION WHITE CARD */}
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-10 md:p-12 lg:p-16 bg-[#F8F9FA]">
+        <div className="w-full max-w-[420px] bg-white rounded-2xl border border-[#DDE4E0] p-8 sm:p-9 shadow-[0_1px_4px_rgba(13,74,71,0.08),0_0_0_1px_rgba(13,74,71,0.05)]">
+          {/* Portal Pill Badge */}
+          <div className="mb-4">
+            <span
+              className={`inline-block text-[11px] font-bold px-3 py-1 rounded-md tracking-wide uppercase ${pillClass}`}
+            >
+              {portalTitle}
+            </span>
           </div>
 
-          {/* Form */}
+          <h2 className="text-2xl font-bold text-[#112221] tracking-tight">
+            {portalType === 'student' && 'Sign in to your classes'}
+            {portalType === 'teacher' && 'Educator Sign In'}
+            {portalType === 'admin' && 'Administrator Sign In'}
+          </h2>
+          <p className="text-[13px] text-[#4A6362] mt-1 mb-6">
+            {portalType === 'student' && 'Enter your student email and password.'}
+            {portalType === 'teacher' && 'Manage timetables and mark student attendance.'}
+            {portalType === 'admin' && 'Manage academy operations, attendance & users.'}
+          </p>
+
           <form onSubmit={handleLogin} className="space-y-4" noValidate>
             <div>
-              <label htmlFor="email" className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                Email Address
+              <label className="block text-[13px] font-semibold text-[#112221] mb-1.5">
+                {portalType === 'student' && 'Student Email Address'}
+                {portalType === 'teacher' && 'Faculty Email Address'}
+                {portalType === 'admin' && 'Administrator Email'}
               </label>
-              <div className="relative">
-                <input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={`w-full bg-gray-50/80 border border-gray-200 text-gray-900 rounded-xl px-4 py-3.5 pl-11 focus:outline-none focus:ring-2 ${theme.ringColor} focus:bg-white transition-all shadow-sm text-sm placeholder-gray-400`}
-                  placeholder="name@alihsanacademy.uk"
-                  disabled={loading}
-                />
-                <svg className="w-5 h-5 text-gray-400 absolute left-3.5 top-3.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.206" />
-                </svg>
-              </div>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={inputPlaceholder}
+                className="w-full border border-[#DDE4E0] rounded-lg px-3.5 py-2.5 text-[14px] text-[#112221] bg-white outline-none transition-all focus:border-[#0D4A47] focus:ring-2 focus:ring-[#0D4A47]/15"
+                disabled={loading}
+              />
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label htmlFor="password" className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  Password
-                </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-[13px] font-semibold text-[#112221]">Password</label>
                 <button
                   type="button"
                   onClick={() => setShowForgotPassword(!showForgotPassword)}
-                  className={`text-xs ${theme.accentColor} hover:underline font-semibold transition-colors`}
-                  tabIndex={0}
+                  className="text-xs text-[#4A6362] hover:text-[#112221] hover:underline font-medium"
                 >
                   Forgot password?
                 </button>
               </div>
-              
-              <div className="relative">
-                <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full bg-gray-50/80 border border-gray-200 text-gray-900 rounded-xl px-4 py-3.5 pl-11 pr-11 focus:outline-none focus:ring-2 ${theme.ringColor} focus:bg-white transition-all shadow-sm text-sm placeholder-gray-400`}
-                  placeholder="••••••••"
-                  disabled={loading}
-                />
-                <svg className="w-5 h-5 text-gray-400 absolute left-3.5 top-3.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-                
-                {/* Toggle Password Visibility */}
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-3.5 text-gray-400 hover:text-gray-600 focus:outline-none"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? (
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  )}
-                </button>
-              </div>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full border border-[#DDE4E0] rounded-lg px-3.5 py-2.5 text-[14px] text-[#112221] bg-white outline-none transition-all focus:border-[#0D4A47] focus:ring-2 focus:ring-[#0D4A47]/15"
+                disabled={loading}
+              />
             </div>
 
-            {/* Error Message */}
-            <AnimatePresence>
-              {error && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto', x: [0, -6, 6, -6, 0] }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="p-3.5 bg-red-50/90 border border-red-200 text-red-700 rounded-xl text-xs font-medium flex items-center gap-2.5 overflow-hidden"
-                >
-                  <svg className="w-4 h-4 flex-shrink-0 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  <span>{error}</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs font-medium">
+                {error}
+              </div>
+            )}
 
-            {/* Submit Button */}
-            <motion.button
+            <button
               type="submit"
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.98 }}
               disabled={loading}
-              className={`w-full ${theme.buttonBg} ${theme.buttonHover} text-white mt-6 py-4 rounded-xl font-bold transition-all shadow-lg ${theme.shadowColor} disabled:opacity-50 text-sm flex items-center justify-center gap-2 cursor-pointer`}
+              className={`w-full h-11 rounded-lg text-[14px] font-semibold cursor-pointer transition-colors mt-6 shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 ${btnClass}`}
             >
               {loading ? (
                 <>
@@ -475,76 +361,75 @@ export default function SharedLogin({
                   <span>Authenticating...</span>
                 </>
               ) : (
-                <span>Sign In to {roleLabel}</span>
+                <span>
+                  {portalType === 'student' && 'Sign In as Student'}
+                  {portalType === 'teacher' && 'Sign In as Tutor'}
+                  {portalType === 'admin' && 'Sign In to Dashboard'}
+                </span>
               )}
-            </motion.button>
+            </button>
           </form>
 
-          {/* Quick Switcher for other Roles - Only on Admin */}
-          {portalType === 'admin' && (
-            <div className="mt-8 pt-6 border-t border-gray-100 text-center">
-              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-3">
-                Need a different portal?
+          {/* Forgot Password Accordion */}
+          {showForgotPassword && (
+            <div className="mt-5 pt-5 border-t border-[#DDE4E0]">
+              <h3 className="text-xs font-bold text-[#112221] mb-1">Reset Password</h3>
+              <p className="text-[11px] text-[#4A6362] mb-3">
+                Enter your registered email address to receive reset instructions.
               </p>
-              <div className="flex items-center justify-center gap-2.5">
-                <Link 
-                  href="/student/login" 
-                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-gray-50 text-gray-600 hover:text-emerald-700 hover:bg-emerald-50 border border-gray-200 transition-colors"
+              <form onSubmit={handleResetPassword} className="space-y-2.5">
+                <input
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  placeholder="your-email@alihsanacademy.uk"
+                  className="w-full border border-[#DDE4E0] rounded-lg px-3 py-2 text-xs text-[#112221] bg-white outline-none"
+                  disabled={resetLoading}
+                />
+                {resetMessage.text && (
+                  <div
+                    className={`p-2 rounded text-xs ${
+                      resetMessage.type === 'error'
+                        ? 'bg-red-50 text-red-700 border border-red-200'
+                        : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                    }`}
+                  >
+                    {resetMessage.text}
+                  </div>
+                )}
+                <button
+                  type="submit"
+                  disabled={resetLoading}
+                  className="w-full py-2 bg-[#112221] text-white rounded-lg text-xs font-semibold hover:bg-black transition-colors"
+                >
+                  {resetLoading ? 'Sending link...' : 'Send Reset Link'}
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* Quick switcher for portal on Admin */}
+          {portalType === 'admin' && (
+            <div className="mt-6 pt-5 border-t border-[#DDE4E0] text-center">
+              <span className="text-[11px] text-[#879E9D] font-medium mr-2">Need a different portal?</span>
+              <div className="inline-flex gap-2 mt-2">
+                <Link
+                  href="/student/login"
+                  className="text-xs text-[#0D4A47] font-semibold hover:underline"
                 >
                   Student Portal
                 </Link>
-                <Link 
-                  href="/teacher/login" 
-                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-gray-50 text-gray-600 hover:text-indigo-700 hover:bg-indigo-50 border border-gray-200 transition-colors"
+                <span className="text-[#879E9D]">•</span>
+                <Link
+                  href="/teacher/login"
+                  className="text-xs text-[#1E293B] font-semibold hover:underline"
                 >
                   Tutor Portal
                 </Link>
               </div>
             </div>
           )}
-
-          {/* Forgot Password Accordion */}
-          <AnimatePresence>
-            {showForgotPassword && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-                className="mt-6 pt-6 border-t border-gray-100 overflow-hidden"
-              >
-                <h3 className="text-sm font-bold text-gray-900 mb-1">Reset Password</h3>
-                <p className="text-xs text-gray-500 mb-4">Enter your registered email address to receive recovery instructions.</p>
-                
-                <form onSubmit={handleResetPassword} className="space-y-3">
-                  <input
-                    type="email"
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    className={`w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 ${theme.ringColor} focus:bg-white transition-all text-xs`}
-                    placeholder="Enter your email address"
-                  />
-                  
-                  {resetMessage.text && (
-                    <div className={`p-2.5 rounded-xl text-xs font-medium ${resetMessage.type === 'error' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'}`}>
-                      {resetMessage.text}
-                    </div>
-                  )}
-                  
-                  <motion.button
-                    type="submit"
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.98 }}
-                    disabled={resetLoading}
-                    className="w-full bg-gray-900 text-white py-2.5 rounded-xl text-xs font-bold hover:bg-gray-800 disabled:opacity-50 transition-colors cursor-pointer"
-                  >
-                    {resetLoading ? 'Sending...' : 'Send Recovery Link'}
-                  </motion.button>
-                </form>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
+        </div>
       </div>
     </div>
   )

@@ -7,18 +7,18 @@ export default function StudentLoginPage() {
     <SharedLogin
       portalType="student"
       portalTitle="Student Portal"
+      portalSubtitle="Student Learning Portal"
+      portalTagline="Quran, Islamic Studies & Moral Education"
       roleLabel="Student"
-      theme={{
-        bgGradient: 'bg-gradient-to-br from-[#064e3b] via-[#043e2f] to-[#022c22]',
-        accentColor: 'text-emerald-600',
-        accentBg: 'bg-emerald-400',
-        buttonBg: 'bg-emerald-700',
-        buttonHover: 'hover:bg-emerald-800',
-        ringColor: 'focus:ring-emerald-600',
-        badgeBg: 'bg-emerald-500/20',
-        badgeText: 'text-emerald-300',
-        shadowColor: 'shadow-emerald-900/25',
-      }}
+      inputPlaceholder="student@alihsanacademy.uk"
+      accentColor="#0D4A47"
+      accentHover="#083836"
+      accentBorder="rgba(13,74,71,0.25)"
+      pillClass="bg-[#E6F3F2] text-[#0D4A47] border border-[#0D4A47]/25"
+      btnClass="bg-[#0D4A47] hover:bg-[#083836] text-white"
+      leftThemeClass="bg-[#0D4A47]"
+      quoteBorderColor="#D97706"
+      quoteCitationColor="#FCD34D"
     />
   )
 }

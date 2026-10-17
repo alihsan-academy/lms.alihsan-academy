@@ -7,18 +7,18 @@ export default function AdminLoginPage() {
     <SharedLogin
       portalType="admin"
       portalTitle="Administration"
+      portalSubtitle="Central Administration"
+      portalTagline="Academy Operations, Records & Security"
       roleLabel="Admin"
-      theme={{
-        bgGradient: 'bg-gradient-to-br from-[#18181b] via-[#0f172a] to-[#09090b]',
-        accentColor: 'text-amber-600',
-        accentBg: 'bg-amber-400',
-        buttonBg: 'bg-slate-900',
-        buttonHover: 'hover:bg-black',
-        ringColor: 'focus:ring-amber-500',
-        badgeBg: 'bg-amber-500/15',
-        badgeText: 'text-amber-300',
-        shadowColor: 'shadow-black/40',
-      }}
+      inputPlaceholder="admin@alihsanacademy.uk"
+      accentColor="#6B1E2E"
+      accentHover="#551624"
+      accentBorder="rgba(107,30,46,0.25)"
+      pillClass="bg-[#F9EEF0] text-[#6B1E2E] border border-[#6B1E2E]/25"
+      btnClass="bg-[#6B1E2E] hover:bg-[#551624] text-white"
+      leftThemeClass="bg-[#6B1E2E]"
+      quoteBorderColor="#F59E0B"
+      quoteCitationColor="#FCD34D"
     />
   )
 }

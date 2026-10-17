@@ -7,18 +7,18 @@ export default function TeacherLoginPage() {
     <SharedLogin
       portalType="teacher"
       portalTitle="Tutor Portal"
+      portalSubtitle="Educator & Tutor Portal"
+      portalTagline="Faculty Workspace & Attendance Tracking"
       roleLabel="Tutor"
-      theme={{
-        bgGradient: 'bg-gradient-to-br from-[#1e1b4b] via-[#0f172a] to-[#020617]',
-        accentColor: 'text-indigo-600',
-        accentBg: 'bg-indigo-400',
-        buttonBg: 'bg-indigo-700',
-        buttonHover: 'hover:bg-indigo-800',
-        ringColor: 'focus:ring-indigo-600',
-        badgeBg: 'bg-indigo-500/20',
-        badgeText: 'text-indigo-300',
-        shadowColor: 'shadow-indigo-950/30',
-      }}
+      inputPlaceholder="teacher@alihsanacademy.uk"
+      accentColor="#1E293B"
+      accentHover="#0F172A"
+      accentBorder="rgba(30,41,59,0.25)"
+      pillClass="bg-[#EEF2F6] text-[#1E293B] border border-[#1E293B]/25"
+      btnClass="bg-[#1E293B] hover:bg-[#0F172A] text-white"
+      leftThemeClass="bg-[#1E293B]"
+      quoteBorderColor="#60A5FA"
+      quoteCitationColor="#93C5FD"
     />
   )
 }
