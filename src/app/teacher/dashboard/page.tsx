@@ -77,6 +77,7 @@ export default function TeacherDashboard() {
   const [customStart, setCustomStart] = useState('')
   const [customEnd, setCustomEnd] = useState('')
   const [viewingStudentDetail, setViewingStudentDetail] = useState<any>(null)
+  const [studentSearchQuery, setStudentSearchQuery] = useState('')
   const [isExportingSummary, setIsExportingSummary] = useState(false)
   const [isExportingStudentPDF, setIsExportingStudentPDF] = useState(false)
 
@@ -281,6 +282,14 @@ export default function TeacherDashboard() {
     }
   })
 
+  const filteredStudentBreakdownList = studentBreakdownList.filter((item) => {
+    const q = studentSearchQuery.toLowerCase().trim()
+    if (!q) return true
+    const nameMatch = item.name && item.name.toLowerCase().includes(q)
+    const regMatch = item.registration_number && String(item.registration_number).toLowerCase().includes(q)
+    return Boolean(nameMatch || regMatch)
+  })
+
   const overallNotAttended = overallAbsent + overallTeacherUnavailable + overallStudentUnavailable + overallBreak
   const completedOrMissed = overallAttended + overallNotAttended
   const overallPercentage = completedOrMissed > 0 ? Math.round((overallAttended / completedOrMissed) * 100) : 0
@@ -434,21 +443,21 @@ export default function TeacherDashboard() {
                   <h3 className="font-black text-foreground text-xl">My Schedule</h3>
                   <p className="text-muted-foreground font-medium text-sm">Select a student to view their upcoming and past classes.</p>
                 </div>
-                <div className="flex flex-col gap-2 w-full md:w-72">
+                <div className="flex flex-col gap-1.5 w-full md:w-72">
                   <div className="relative w-full">
                     <select 
-                      className="w-full p-3 border-2 border-border rounded-xl bg-muted/50 font-bold text-foreground focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none appearance-none cursor-pointer"
+                      className="w-full h-9 px-3 pr-8 border border-border rounded-lg bg-white text-xs font-semibold text-foreground focus:ring-1 focus:ring-primary focus:border-primary outline-none appearance-none cursor-pointer shadow-sm"
                       value={selectedStudentId}
                       onChange={(e) => setSelectedStudentId(e.target.value)}
                       disabled={students.length === 0}
                     >
                       {students.length > 0 ? (
-                        students.map(s => <option key={s.id} value={s.id}>{s.name} • {s.registration_number || 'No Reg'}</option>)
+                        students.map(s => <option key={s.id} value={s.id}>{s.name} • #{s.registration_number || 'No Reg'}</option>)
                       ) : (
                         <option value="">No students assigned</option>
                       )}
                     </select>
-                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                   </div>
                   {students.length > 0 && selectedStudentId && (() => {
                     const s = students.find(st => st.id === selectedStudentId)
@@ -616,59 +625,86 @@ export default function TeacherDashboard() {
               </div>
 
               {/* Secondary Metrics Ribbon */}
-              <div className="bg-white p-4 rounded-2xl border-2 border-border shadow-sm grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
-                <div className="p-3 bg-red-50 rounded-xl border border-red-100">
-                  <span className="text-[11px] font-bold text-red-700 block uppercase">Teacher Unavailable</span>
-                  <span className="text-xl font-black text-red-900">{overallTeacherUnavailable}</span>
+              <div className="bg-white p-3 md:p-4 rounded-xl border border-border shadow-sm grid grid-cols-2 md:grid-cols-4 gap-2.5 text-center">
+                <div className="p-2.5 bg-red-50/70 rounded-lg border border-red-100">
+                  <span className="text-[10px] font-semibold text-red-700 block uppercase tracking-wider">Teacher Unavailable</span>
+                  <span className="text-lg font-bold text-red-900">{overallTeacherUnavailable}</span>
                 </div>
-                <div className="p-3 bg-orange-50 rounded-xl border border-orange-100">
-                  <span className="text-[11px] font-bold text-orange-700 block uppercase">Student Unavailable</span>
-                  <span className="text-xl font-black text-orange-900">{overallStudentUnavailable}</span>
+                <div className="p-2.5 bg-orange-50/70 rounded-lg border border-orange-100">
+                  <span className="text-[10px] font-semibold text-orange-700 block uppercase tracking-wider">Student Unavailable</span>
+                  <span className="text-lg font-bold text-orange-900">{overallStudentUnavailable}</span>
                 </div>
-                <div className="p-3 bg-amber-50 rounded-xl border border-amber-100">
-                  <span className="text-[11px] font-bold text-amber-700 block uppercase">On Break</span>
-                  <span className="text-xl font-black text-amber-900">{overallBreak}</span>
+                <div className="p-2.5 bg-amber-50/70 rounded-lg border border-amber-100">
+                  <span className="text-[10px] font-semibold text-amber-700 block uppercase tracking-wider">On Break</span>
+                  <span className="text-lg font-bold text-amber-900">{overallBreak}</span>
                 </div>
-                <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
-                  <span className="text-[11px] font-bold text-blue-700 block uppercase">Assigned Students</span>
-                  <span className="text-xl font-black text-blue-900">{students.length}</span>
+                <div className="p-2.5 bg-blue-50/70 rounded-lg border border-blue-100">
+                  <span className="text-[10px] font-semibold text-blue-700 block uppercase tracking-wider">Assigned Students</span>
+                  <span className="text-lg font-bold text-blue-900">{students.length}</span>
                 </div>
               </div>
 
               {/* Student Breakdown Section */}
-              <AnimatedCard delay={0.2} className="p-6 md:p-8">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+              <AnimatedCard delay={0.2} className="p-5 md:p-6 rounded-xl border border-border shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                   <div>
-                    <h3 className="font-black text-foreground text-xl">Assigned Students Attendance</h3>
+                    <h3 className="font-bold text-foreground text-lg">Assigned Students Attendance</h3>
                     <p className="text-xs text-muted-foreground font-medium mt-0.5">
                       Breakdown for <strong>{resolvedDateRange.label}</strong>
                     </p>
                   </div>
-                  <span className="text-xs font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full w-max">
+                  <span className="text-xs font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-full w-max">
                     {students.length} Students Total
                   </span>
                 </div>
 
-                <div className="space-y-4">
-                  {studentBreakdownList.length > 0 ? (
-                    studentBreakdownList.map((item, i) => (
-                      <div key={item.student.id || i} className="bg-muted/30 p-4 md:p-5 rounded-2xl border-2 border-border/60 hover:border-primary/40 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
+                {/* Search Input Filter */}
+                <div className="mb-4">
+                  <div className="relative max-w-md">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      value={studentSearchQuery}
+                      onChange={(e) => setStudentSearchQuery(e.target.value)}
+                      placeholder="Search students by name or registration number..."
+                      className="pl-9 pr-8 h-9 text-xs font-medium bg-white border border-border rounded-lg focus-visible:ring-1 focus-visible:ring-primary"
+                    />
+                    {studentSearchQuery && (
+                      <button
+                        onClick={() => setStudentSearchQuery('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-muted text-muted-foreground"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  {studentSearchQuery && (
+                    <p className="text-[11px] text-muted-foreground mt-1.5 font-medium">
+                      Showing {filteredStudentBreakdownList.length} of {studentBreakdownList.length} students matching "{studentSearchQuery}"
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  {filteredStudentBreakdownList.length > 0 ? (
+                    filteredStudentBreakdownList.map((item, i) => (
+                      <div key={item.student.id || i} className="bg-muted/30 p-3.5 md:p-4 rounded-xl border border-border hover:border-primary/40 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
                           <Avatar photoUrl={item.student.profile_photo} name={item.name} size="md" />
                           <div>
                             <div className="flex items-center gap-2">
-                              <h4 className="font-black text-foreground text-lg">{item.name}</h4>
+                              <h4 className="font-bold text-foreground text-sm">{item.name}</h4>
                               <StatusBadge status={item.enrolment_status} />
                             </div>
                             <div className="flex flex-wrap items-center gap-2 mt-1">
-                              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">
+                              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded font-semibold">
                                 Reg: #{item.registration_number}
                               </span>
-                              <span className="text-xs text-muted-foreground font-semibold">
+                              <span className="text-xs text-muted-foreground font-medium">
                                 {item.attended} / {item.scheduled} Classes Attended
                               </span>
                               {item.remarks && (
-                                <span className="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded font-bold">
+                                <span className="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded font-medium">
                                   {item.remarks}
                                 </span>
                               )}
@@ -676,27 +712,36 @@ export default function TeacherDashboard() {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-4 self-end md:self-center">
+                        <div className="flex items-center gap-3 self-end md:self-center">
                           <div className="text-right">
-                            <span className="font-black text-2xl text-foreground">{item.percentage}%</span>
-                            <span className="block text-[10px] text-muted-foreground font-bold uppercase">Rate</span>
+                            <span className="font-bold text-lg text-foreground">{item.percentage}%</span>
+                            <span className="block text-[9px] text-muted-foreground font-semibold uppercase tracking-wider">Rate</span>
                           </div>
 
-                          <BouncyButton
-                            size="sm"
-                            variant="outline"
+                          <button
                             onClick={() => setViewingStudentDetail(item)}
-                            className="text-xs font-bold border-2 flex items-center gap-1.5"
+                            className="px-3 py-1.5 rounded-md text-xs font-semibold border border-border bg-white hover:bg-muted text-foreground transition-colors flex items-center gap-1.5 shadow-sm"
                           >
-                            <FileText className="h-3.5 w-3.5" /> View Details & PDF
-                          </BouncyButton>
+                            <FileText className="h-3.5 w-3.5 text-primary" /> View Details & PDF
+                          </button>
                         </div>
                       </div>
                     ))
+                  ) : studentSearchQuery ? (
+                    <div className="text-center py-8 bg-muted/20 rounded-xl border border-dashed border-border">
+                      <Search className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+                      <p className="text-sm font-semibold text-foreground">No students found matching "{studentSearchQuery}"</p>
+                      <button
+                        onClick={() => setStudentSearchQuery('')}
+                        className="text-xs font-semibold text-primary hover:underline mt-1"
+                      >
+                        Clear search filter
+                      </button>
+                    </div>
                   ) : (
                     <div className="text-center py-10">
-                      <BarChart3 className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-                      <p className="text-muted-foreground font-bold">No students assigned to your profile.</p>
+                      <BarChart3 className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
+                      <p className="text-muted-foreground font-medium text-xs">No students assigned to your profile.</p>
                     </div>
                   )}
                 </div>
@@ -1043,13 +1088,12 @@ export default function TeacherDashboard() {
   )
 }
 
-function StatCard({ title, value, index, gradient, subtitle }: { title: string, value: any, index: number, gradient: string, subtitle?: string }) {
+function StatCard({ title, value, index, subtitle }: { title: string, value: any, index: number, gradient?: string, subtitle?: string }) {
   return (
-    <AnimatedCard delay={index * 0.1} className={`border-none text-white p-5 relative overflow-hidden bg-gradient-to-br ${gradient}`}>
-      <Sparkles className="absolute -right-2 -top-2 w-16 h-16 opacity-20" />
-      <p className="text-white/80 text-xs font-bold tracking-widest uppercase mb-1">{title}</p>
-      <p className="text-3xl md:text-5xl font-black">{value}</p>
-      {subtitle && <span className="text-[10px] text-white/70 mt-1 block">{subtitle}</span>}
+    <AnimatedCard delay={index * 0.05} className="border border-border bg-white p-4 relative overflow-hidden rounded-xl shadow-sm">
+      <p className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase mb-1">{title}</p>
+      <p className="text-2xl md:text-3xl font-bold text-foreground">{value}</p>
+      {subtitle && <span className="text-[11px] text-muted-foreground font-medium mt-0.5 block">{subtitle}</span>}
     </AnimatedCard>
   )
 }
