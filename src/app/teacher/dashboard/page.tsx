@@ -487,67 +487,63 @@ export default function TeacherDashboard() {
                     const parsed = parseClassMetadata(c, allAttendance.find(a => a.class_id === c.id), students.find(s => s.id === c.student_id))
                     const student = students.find(s => s.id === c.student_id)
                     return (
-                      <AnimatedCard key={c.id} delay={index * 0.05} className="p-0 overflow-hidden hover:border-primary/50 transition-colors">
-                        <div className="p-5 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                          <div className="flex items-center gap-5">
-                            <Avatar photoUrl={student?.profile_photo} name={student?.name} size="lg" />
-                            <div className="space-y-1">
-                              <h4 className="font-black text-foreground text-xl">{student?.name || 'Unknown Student'}</h4>
-                              <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                                <Clock className="h-4 w-4" />
+                      <AnimatedCard key={c.id} delay={index * 0.03} className="p-0 overflow-hidden hover:border-primary/40 transition-colors rounded-xl border border-border shadow-sm">
+                        <div className="p-3.5 md:p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                          <div className="flex items-center gap-3.5">
+                            <Avatar photoUrl={student?.profile_photo} name={student?.name} size="md" />
+                            <div className="space-y-0.5">
+                              <h4 className="font-bold text-foreground text-sm md:text-base leading-tight">{student?.name || 'Unknown Student'}</h4>
+                              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                                <Clock className="h-3.5 w-3.5 text-muted-foreground/70" />
                                 <span>{formatUKTime(c.scheduled_at)} (UK Time)</span>
                               </div>
                               {parsed.remarks && (
-                                <p className="text-xs bg-muted/70 text-foreground px-2 py-0.5 rounded font-medium inline-block">
-                                  <strong>Note:</strong> {parsed.remarks}
+                                <p className="text-[11px] bg-muted/60 text-muted-foreground px-2 py-0.5 rounded font-medium inline-block">
+                                  <strong className="text-foreground">Note:</strong> {parsed.remarks}
                                 </p>
                               )}
                               {c.meet_link && (
-                                <a href={c.meet_link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors mt-2">
-                                  <Video className="h-4 w-4" />
+                                <a href={c.meet_link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 bg-[#0D4A47]/10 text-[#0D4A47] hover:bg-[#0D4A47]/20 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors mt-1">
+                                  <Video className="h-3.5 w-3.5" />
                                   Join Meeting Link
                                 </a>
                               )}
                             </div>
                           </div>
 
-                          <div className="flex flex-col md:items-end gap-3 w-full md:w-auto">
-                            <div className="flex flex-col gap-2 items-end">
-                              <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border-2 ${
+                          <div className="flex flex-col md:items-end gap-2 w-full md:w-auto self-end md:self-center">
+                            <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
                                 parsed.status === 'present'
-                                  ? 'bg-green-50 text-green-700 border-green-200'
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                                   : parsed.status === 'teacher_unavailable' || parsed.status === 'student_unavailable' || parsed.status === 'absent'
-                                  ? 'bg-red-50 text-red-700 border-red-200'
+                                  ? 'bg-rose-50 text-rose-800 border-rose-200'
                                   : parsed.status === 'break'
-                                  ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                  : 'bg-blue-50 text-blue-700 border-blue-200'
+                                  ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                  : 'bg-blue-50 text-blue-800 border-blue-200'
                               }`}>
                                 {parsed.statusLabel}
                               </span>
 
                               {parsed.recording_url && (
-                                <a href={parsed.recording_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-teal-700 bg-teal-50 border-2 border-teal-200 px-3 py-1 rounded-lg hover:bg-teal-100 transition-colors">
-                                  🎬 Watch Recording
+                                <a href={parsed.recording_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded hover:bg-teal-100 transition-colors">
+                                  🎬 Recording
                                 </a>
                               )}
                             </div>
 
-                            <div className="flex flex-wrap gap-2">
-                              <BouncyButton 
-                                variant="default"
-                                size="sm"
-                                onClick={() => {
-                                  setPendingCompleteClass(c)
-                                  setCompletionStatus(c.status === 'completed' && parsed.status !== 'present' && parsed.status !== 'scheduled' ? parsed.status : 'present')
-                                  setRecordingUrl(parsed.recording_url || '')
-                                  setClassRemarks(parsed.remarks || '')
-                                }} 
-                                className="bg-primary hover:bg-primary/90 text-white"
-                              >
-                                <CheckCircle className="h-4 w-4 mr-1.5" />
-                                {c.status === 'completed' ? 'Update Status' : 'Mark Attendance'}
-                              </BouncyButton>
-                            </div>
+                            <button
+                              onClick={() => {
+                                setPendingCompleteClass(c)
+                                setCompletionStatus(c.status === 'completed' && parsed.status !== 'present' && parsed.status !== 'scheduled' ? parsed.status : 'present')
+                                setRecordingUrl(parsed.recording_url || '')
+                                setClassRemarks(parsed.remarks || '')
+                              }} 
+                              className="px-3 py-1.5 rounded-md text-xs font-semibold bg-[#1E293B] hover:bg-[#0F172A] text-white transition-colors flex items-center gap-1.5 shadow-sm"
+                            >
+                              <CheckCircle className="h-3.5 w-3.5" />
+                              {c.status === 'completed' ? 'Update Status' : 'Mark Attendance'}
+                            </button>
                           </div>
                         </div>
                       </AnimatedCard>
@@ -1022,16 +1018,39 @@ export default function TeacherDashboard() {
                 
                 <form onSubmit={handleUpdateStatus} className="space-y-4 mb-6">
                   <div className="space-y-2">
-                    <Label className="text-foreground font-bold">Enrolment Status</Label>
-                    <select 
-                      className="w-full p-3 border-2 border-border rounded-xl bg-muted/50 font-bold focus:ring-4 focus:border-primary outline-none"
-                      value={statusFormData.enrolmentStatus}
-                      onChange={(e) => setStatusFormData(prev => ({ ...prev, enrolmentStatus: e.target.value }))}
-                    >
-                      <option value="ongoing">✅ Ongoing</option>
-                      <option value="break">🕐 On a Break</option>
-                      <option value="stopped">🛑 Stopped</option>
-                    </select>
+                    <Label className="text-foreground font-semibold text-xs">Enrolment Status</Label>
+                    <div className="grid grid-cols-1 gap-2 pt-1">
+                      {[
+                        { id: 'ongoing', label: 'Ongoing', desc: 'Regular active student attendance', icon: '✅', border: 'border-emerald-200 bg-emerald-50/50 text-emerald-900', activeRing: 'ring-2 ring-emerald-600 border-emerald-600 bg-emerald-50' },
+                        { id: 'break', label: 'On a Break', desc: 'Temporary leave with scheduled dates', icon: '🕐', border: 'border-amber-200 bg-amber-50/50 text-amber-900', activeRing: 'ring-2 ring-amber-600 border-amber-600 bg-amber-50' },
+                        { id: 'stopped', label: 'Stopped', desc: 'Completed or discontinued course', icon: '🛑', border: 'border-red-200 bg-red-50/50 text-red-900', activeRing: 'ring-2 ring-red-600 border-red-600 bg-red-50' }
+                      ].map(opt => {
+                        const isSelected = statusFormData.enrolmentStatus === opt.id
+                        return (
+                          <button
+                            type="button"
+                            key={opt.id}
+                            onClick={() => setStatusFormData(prev => ({ ...prev, enrolmentStatus: opt.id }))}
+                            className={`flex items-center justify-between p-3 rounded-lg border text-left transition-all ${
+                              isSelected ? opt.activeRing : `${opt.border} hover:opacity-90`
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <span className="text-base">{opt.icon}</span>
+                              <div>
+                                <span className="font-bold text-xs block">{opt.label}</span>
+                                <span className="text-[10px] text-muted-foreground font-medium">{opt.desc}</span>
+                              </div>
+                            </div>
+                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                              isSelected ? 'border-primary bg-primary text-white' : 'border-muted-foreground/30 bg-white'
+                            }`}>
+                              {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white block" />}
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
                   
                   {statusFormData.enrolmentStatus === 'break' && (
