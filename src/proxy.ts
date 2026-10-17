@@ -6,9 +6,15 @@ export default async function proxy(request: NextRequest) {
     request,
   })
 
+  let supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!supabaseUrl || !supabaseUrl.startsWith('http')) {
+    supabaseUrl = 'https://placeholder-build-url.supabase.co'
+  }
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key'
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
@@ -43,9 +49,10 @@ export default async function proxy(request: NextRequest) {
 
   // Redirect authenticated users away from their own login page to their dashboard
   if (user && isLoginPage) {
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-key'
     const supabaseAdmin = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      supabaseUrl,
+      serviceKey,
       {
         cookies: {
           get(name: string) { return undefined },
@@ -98,9 +105,10 @@ export default async function proxy(request: NextRequest) {
 
   // Role-based route protection
   if (user && isProtectedRoute) {
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-key'
     const supabaseAdmin = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      supabaseUrl,
+      serviceKey,
       {
         cookies: {
           get(name: string) { return undefined },
