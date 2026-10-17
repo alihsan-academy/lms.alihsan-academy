@@ -3,14 +3,16 @@ import { createBrowserClient } from '@supabase/ssr'
 const SUPABASE_URL = 'https://iboroeaysswvsewsmrcf.supabase.co'
 const SUPABASE_ANON_KEY = 'sb_publishable_2Dz5j4tAsA5_SLJZVRfhRQ_JcvhvMvq'
 
-export function createClient() {
-  const url = (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_URL.startsWith('http'))
-    ? process.env.NEXT_PUBLIC_SUPABASE_URL
-    : SUPABASE_URL
+function getValidEnv(val: string | undefined, prefix: string, fallback: string): string {
+  if (!val || typeof val !== 'string') return fallback
+  const trimmed = val.trim()
+  if (trimmed.includes('[SENSITIVE]') || !trimmed.startsWith(prefix)) return fallback
+  return trimmed
+}
 
-  const anonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.startsWith('sb_'))
-    ? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    : SUPABASE_ANON_KEY
+export function createClient() {
+  const url = getValidEnv(process.env.NEXT_PUBLIC_SUPABASE_URL, 'http', SUPABASE_URL)
+  const anonKey = getValidEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, 'sb_', SUPABASE_ANON_KEY)
 
   return createBrowserClient(url, anonKey)
 }
