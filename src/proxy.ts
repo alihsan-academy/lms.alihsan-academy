@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/admin'
 
 export default async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -55,7 +56,7 @@ export default async function proxy(request: NextRequest) {
 
   // Redirect authenticated users away from their own login page to their dashboard
   if (user && isLoginPage) {
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-key'
+    const serviceKey = SUPABASE_SERVICE_ROLE_KEY
     const supabaseAdmin = createServerClient(
       supabaseUrl,
       serviceKey,
@@ -111,7 +112,7 @@ export default async function proxy(request: NextRequest) {
 
   // Role-based route protection
   if (user && isProtectedRoute) {
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-key'
+    const serviceKey = SUPABASE_SERVICE_ROLE_KEY
     const supabaseAdmin = createServerClient(
       supabaseUrl,
       serviceKey,
