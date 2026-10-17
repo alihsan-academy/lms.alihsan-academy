@@ -10,15 +10,20 @@ export interface SharedLoginProps {
   portalSubtitle: string
   portalTagline: string
   roleLabel: string
+  headingText: string
+  subheadingText: string
+  emailLabel: string
   inputPlaceholder: string
-  accentColor: string
-  accentHover: string
-  accentBorder: string
-  pillClass: string
-  btnClass: string
-  leftThemeClass: string
+  submitButtonText: string
+  themeColor: string
+  themeHoverColor: string
+  pillBg: string
+  pillColor: string
+  pillBorder: string
   quoteBorderColor: string
   quoteCitationColor: string
+  minaretAccentColor: string
+  footerPortalName: string
 }
 
 export default function SharedLogin({
@@ -26,16 +31,20 @@ export default function SharedLogin({
   portalTitle,
   portalSubtitle,
   portalTagline,
-  roleLabel,
+  headingText,
+  subheadingText,
+  emailLabel,
   inputPlaceholder,
-  accentColor,
-  accentHover,
-  accentBorder,
-  pillClass,
-  btnClass,
-  leftThemeClass,
+  submitButtonText,
+  themeColor,
+  themeHoverColor,
+  pillBg,
+  pillColor,
+  pillBorder,
   quoteBorderColor,
   quoteCitationColor,
+  minaretAccentColor,
+  footerPortalName,
 }: SharedLoginProps) {
   const [currentQuote, setCurrentQuote] = useState<{
     arabic?: string
@@ -196,137 +205,339 @@ export default function SharedLogin({
   }
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-[#F8F9FA] font-sans antialiased text-[#112221]">
-      {/* LEFT SIDE - APPROVED DIRECTION B MINIMALIST ISLAMIC PORTAL */}
+    <div
+      style={{
+        display: 'flex',
+        minHeight: '100vh',
+        backgroundColor: '#F8F9FA',
+        fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif",
+        color: '#112221',
+        margin: 0,
+        boxSizing: 'border-box',
+      }}
+    >
+      {/* LEFT SIDE - EXACT APPROVED DIRECTION B SPEC */}
       <div
-        className={`w-full md:w-[45%] min-h-[460px] md:min-h-screen p-8 sm:p-12 md:p-14 flex flex-col justify-between relative overflow-hidden text-white select-none ${leftThemeClass}`}
+        style={{
+          width: '45%',
+          minWidth: '380px',
+          backgroundColor: themeColor,
+          padding: '52px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          position: 'relative',
+          overflow: 'hidden',
+          color: '#FFFFFF',
+          boxSizing: 'border-box',
+        }}
       >
         {/* Islamic Geometry Background Overlay */}
         <div
-          className="absolute inset-0 opacity-[0.08] pointer-events-none"
           style={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            opacity: 0.08,
+            backgroundSize: '80px 80px',
             backgroundImage: `
               radial-gradient(circle at 40px 40px, rgba(255,255,255,0.4) 1px, transparent 1px),
               linear-gradient(45deg, transparent 48%, rgba(255,255,255,0.2) 49%, rgba(255,255,255,0.2) 51%, transparent 52%),
               linear-gradient(-45deg, transparent 48%, rgba(255,255,255,0.2) 49%, rgba(255,255,255,0.2) 51%, transparent 52%)
             `,
-            backgroundSize: '80px 80px',
           }}
         />
 
-        {/* Top Branding with Official Academy Minaret Geometric Logo */}
-        <div className="relative z-10">
-          <div className="inline-flex items-center gap-3.5 mb-7">
+        {/* Top Header & Branding with Official Minaret Vector */}
+        <div style={{ position: 'relative', zIndex: 2 }}>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '14px',
+              marginBottom: '28px',
+            }}
+          >
             <svg
-              className="w-11 h-12 flex-shrink-0"
+              style={{ width: '44px', height: '48px', flexShrink: 0 }}
               viewBox="0 0 100 120"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
-              <path d="M50 5 L65 30 L35 30 Z" fill="#D97706" />
+              <path d="M50 5 L65 30 L35 30 Z" fill={minaretAccentColor} />
               <path d="M30 35 C55 33, 70 38, 75 42 L72 50 C55 46, 40 45, 27 48 Z" fill="#FFFFFF" />
               <path d="M24 53 C55 50, 75 55, 80 60 L77 68 C55 64, 38 63, 21 66 Z" fill="#FFFFFF" />
               <path d="M18 71 C55 67, 80 73, 85 78 L81 86 C55 81, 35 80, 15 84 Z" fill="#FFFFFF" />
-              <rect x="25" y="90" width="8" height="8" fill="#D97706" />
+              <rect x="25" y="90" width="8" height="8" fill={minaretAccentColor} />
             </svg>
             <div>
-              <div className="text-2xl font-bold text-white tracking-tight leading-tight">
-                al <span className="font-extrabold">ihsan</span>{' '}
-                <span className="text-base font-medium opacity-90">academy</span>
+              <div
+                style={{
+                  fontSize: '26px',
+                  fontWeight: 700,
+                  color: '#FFFFFF',
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1.1,
+                }}
+              >
+                al <span style={{ fontWeight: 800 }}>ihsan</span>{' '}
+                <span style={{ fontSize: '16px', fontWeight: 500, opacity: 0.85 }}>academy</span>
               </div>
-              <div className="text-[10px] text-white/70 font-semibold tracking-widest uppercase mt-0.5">
+              <div
+                style={{
+                  fontSize: '10px',
+                  color: 'rgba(255,255,255,0.7)',
+                  fontWeight: 600,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  marginTop: '3px',
+                }}
+              >
                 Building a generation for tomorrow
               </div>
             </div>
           </div>
 
-          <div className="text-[16px] font-semibold text-white/95 mb-1">{portalSubtitle}</div>
-          <div className="text-[13px] text-white/70">{portalTagline}</div>
+          <div
+            style={{
+              fontSize: '16px',
+              fontWeight: 600,
+              color: 'rgba(255,255,255,0.95)',
+              marginBottom: '4px',
+            }}
+          >
+            {portalSubtitle}
+          </div>
+          <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>
+            {portalTagline}
+          </div>
         </div>
 
-        {/* Center: Daily Islamic Quote Reflection Card */}
+        {/* Center: Exact Islamic Quote Card */}
         <div
-          className="my-8 md:my-auto bg-white/[0.07] backdrop-blur-md rounded-xl p-6 sm:p-7 border border-white/[0.14] relative z-10 shadow-lg"
-          style={{ borderLeftWidth: '3px', borderLeftColor: quoteBorderColor }}
+          style={{
+            background: 'rgba(255,255,255,0.07)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255,255,255,0.14)',
+            borderRadius: '12px',
+            padding: '24px 28px',
+            borderLeft: `3px solid ${quoteBorderColor}`,
+            position: 'relative',
+            zIndex: 2,
+            margin: '28px 0',
+          }}
         >
           {currentQuote?.arabic ? (
-            <div className="text-xl sm:text-2xl font-serif text-right text-white leading-relaxed mb-2.5" dir="rtl">
+            <div
+              style={{
+                fontSize: '22px',
+                direction: 'rtl',
+                textAlign: 'right',
+                lineHeight: 1.8,
+                color: '#FFFFFF',
+                marginBottom: '10px',
+                fontWeight: 500,
+              }}
+              dir="rtl"
+            >
               {currentQuote.arabic}
             </div>
           ) : (
-            <div className="text-xl sm:text-2xl font-serif text-right text-white leading-relaxed mb-2.5" dir="rtl">
+            <div
+              style={{
+                fontSize: '22px',
+                direction: 'rtl',
+                textAlign: 'right',
+                lineHeight: 1.8,
+                color: '#FFFFFF',
+                marginBottom: '10px',
+                fontWeight: 500,
+              }}
+              dir="rtl"
+            >
               {portalType === 'teacher'
-                ? 'خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ'
-                : 'وَقُل رَّبِّ زِدۡنِي عِلۡمٗا'}
+                ? 'وَقُل رَّبِّ زِدۡنِي عِلۡمٗا'
+                : 'اقۡرَأۡ بِاسۡمِ رَبِّكَ الَّذِيۡ خَلَقَ'}
             </div>
           )}
 
-          <div className="text-[13.5px] text-white/90 italic leading-relaxed">
-            "{currentQuote?.text || (portalType === 'teacher' ? 'The best among you are those who learn the Quran and teach it.' : 'And say: My Lord, increase me in knowledge.')}"
+          <div
+            style={{
+              fontSize: '13.5px',
+              color: 'rgba(255,255,255,0.9)',
+              fontStyle: 'italic',
+              lineHeight: 1.6,
+            }}
+          >
+            "{currentQuote?.text || (portalType === 'teacher' ? 'And say: My Lord, increase me in knowledge.' : 'Read! In the name of your Lord who created.')}"
           </div>
 
           <div
-            className="text-[11px] font-bold uppercase tracking-wider mt-3"
-            style={{ color: quoteCitationColor }}
+            style={{
+              fontSize: '11px',
+              color: quoteCitationColor,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              marginTop: '8px',
+              fontWeight: 700,
+            }}
           >
-            {currentQuote?.source || currentQuote?.author || (portalType === 'teacher' ? 'Sahih al-Bukhari 5027' : 'Surah Ta-Ha (20:114)')}
+            {currentQuote?.source || currentQuote?.author || (portalType === 'teacher' ? 'Quran 20:114' : 'Quran 96:1')}
           </div>
         </div>
 
         {/* Footer info & Domain */}
-        <div className="relative z-10 text-[11px] text-white/60 flex items-center justify-between border-t border-white/10 pt-4">
-          <span className="font-mono tracking-wider font-medium text-white/80">alihsanacademy.uk</span>
-          <span>{portalTitle}</span>
+        <div
+          style={{
+            position: 'relative',
+            zIndex: 2,
+            fontSize: '11px',
+            opacity: 0.6,
+            display: 'flex',
+            justifyContent: 'space-between',
+          }}
+        >
+          <span>alihsanacademy.uk</span>
+          <span>{footerPortalName}</span>
         </div>
       </div>
 
-      {/* RIGHT SIDE - CLEAN PREMIUM EDUCATION WHITE CARD */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-10 md:p-12 lg:p-16 bg-[#F8F9FA]">
-        <div className="w-full max-w-[420px] bg-white rounded-2xl border border-[#DDE4E0] p-8 sm:p-9 shadow-[0_1px_4px_rgba(13,74,71,0.08),0_0_0_1px_rgba(13,74,71,0.05)]">
+      {/* RIGHT SIDE - EXACT BOXY DIRECTION B LOGIN CARD */}
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '48px',
+          backgroundColor: '#F8F9FA',
+          boxSizing: 'border-box',
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '16px',
+            border: '1px solid #DDE4E0',
+            padding: '38px',
+            width: '100%',
+            maxWidth: '420px',
+            boxShadow: '0 1px 4px rgba(13, 74, 71, 0.08), 0 0 0 1px rgba(13, 74, 71, 0.05)',
+            position: 'relative',
+            zIndex: 2,
+            boxSizing: 'border-box',
+          }}
+        >
           {/* Portal Pill Badge */}
-          <div className="mb-4">
-            <span
-              className={`inline-block text-[11px] font-bold px-3 py-1 rounded-md tracking-wide uppercase ${pillClass}`}
-            >
-              {portalTitle}
-            </span>
+          <div
+            style={{
+              display: 'inline-block',
+              fontSize: '11px',
+              fontWeight: 700,
+              padding: '4px 10px',
+              borderRadius: '4px',
+              backgroundColor: pillBg,
+              color: pillColor,
+              border: `1px solid ${pillBorder}`,
+              marginBottom: '14px',
+              textTransform: 'none',
+              letterSpacing: 'normal',
+            }}
+          >
+            {portalTitle}
           </div>
 
-          <h2 className="text-2xl font-bold text-[#112221] tracking-tight">
-            {portalType === 'student' && 'Sign in to your classes'}
-            {portalType === 'teacher' && 'Educator Sign In'}
-            {portalType === 'admin' && 'Administrator Sign In'}
+          <h2
+            style={{
+              fontSize: '24px',
+              fontWeight: 700,
+              letterSpacing: '-0.01em',
+              color: '#112221',
+              margin: '0 0 4px 0',
+              lineHeight: 1.25,
+            }}
+          >
+            {headingText}
           </h2>
-          <p className="text-[13px] text-[#4A6362] mt-1 mb-6">
-            {portalType === 'student' && 'Enter your student email and password.'}
-            {portalType === 'teacher' && 'Manage timetables and mark student attendance.'}
-            {portalType === 'admin' && 'Manage academy operations, attendance & users.'}
+
+          <p
+            style={{
+              fontSize: '13px',
+              color: '#4A6362',
+              marginTop: '4px',
+              marginBottom: '20px',
+              lineHeight: 1.5,
+            }}
+          >
+            {subheadingText}
           </p>
 
-          <form onSubmit={handleLogin} className="space-y-4" noValidate>
-            <div>
-              <label className="block text-[13px] font-semibold text-[#112221] mb-1.5">
-                {portalType === 'student' && 'Student Email Address'}
-                {portalType === 'teacher' && 'Faculty Email Address'}
-                {portalType === 'admin' && 'Administrator Email'}
+          <form onSubmit={handleLogin} noValidate>
+            <div style={{ marginTop: '18px' }}>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: '#112221',
+                  marginBottom: '6px',
+                }}
+              >
+                {emailLabel}
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={inputPlaceholder}
-                className="w-full border border-[#DDE4E0] rounded-lg px-3.5 py-2.5 text-[14px] text-[#112221] bg-white outline-none transition-all focus:border-[#0D4A47] focus:ring-2 focus:ring-[#0D4A47]/15"
                 disabled={loading}
+                style={{
+                  width: '100%',
+                  border: '1px solid #DDE4E0',
+                  borderRadius: '8px',
+                  padding: '10px 14px',
+                  fontSize: '14px',
+                  color: '#112221',
+                  outline: 'none',
+                  backgroundColor: '#FFFFFF',
+                  boxSizing: 'border-box',
+                  fontFamily: 'inherit',
+                }}
               />
             </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-[13px] font-semibold text-[#112221]">Password</label>
+            <div style={{ marginTop: '18px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '6px',
+                }}
+              >
+                <label
+                  style={{
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    color: '#112221',
+                  }}
+                >
+                  Password
+                </label>
                 <button
                   type="button"
                   onClick={() => setShowForgotPassword(!showForgotPassword)}
-                  className="text-xs text-[#4A6362] hover:text-[#112221] hover:underline font-medium"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    fontSize: '12px',
+                    color: '#4A6362',
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                    fontFamily: 'inherit',
+                  }}
                 >
                   Forgot password?
                 </button>
@@ -336,13 +547,35 @@ export default function SharedLogin({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full border border-[#DDE4E0] rounded-lg px-3.5 py-2.5 text-[14px] text-[#112221] bg-white outline-none transition-all focus:border-[#0D4A47] focus:ring-2 focus:ring-[#0D4A47]/15"
                 disabled={loading}
+                style={{
+                  width: '100%',
+                  border: '1px solid #DDE4E0',
+                  borderRadius: '8px',
+                  padding: '10px 14px',
+                  fontSize: '14px',
+                  color: '#112221',
+                  outline: 'none',
+                  backgroundColor: '#FFFFFF',
+                  boxSizing: 'border-box',
+                  fontFamily: 'inherit',
+                }}
               />
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs font-medium">
+              <div
+                style={{
+                  marginTop: '14px',
+                  padding: '10px 12px',
+                  backgroundColor: '#FEF2F2',
+                  border: '1px solid #FECACA',
+                  borderRadius: '6px',
+                  color: '#B91C1C',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                }}
+              >
                 {error}
               </div>
             )}
@@ -350,49 +583,69 @@ export default function SharedLogin({
             <button
               type="submit"
               disabled={loading}
-              className={`w-full h-11 rounded-lg text-[14px] font-semibold cursor-pointer transition-colors mt-6 shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 ${btnClass}`}
+              style={{
+                width: '100%',
+                height: '44px',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: 600,
+                border: 'none',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                marginTop: '24px',
+                backgroundColor: themeColor,
+                color: '#FFFFFF',
+                fontFamily: 'inherit',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                opacity: loading ? 0.7 : 1,
+              }}
             >
-              {loading ? (
-                <>
-                  <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  <span>Authenticating...</span>
-                </>
-              ) : (
-                <span>
-                  {portalType === 'student' && 'Sign In as Student'}
-                  {portalType === 'teacher' && 'Sign In as Tutor'}
-                  {portalType === 'admin' && 'Sign In to Dashboard'}
-                </span>
-              )}
+              {loading ? 'Authenticating...' : submitButtonText}
             </button>
           </form>
 
-          {/* Forgot Password Accordion */}
+          {/* Forgot Password Container */}
           {showForgotPassword && (
-            <div className="mt-5 pt-5 border-t border-[#DDE4E0]">
-              <h3 className="text-xs font-bold text-[#112221] mb-1">Reset Password</h3>
-              <p className="text-[11px] text-[#4A6362] mb-3">
-                Enter your registered email address to receive reset instructions.
-              </p>
-              <form onSubmit={handleResetPassword} className="space-y-2.5">
+            <div
+              style={{
+                marginTop: '18px',
+                paddingTop: '16px',
+                borderTop: '1px solid #DDE4E0',
+              }}
+            >
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#112221', marginBottom: '4px' }}>
+                Reset Password
+              </div>
+              <div style={{ fontSize: '12px', color: '#4A6362', marginBottom: '10px' }}>
+                Enter your email address to receive reset instructions.
+              </div>
+              <form onSubmit={handleResetPassword}>
                 <input
                   type="email"
                   value={resetEmail}
                   onChange={(e) => setResetEmail(e.target.value)}
-                  placeholder="your-email@alihsanacademy.uk"
-                  className="w-full border border-[#DDE4E0] rounded-lg px-3 py-2 text-xs text-[#112221] bg-white outline-none"
+                  placeholder="name@alihsanacademy.uk"
                   disabled={resetLoading}
+                  style={{
+                    width: '100%',
+                    border: '1px solid #DDE4E0',
+                    borderRadius: '6px',
+                    padding: '8px 12px',
+                    fontSize: '13px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    marginBottom: '8px',
+                  }}
                 />
                 {resetMessage.text && (
                   <div
-                    className={`p-2 rounded text-xs ${
-                      resetMessage.type === 'error'
-                        ? 'bg-red-50 text-red-700 border border-red-200'
-                        : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                    }`}
+                    style={{
+                      fontSize: '12px',
+                      color: resetMessage.type === 'error' ? '#B91C1C' : '#047857',
+                      marginBottom: '8px',
+                    }}
                   >
                     {resetMessage.text}
                   </div>
@@ -400,33 +653,43 @@ export default function SharedLogin({
                 <button
                   type="submit"
                   disabled={resetLoading}
-                  className="w-full py-2 bg-[#112221] text-white rounded-lg text-xs font-semibold hover:bg-black transition-colors"
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    backgroundColor: '#112221',
+                    color: '#FFFFFF',
+                    borderRadius: '6px',
+                    border: 'none',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
                 >
-                  {resetLoading ? 'Sending link...' : 'Send Reset Link'}
+                  {resetLoading ? 'Sending...' : 'Send Reset Link'}
                 </button>
               </form>
             </div>
           )}
 
-          {/* Quick switcher for portal on Admin */}
           {portalType === 'admin' && (
-            <div className="mt-6 pt-5 border-t border-[#DDE4E0] text-center">
-              <span className="text-[11px] text-[#879E9D] font-medium mr-2">Need a different portal?</span>
-              <div className="inline-flex gap-2 mt-2">
-                <Link
-                  href="/student/login"
-                  className="text-xs text-[#0D4A47] font-semibold hover:underline"
-                >
-                  Student Portal
-                </Link>
-                <span className="text-[#879E9D]">•</span>
-                <Link
-                  href="/teacher/login"
-                  className="text-xs text-[#1E293B] font-semibold hover:underline"
-                >
-                  Tutor Portal
-                </Link>
-              </div>
+            <div
+              style={{
+                marginTop: '20px',
+                paddingTop: '16px',
+                borderTop: '1px solid #DDE4E0',
+                fontSize: '12px',
+                color: '#879E9D',
+                textAlign: 'center',
+              }}
+            >
+              Need a different portal?{' '}
+              <Link href="/student/login" style={{ color: '#0D4A47', fontWeight: 600 }}>
+                Student
+              </Link>{' '}
+              •{' '}
+              <Link href="/teacher/login" style={{ color: '#1E293B', fontWeight: 600 }}>
+                Tutor
+              </Link>
             </div>
           )}
         </div>

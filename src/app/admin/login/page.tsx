@@ -6,19 +6,24 @@ export default function AdminLoginPage() {
   return (
     <SharedLogin
       portalType="admin"
-      portalTitle="Administration"
+      portalTitle="Super Admin Portal"
       portalSubtitle="Central Administration"
       portalTagline="Academy Operations, Records & Security"
-      roleLabel="Admin"
+      headingText="Administrator Sign In"
+      subheadingText="Manage academy operations, attendance & users."
+      emailLabel="Administrator Email"
       inputPlaceholder="admin@alihsanacademy.uk"
-      accentColor="#6B1E2E"
-      accentHover="#551624"
-      accentBorder="rgba(107,30,46,0.25)"
-      pillClass="bg-[#F9EEF0] text-[#6B1E2E] border border-[#6B1E2E]/25"
-      btnClass="bg-[#6B1E2E] hover:bg-[#551624] text-white"
-      leftThemeClass="bg-[#6B1E2E]"
+      submitButtonText="Sign In to Dashboard"
+      roleLabel="Admin"
+      themeColor="#6B1E2E"
+      themeHoverColor="#551624"
+      pillBg="#F9EEF0"
+      pillColor="#6B1E2E"
+      pillBorder="rgba(107,30,46,0.25)"
       quoteBorderColor="#F59E0B"
       quoteCitationColor="#FCD34D"
+      minaretAccentColor="#F59E0B"
+      footerPortalName="Secure Administrative Gateway"
     />
   )
 }

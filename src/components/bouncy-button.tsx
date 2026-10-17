@@ -13,15 +13,15 @@ export const BouncyButton = React.forwardRef<HTMLButtonElement, BouncyButtonProp
   ({ className, ...props }, ref) => {
     return (
       <motion.div
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.98 }}
+        transition={{ duration: 0.12 }}
         className="inline-block"
       >
         <Button 
           ref={ref}
           className={cn(
-            "rounded-xl font-bold shadow-sm transition-shadow hover:shadow-md",
+            "rounded-lg font-semibold shadow-none border transition-colors",
             className
           )} 
           {...props} 
