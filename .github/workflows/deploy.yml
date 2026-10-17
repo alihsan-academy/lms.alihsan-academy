@@ -28,9 +28,8 @@ jobs:
       - name: Print build log on failure
         if: failure()
         run: |
-          tail -n 120 build.log
-          while IFS= read -r line; do
-            echo "::error title=VercelBuildError::$line"
-          done < <(tail -n 35 build.log)
+          grep -i -C 3 "error" build.log | head -n 40 | while IFS= read -r line; do
+            echo "::error title=BuildError::$line"
+          done
       - name: Deploy Project Artifacts to Vercel
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
