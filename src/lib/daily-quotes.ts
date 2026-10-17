@@ -79,11 +79,20 @@ export function generateShuffledOrder(count: number, seed?: number): number[] {
   return array
 }
 
+interface RawQuoteItem {
+  id: string
+  category: string
+  arabic?: string
+  text: string
+  source: string
+  type: string
+}
+
 /**
  * Formats a raw quote item into a DailyQuoteItem
  */
 function formatQuoteItem(
-  raw: any,
+  raw: RawQuoteItem,
   portal: PortalType,
   dateStr: string
 ): DailyQuoteItem {
@@ -202,7 +211,7 @@ async function resolveDailyQuote(
         if (parsed.student?.order && parsed.teacher?.order) {
           state = parsed
         }
-      } catch (parseErr) {
+      } catch {
         console.warn('Could not parse daily_quotes_state.json, reinitializing')
       }
     }
