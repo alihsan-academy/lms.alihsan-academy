@@ -191,7 +191,7 @@ export default function SharedLogin({
     setResetLoading(true)
     try {
       const supabase = createClient()
-      const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/login` : undefined
+      const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
         redirectTo: redirectUrl,
       })

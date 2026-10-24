@@ -40,13 +40,22 @@ export default async function proxy(request: NextRequest) {
                       request.nextUrl.pathname === '/teacher/login' || 
                       request.nextUrl.pathname === '/admin/login'
 
+  const isRecoveryMode = request.nextUrl.searchParams.get('type') === 'recovery' || 
+                         request.nextUrl.searchParams.has('code')
+
+  if (isRecoveryMode && isLoginPage) {
+    const resetUrl = request.nextUrl.clone()
+    resetUrl.pathname = '/reset-password'
+    return NextResponse.redirect(resetUrl)
+  }
+
   const isProtectedRoute = (request.nextUrl.pathname.startsWith('/student') && request.nextUrl.pathname !== '/student/login') ||
                            (request.nextUrl.pathname.startsWith('/teacher') && request.nextUrl.pathname !== '/teacher/login') ||
                            (request.nextUrl.pathname.startsWith('/admin') && request.nextUrl.pathname !== '/admin/login') ||
                            request.nextUrl.pathname.startsWith('/superadmin')
 
-  // Redirect authenticated users away from login / landing pages to their dashboard
-  if (user && (isLoginPage || request.nextUrl.pathname === '/')) {
+  // Redirect authenticated users away from login / landing pages to their dashboard (unless recovering password)
+  if (user && (isLoginPage || request.nextUrl.pathname === '/') && !isRecoveryMode) {
     const serviceKey = SUPABASE_SERVICE_ROLE_KEY
     const supabaseAdmin = createServerClient(
       supabaseUrl,
