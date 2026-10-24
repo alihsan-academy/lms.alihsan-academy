@@ -211,30 +211,16 @@ export default function SharedLogin({
 
   return (
     <div
+      className="flex flex-col lg:flex-row min-h-screen w-full bg-[#F8F9FA] text-[#112221] overflow-x-hidden font-sans m-0 box-border"
       style={{
-        display: 'flex',
-        minHeight: '100vh',
-        backgroundColor: '#F8F9FA',
         fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif",
-        color: '#112221',
-        margin: 0,
-        boxSizing: 'border-box',
       }}
     >
-      {/* LEFT SIDE - EXACT APPROVED DIRECTION B SPEC */}
+      {/* LEFT SIDE - BRANDING & DAILY QUOTE */}
       <div
+        className="w-full lg:w-[45%] lg:min-w-[380px] p-6 sm:p-8 lg:p-12 flex flex-col justify-between relative overflow-hidden text-white box-border shrink-0"
         style={{
-          width: '45%',
-          minWidth: '380px',
           backgroundColor: themeColor,
-          padding: '52px',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          position: 'relative',
-          overflow: 'hidden',
-          color: '#FFFFFF',
-          boxSizing: 'border-box',
         }}
       >
         {/* Islamic Geometry Background Overlay */}
