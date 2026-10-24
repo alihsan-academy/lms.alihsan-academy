@@ -97,34 +97,34 @@ export function DateRangeFilter({
             <span className="text-xs font-bold text-foreground">Custom Period:</span>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-            <div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full">
+            <div className="flex-1">
               <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-0.5">From Date</label>
               <input
                 type="date"
                 required
                 value={localStart}
                 onChange={(e) => setLocalStart(e.target.value)}
-                className="text-xs font-bold bg-white border-2 border-border rounded-lg px-2.5 py-1.5 outline-none focus:border-primary"
+                className="w-full text-xs font-bold bg-white border-2 border-border rounded-lg px-2.5 py-2 outline-none focus:border-primary"
               />
             </div>
 
             <ChevronRight className="h-4 w-4 text-muted-foreground hidden sm:block mt-4" />
 
-            <div>
+            <div className="flex-1">
               <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-0.5">To Date</label>
               <input
                 type="date"
                 required
                 value={localEnd}
                 onChange={(e) => setLocalEnd(e.target.value)}
-                className="text-xs font-bold bg-white border-2 border-border rounded-lg px-2.5 py-1.5 outline-none focus:border-primary"
+                className="w-full text-xs font-bold bg-white border-2 border-border rounded-lg px-2.5 py-2 outline-none focus:border-primary"
               />
             </div>
 
             <button
               type="submit"
-              className="mt-4 text-xs font-black bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition-colors shadow-sm"
+              className="sm:mt-4 text-xs font-black bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition-colors shadow-sm min-h-[38px] flex items-center justify-center"
             >
               Apply Filter
             </button>

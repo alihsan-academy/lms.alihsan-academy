@@ -216,10 +216,10 @@ export default function StudentDashboard() {
       </main>
 
       {/* Bottom Navigation for Mobile */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-border flex justify-around p-2 z-50 md:hidden pb-safe shadow-sm">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-border flex justify-around p-1 sm:p-2 z-50 md:hidden pb-safe shadow-md">
         <button 
           onClick={() => setActiveTab('home')} 
-          className={`flex flex-col items-center p-1.5 w-full transition-colors ${activeTab === 'home' ? 'text-primary font-bold' : 'text-muted-foreground'}`}
+          className={`flex flex-col items-center justify-center min-h-[48px] py-1 px-2 w-full transition-colors ${activeTab === 'home' ? 'text-primary font-bold' : 'text-muted-foreground'}`}
         >
           <div className={`p-1 rounded-md mb-0.5 ${activeTab === 'home' ? 'bg-primary/10' : ''}`}>
             <Home className="h-5 w-5" />
@@ -228,7 +228,7 @@ export default function StudentDashboard() {
         </button>
         <button 
           onClick={() => setActiveTab('attendance')} 
-          className={`flex flex-col items-center p-1.5 w-full transition-colors ${activeTab === 'attendance' ? 'text-primary font-bold' : 'text-muted-foreground'}`}
+          className={`flex flex-col items-center justify-center min-h-[48px] py-1 px-2 w-full transition-colors ${activeTab === 'attendance' ? 'text-primary font-bold' : 'text-muted-foreground'}`}
         >
           <div className={`p-1 rounded-md mb-0.5 ${activeTab === 'attendance' ? 'bg-primary/10' : ''}`}>
             <BarChart3 className="h-5 w-5" />
@@ -237,7 +237,7 @@ export default function StudentDashboard() {
         </button>
         <button 
           onClick={() => setActiveTab('profile')} 
-          className={`flex flex-col items-center p-1.5 w-full transition-colors ${activeTab === 'profile' ? 'text-primary font-bold' : 'text-muted-foreground'}`}
+          className={`flex flex-col items-center justify-center min-h-[48px] py-1 px-2 w-full transition-colors ${activeTab === 'profile' ? 'text-primary font-bold' : 'text-muted-foreground'}`}
         >
           <div className={`p-1 rounded-md mb-0.5 ${activeTab === 'profile' ? 'bg-primary/10' : ''}`}>
             <User className="h-5 w-5" />
@@ -324,8 +324,8 @@ function HomeTab({ studentName, todayClass, upcomingClasses, teachers, onRefresh
         </div>
 
         {todayClass ? (
-          <AnimatedCard delay={0.3} className="p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-gradient-to-r from-card to-blue-50/50 border-primary/20">
-            <div className="flex items-center gap-5">
+          <AnimatedCard delay={0.3} className="p-5 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-5 md:gap-6 bg-gradient-to-r from-card to-blue-50/50 border-primary/20">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5">
               {(() => {
                 const teacher = teachers.find(t => t.user_id === todayClass.teacher_id);
                 return (
@@ -333,10 +333,10 @@ function HomeTab({ studentName, todayClass, upcomingClasses, teachers, onRefresh
                     <Avatar photoUrl={teacher?.profile_photo} name={teacher?.name} size="lg" />
                     <div className="space-y-1">
                       <span className="inline-block px-3 py-1 bg-destructive text-white text-[10px] font-black rounded-full uppercase tracking-widest shadow-sm animate-pulse mb-1">Live Today</span>
-                      <h4 className="font-black text-2xl md:text-3xl text-foreground">{todayClass.title || 'Live Session'}</h4>
+                      <h4 className="font-black text-xl sm:text-2xl md:text-3xl text-foreground">{todayClass.title || 'Live Session'}</h4>
                       <p className="text-sm font-bold text-primary">Teacher {teacher?.name || 'Assigned'}</p>
-                      <div className="text-muted-foreground font-semibold mt-2 flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
+                      <div className="text-muted-foreground font-semibold mt-1.5 flex items-center gap-2 text-xs sm:text-sm">
+                        <Clock className="h-4 w-4 shrink-0" />
                         <span>{formatUKTime(todayClass.scheduled_at)} (UK Time)</span>
                       </div>
                     </div>
@@ -349,13 +349,13 @@ function HomeTab({ studentName, todayClass, upcomingClasses, teachers, onRefresh
                 href={todayClass.recording_url} 
                 target="_blank" 
                 rel="noreferrer"
-                className="bg-[#1E293B] hover:bg-[#0F172A] text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2 text-center whitespace-nowrap"
+                className="w-full sm:w-auto bg-[#1E293B] hover:bg-[#0F172A] text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2 text-center whitespace-nowrap min-h-[44px]"
               >
                 <Video className="h-4 w-4" />
                 Watch Recording
               </a>
             ) : todayClass.status === 'completed' ? (
-              <div className="bg-muted text-muted-foreground px-4 py-2 rounded-lg font-medium text-xs text-center border border-border">
+              <div className="w-full sm:w-auto bg-muted text-muted-foreground px-4 py-2.5 rounded-lg font-medium text-xs text-center border border-border">
                 Class completed.
               </div>
             ) : todayClass.meet_link ? (
@@ -363,13 +363,13 @@ function HomeTab({ studentName, todayClass, upcomingClasses, teachers, onRefresh
                 href={todayClass.meet_link} 
                 target="_blank" 
                 rel="noreferrer"
-                className="bg-[#0D4A47] hover:bg-[#083836] text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2 text-center whitespace-nowrap shadow-sm"
+                className="w-full sm:w-auto bg-[#0D4A47] hover:bg-[#083836] text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2 text-center whitespace-nowrap shadow-sm min-h-[44px]"
               >
                 <Video className="h-4 w-4" />
                 Join Class
               </a>
             ) : (
-              <div className="bg-muted text-muted-foreground px-4 py-2 rounded-lg font-medium text-xs text-center border border-border">
+              <div className="w-full sm:w-auto bg-muted text-muted-foreground px-4 py-2.5 rounded-lg font-medium text-xs text-center border border-border">
                 Link arriving soon...
               </div>
             )}
@@ -632,7 +632,7 @@ function AttendanceTab({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 self-end md:self-center">
+                    <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-center mt-2 sm:mt-0">
                       {item.recording_url && (
                         <a 
                           href={item.recording_url} 

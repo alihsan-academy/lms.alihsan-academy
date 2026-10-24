@@ -320,10 +320,10 @@ export function AdminAttendanceManager({
           </p>
         </div>
 
-        <div className="flex bg-muted p-1 rounded-lg gap-1 self-start md:self-auto border border-border">
+        <div className="flex bg-muted p-1 rounded-lg gap-1 self-start md:self-auto border border-border overflow-x-auto max-w-full">
           <button
             onClick={() => setSearchMode('teacher')}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+            className={`whitespace-nowrap px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 shrink-0 ${
               searchMode === 'teacher'
                 ? 'bg-[#1A6B4A] text-white shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
@@ -334,7 +334,7 @@ export function AdminAttendanceManager({
 
           <button
             onClick={() => setSearchMode('student')}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+            className={`whitespace-nowrap px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 shrink-0 ${
               searchMode === 'student'
                 ? 'bg-[#1A6B4A] text-white shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
@@ -345,7 +345,7 @@ export function AdminAttendanceManager({
 
           <button
             onClick={() => setSearchMode('all')}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+            className={`whitespace-nowrap px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 shrink-0 ${
               searchMode === 'all'
                 ? 'bg-[#1A6B4A] text-white shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
@@ -356,7 +356,7 @@ export function AdminAttendanceManager({
 
           <button
             onClick={() => setSearchMode('filter')}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+            className={`whitespace-nowrap px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 shrink-0 ${
               searchMode === 'filter'
                 ? 'bg-[#D97706] text-white shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
@@ -503,7 +503,7 @@ export function AdminAttendanceManager({
                 </div>
 
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
+                  <table className="w-full text-left border-collapse min-w-[750px]">
                     <thead>
                       <tr className="bg-muted border-b-2 border-border">
                         <th className="p-4 text-xs font-black text-foreground uppercase tracking-wider">Reg No</th>
@@ -786,7 +786,7 @@ export function AdminAttendanceManager({
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[650px]">
               <thead>
                 <tr className="bg-muted border-b-2 border-border">
                   <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Student</th>
@@ -1038,7 +1038,7 @@ export function AdminAttendanceManager({
           {/* Results Table */}
           {filteredIntelligenceStudents.length > 0 ? (
             <div className="overflow-x-auto rounded-2xl border-2 border-border">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm min-w-[700px]">
                 <thead>
                   <tr className="bg-muted/60">
                     <th className="p-3 text-left text-xs font-black text-muted-foreground uppercase">Student</th>

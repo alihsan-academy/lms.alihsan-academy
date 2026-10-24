@@ -56,8 +56,8 @@ export function AcademyHeader({ size = "md", showTagline = true, portalName }: A
 
       {portalName && (
         <>
-          <div className="h-6 w-px bg-[#DDE4E0] mx-1" />
-          <span className="text-[13px] font-bold text-[#1A2B23]">{portalName}</span>
+          <div className="h-5 sm:h-6 w-px bg-[#DDE4E0] mx-0.5 sm:mx-1 shrink-0" />
+          <span className="text-xs sm:text-[13px] font-bold text-[#1A2B23] truncate max-w-[110px] sm:max-w-none">{portalName}</span>
         </>
       )}
     </div>

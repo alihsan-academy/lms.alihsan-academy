@@ -44,7 +44,7 @@ export default function HomePage() {
   ]
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] text-[#1A2B23] flex flex-col justify-between p-6 md:p-12 relative overflow-hidden font-sans selection:bg-[#1A6B4A]/15 selection:text-[#1A6B4A]">
+    <div className="min-h-screen bg-[#F8F9FA] text-[#1A2B23] flex flex-col justify-between p-4 sm:p-6 md:p-12 relative overflow-x-hidden font-sans selection:bg-[#1A6B4A]/15 selection:text-[#1A6B4A]">
       
       {/* Islamic Geometry Background Overlay Pattern matching Login & Dashboards */}
       <div 
@@ -91,13 +91,13 @@ export default function HomePage() {
       </header>
 
       {/* Main Content Area */}
-      <main className="relative z-10 max-w-5xl mx-auto w-full my-auto py-12 md:py-16">
-        <div className="text-center max-w-2xl mx-auto mb-12 md:mb-14">
+      <main className="relative z-10 max-w-5xl mx-auto w-full my-auto py-8 sm:py-12 md:py-16">
+        <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12 md:mb-14 px-2">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#E8F5EE] border border-[#1A6B4A]/20 text-[#1A6B4A] text-[11px] font-bold tracking-wide uppercase mb-4"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#E8F5EE] border border-[#1A6B4A]/20 text-[#1A6B4A] text-[11px] font-bold tracking-wide uppercase mb-3 sm:mb-4"
           >
             Digital Learning Gateway
           </motion.div>
@@ -105,7 +105,7 @@ export default function HomePage() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.1 }}
-            className="text-3xl md:text-5xl font-bold text-[#1A2B23] tracking-tight leading-tight"
+            className="text-2xl sm:text-4xl md:text-5xl font-bold text-[#1A2B23] tracking-tight leading-tight"
           >
             Select Your Academy Portal
           </motion.h1>
@@ -113,7 +113,7 @@ export default function HomePage() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.15 }}
-            className="text-[#5C7066] text-sm md:text-base mt-3 max-w-md mx-auto leading-relaxed"
+            className="text-[#5C7066] text-xs sm:text-sm md:text-base mt-2 sm:mt-3 max-w-md mx-auto leading-relaxed"
           >
             Choose your role to access your personalized educational dashboard and tools.
           </motion.p>

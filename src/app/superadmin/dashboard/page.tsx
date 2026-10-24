@@ -275,6 +275,9 @@ export default function SuperAdminDashboard() {
              <ShieldAlert className="h-5 w-5 text-destructive" />
              <span className="font-extrabold text-foreground text-xl">Super Admin</span>
           </div>
+          <span className="sm:hidden text-[10px] font-black text-rose-800 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+            SuperAdmin
+          </span>
         </div>
         <div className="flex items-center gap-3">
           <BouncyButton 
@@ -291,9 +294,9 @@ export default function SuperAdminDashboard() {
         </div>
       </header>
 
-      {/* Desktop Navigation */}
-      <div className="hidden md:block bg-white border-b border-border px-8">
-        <nav className="flex space-x-1.5 max-w-6xl mx-auto py-2">
+      {/* Navigation: Responsive - Scrollable on Mobile, Centered on Desktop */}
+      <div className="bg-white border-b border-border px-3 md:px-8 overflow-x-auto scrollbar-none">
+        <nav className="flex space-x-1.5 max-w-6xl mx-auto py-2 shrink-0 min-w-max md:min-w-0">
           <NavTab active={activeTab === 'statistics'} onClick={() => setActiveTab('statistics')} icon={<BarChart3 />} label="Statistics" />
           <NavTab active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<GraduationCap />} label="Students" />
           <NavTab active={activeTab === 'teachers'} onClick={() => setActiveTab('teachers')} icon={<BookOpen />} label="Teachers" />
@@ -321,7 +324,7 @@ export default function SuperAdminDashboard() {
                 <h3 className="text-2xl font-black text-foreground mb-4">Students Under Each Teacher</h3>
                 <AnimatedCard delay={0.2} className="p-0 overflow-hidden border-2 border-border">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full text-left border-collapse min-w-[650px]">
                       <thead>
                         <tr className="bg-muted border-b-2 border-border">
                           <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Teacher Info</th>
@@ -371,7 +374,7 @@ export default function SuperAdminDashboard() {
                 <h3 className="text-2xl font-black text-foreground mb-4">Each Student's Attendance</h3>
                 <AnimatedCard delay={0.3} className="p-0 overflow-hidden border-2 border-border">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full text-left border-collapse min-w-[650px]">
                       <thead>
                         <tr className="bg-muted border-b-2 border-border">
                           <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Student Info</th>
@@ -426,7 +429,7 @@ export default function SuperAdminDashboard() {
                 <h3 className="text-2xl font-black text-foreground mb-4">Each Teacher's Performance</h3>
                 <AnimatedCard delay={0.4} className="p-0 overflow-hidden border-2 border-border">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                    <table className="w-full text-left border-collapse min-w-[650px]">
                       <thead>
                         <tr className="bg-muted border-b-2 border-border">
                           <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Teacher Info</th>
@@ -504,7 +507,7 @@ export default function SuperAdminDashboard() {
 
               <AnimatedCard delay={0.1} className="p-0 overflow-hidden border-2 border-border">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
+                  <table className="w-full text-left border-collapse min-w-[650px]">
                     <thead>
                       <tr className="bg-muted border-b-2 border-border">
                         <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Reg No</th>
@@ -627,7 +630,7 @@ export default function SuperAdminDashboard() {
 
               <AnimatedCard delay={0.1} className="p-0 overflow-hidden border-2 border-border">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
+                  <table className="w-full text-left border-collapse min-w-[650px]">
                     <thead>
                       <tr className="bg-muted border-b-2 border-border">
                         <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Teacher Name</th>
@@ -847,7 +850,7 @@ export default function SuperAdminDashboard() {
                   
                   return (
                     <div className="overflow-x-auto border-2 border-border rounded-2xl bg-white">
-                      <table className="w-full text-left border-collapse">
+                      <table className="w-full text-left border-collapse min-w-[650px]">
                         <thead>
                           <tr className="bg-muted border-b-2 border-border">
                             <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">User</th>
@@ -1100,6 +1103,15 @@ export default function SuperAdminDashboard() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-border flex justify-around p-1 z-40 md:hidden pb-safe shadow-lg">
+        <NavBtn active={activeTab === 'statistics'} onClick={() => setActiveTab('statistics')} icon={<BarChart3 className="size-4" />} label="Stats" />
+        <NavBtn active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<GraduationCap className="size-4" />} label="Students" />
+        <NavBtn active={activeTab === 'teachers'} onClick={() => setActiveTab('teachers')} icon={<BookOpen className="size-4" />} label="Teachers" />
+        <NavBtn active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={<CheckCircle className="size-4" />} label="Attendance" />
+        <NavBtn active={activeTab === 'manage'} onClick={() => setActiveTab('manage')} icon={<Users className="size-4" />} label="Users" />
+      </nav>
     </div>
   )
 }
@@ -1139,7 +1151,7 @@ function NavTab({ active, onClick, icon, label }: { active: boolean, onClick: ()
   return (
     <button 
       onClick={onClick} 
-      className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 border ${
+      className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 border shrink-0 whitespace-nowrap min-h-[36px] ${
         active 
           ? 'bg-[#6B1E2E] text-white border-[#6B1E2E] shadow-sm' 
           : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
@@ -1155,12 +1167,12 @@ function NavBtn({ active, onClick, icon, label }: { active: boolean, onClick: ()
   return (
     <button 
       onClick={onClick} 
-      className={`flex flex-col items-center p-1.5 w-full transition-colors ${active ? 'text-primary font-bold' : 'text-muted-foreground'}`}
+      className={`flex flex-col items-center justify-center min-h-[48px] py-1 px-1 w-full transition-colors ${active ? 'text-primary font-bold' : 'text-muted-foreground'}`}
     >
       <div className={`p-1 rounded-md mb-0.5 ${active ? 'bg-primary/10' : ''}`}>
         {icon}
       </div>
-      <span className="text-[10px]">{label}</span>
+      <span className="text-[10px] whitespace-nowrap">{label}</span>
     </button>
   )
 }

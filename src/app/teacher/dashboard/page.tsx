@@ -539,7 +539,7 @@ export default function TeacherDashboard() {
                                 setRecordingUrl(parsed.recording_url || '')
                                 setClassRemarks(parsed.remarks || '')
                               }} 
-                              className="px-3 py-1.5 rounded-md text-xs font-semibold bg-[#1E293B] hover:bg-[#0F172A] text-white transition-colors flex items-center gap-1.5 shadow-sm"
+                              className="w-full sm:w-auto px-3 py-2 rounded-md text-xs font-semibold bg-[#1E293B] hover:bg-[#0F172A] text-white transition-colors flex items-center justify-center gap-1.5 shadow-sm min-h-[38px]"
                             >
                               <CheckCircle className="h-3.5 w-3.5" />
                               {c.status === 'completed' ? 'Update Status' : 'Mark Attendance'}
@@ -1121,7 +1121,7 @@ function NavBtn({ active, onClick, icon, label }: { active: boolean, onClick: ()
   return (
     <button 
       onClick={onClick} 
-      className={`flex flex-col items-center p-1.5 w-full transition-colors ${active ? 'text-primary font-bold' : 'text-muted-foreground'}`}
+      className={`flex flex-col items-center justify-center min-h-[48px] py-1 px-2 w-full transition-colors ${active ? 'text-primary font-bold' : 'text-muted-foreground'}`}
     >
       <div className={`p-1 rounded-md mb-0.5 ${active ? 'bg-primary/10' : ''}`}>
         {icon}

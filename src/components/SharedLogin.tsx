@@ -216,9 +216,9 @@ export default function SharedLogin({
         fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif",
       }}
     >
-      {/* LEFT SIDE - BRANDING & DAILY QUOTE */}
+      {/* LOWER HALF ON MOBILE / LEFT SIDE ON DESKTOP: BRANDING & ARABIC QUOTE PANEL */}
       <div
-        className="w-full lg:w-[45%] lg:min-w-[380px] p-6 sm:p-8 lg:p-12 flex flex-col justify-between relative overflow-hidden text-white box-border shrink-0"
+        className="order-2 lg:order-1 w-full lg:w-[45%] lg:min-w-[380px] p-6 sm:p-8 lg:p-12 flex flex-col justify-between relative overflow-hidden text-white box-border shrink-0"
         style={{
           backgroundColor: themeColor,
         }}
@@ -393,32 +393,33 @@ export default function SharedLogin({
         </div>
       </div>
 
-      {/* RIGHT SIDE - EXACT BOXY DIRECTION B LOGIN CARD */}
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '48px',
-          backgroundColor: '#F8F9FA',
-          boxSizing: 'border-box',
-        }}
-      >
-        <div
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '16px',
-            border: '1px solid #DDE4E0',
-            padding: '38px',
-            width: '100%',
-            maxWidth: '420px',
-            boxShadow: '0 1px 4px rgba(13, 74, 71, 0.08), 0 0 0 1px rgba(13, 74, 71, 0.05)',
-            position: 'relative',
-            zIndex: 2,
-            boxSizing: 'border-box',
-          }}
-        >
+      {/* UPPER HALF ON MOBILE / RIGHT SIDE ON DESKTOP: CREDENTIALS CARD */}
+      <div className="order-1 lg:order-2 flex-1 flex items-center justify-center p-4 sm:p-8 lg:p-12 bg-[#F8F9FA] box-border w-full">
+        <div className="bg-white rounded-2xl border border-[#DDE4E0] p-6 sm:p-8 w-full max-w-[420px] shadow-sm relative z-10 box-border">
+          {/* Mobile Top Brand Bar (Visible on mobile screens before credentials) */}
+          <div className="flex items-center gap-3 mb-4 lg:hidden pb-3.5 border-b border-[#DDE4E0]">
+            <svg
+              className="w-8 h-9 shrink-0"
+              viewBox="0 0 100 120"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M50 5 L65 30 L35 30 Z" fill={minaretAccentColor} />
+              <path d="M30 35 C55 33, 70 38, 75 42 L72 50 C55 46, 40 45, 27 48 Z" fill={themeColor} />
+              <path d="M24 53 C55 50, 75 55, 80 60 L77 68 C55 64, 38 63, 21 66 Z" fill={themeColor} />
+              <path d="M18 71 C55 67, 80 73, 85 78 L81 86 C55 81, 35 80, 15 84 Z" fill={themeColor} />
+              <rect x="25" y="90" width="8" height="8" fill={minaretAccentColor} />
+            </svg>
+            <div>
+              <div className="text-sm font-bold tracking-tight text-[#112221] leading-tight">
+                AL IHSAN Academy
+              </div>
+              <div className="text-[10px] text-[#5C7066] font-semibold uppercase tracking-wider">
+                Moral Education
+              </div>
+            </div>
+          </div>
+
           {/* Portal Pill Badge */}
           <div
             style={{
@@ -438,42 +439,17 @@ export default function SharedLogin({
             {portalTitle}
           </div>
 
-          <h2
-            style={{
-              fontSize: '24px',
-              fontWeight: 700,
-              letterSpacing: '-0.01em',
-              color: '#112221',
-              margin: '0 0 4px 0',
-              lineHeight: 1.25,
-            }}
-          >
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[#112221] m-0 mb-1 leading-snug">
             {headingText}
           </h2>
 
-          <p
-            style={{
-              fontSize: '13px',
-              color: '#4A6362',
-              marginTop: '4px',
-              marginBottom: '20px',
-              lineHeight: 1.5,
-            }}
-          >
+          <p className="text-xs sm:text-sm text-[#4A6362] mt-1 mb-5 leading-relaxed">
             {subheadingText}
           </p>
 
           <form onSubmit={handleLogin} noValidate>
-            <div style={{ marginTop: '18px' }}>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: '#112221',
-                  marginBottom: '6px',
-                }}
-              >
+            <div className="mt-4">
+              <label className="block text-xs sm:text-sm font-semibold text-[#112221] mb-1.5">
                 {emailLabel}
               </label>
               <input
@@ -482,101 +458,44 @@ export default function SharedLogin({
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={inputPlaceholder}
                 disabled={loading}
-                style={{
-                  width: '100%',
-                  border: '1px solid #DDE4E0',
-                  borderRadius: '8px',
-                  padding: '10px 14px',
-                  fontSize: '14px',
-                  color: '#112221',
-                  outline: 'none',
-                  backgroundColor: '#FFFFFF',
-                  boxSizing: 'border-box',
-                  fontFamily: 'inherit',
-                }}
+                className="w-full border border-[#DDE4E0] rounded-lg px-3.5 py-2.5 text-base md:text-sm text-[#112221] outline-none bg-white focus:border-[#1A6B4A] focus:ring-1 focus:ring-[#1A6B4A] transition-all box-border font-sans h-11"
               />
             </div>
 
-            <div style={{ marginTop: '18px' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '6px',
-                }}
-              >
-                <label
-                  style={{
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    color: '#112221',
-                  }}
-                >
+            <div className="mt-4">
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="text-xs sm:text-sm font-semibold text-[#112221]">
                   Password
                 </label>
                 <button
                   type="button"
                   onClick={() => setShowForgotPassword(!showForgotPassword)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: 0,
-                    fontSize: '12px',
-                    color: '#4A6362',
-                    cursor: 'pointer',
-                    textDecoration: 'underline',
-                    fontFamily: 'inherit',
-                  }}
+                  className="bg-transparent border-0 p-0 text-xs text-[#4A6362] cursor-pointer underline hover:text-[#112221] font-sans"
                 >
                   Forgot Password?
                 </button>
               </div>
-              <div style={{ position: 'relative', width: '100%' }}>
+              <div className="relative w-full">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   disabled={loading}
-                  style={{
-                    width: '100%',
-                    border: '1px solid #DDE4E0',
-                    borderRadius: '8px',
-                    padding: '10px 42px 10px 14px',
-                    fontSize: '14px',
-                    color: '#112221',
-                    outline: 'none',
-                    backgroundColor: '#FFFFFF',
-                    boxSizing: 'border-box',
-                    fontFamily: 'inherit',
-                  }}
+                  className="w-full border border-[#DDE4E0] rounded-lg pl-3.5 pr-11 py-2.5 text-base md:text-sm text-[#112221] outline-none bg-white focus:border-[#1A6B4A] focus:ring-1 focus:ring-[#1A6B4A] transition-all box-border font-sans h-11"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  style={{
-                    position: 'absolute',
-                    right: '10px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    padding: '4px',
-                    cursor: 'pointer',
-                    color: '#5C7066',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-transparent border-0 p-1.5 cursor-pointer text-[#5C7066] hover:text-[#112221] flex items-center justify-center min-w-[36px] min-h-[36px]"
                 >
                   {showPassword ? (
-                    <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.75" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
                     </svg>
                   ) : (
-                    <svg style={{ width: '18px', height: '18px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.75" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.75" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
@@ -586,18 +505,7 @@ export default function SharedLogin({
             </div>
 
             {error && (
-              <div
-                style={{
-                  marginTop: '14px',
-                  padding: '10px 12px',
-                  backgroundColor: '#FEF2F2',
-                  border: '1px solid #FECACA',
-                  borderRadius: '6px',
-                  color: '#B91C1C',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                }}
-              >
+              <div className="mt-3.5 p-2.5 sm:p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs font-medium">
                 {error}
               </div>
             )}
@@ -605,22 +513,9 @@ export default function SharedLogin({
             <button
               type="submit"
               disabled={loading}
+              className="w-full h-11 min-h-[44px] rounded-lg text-sm font-semibold border-none cursor-pointer mt-5 text-white flex items-center justify-center gap-2 transition-opacity active:opacity-90 font-sans shadow-sm"
               style={{
-                width: '100%',
-                height: '44px',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: 600,
-                border: 'none',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                marginTop: '24px',
                 backgroundColor: themeColor,
-                color: '#FFFFFF',
-                fontFamily: 'inherit',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
                 opacity: loading ? 0.7 : 1,
               }}
             >
@@ -709,8 +604,50 @@ export default function SharedLogin({
                 Student
               </Link>{' '}
               •{' '}
-              <Link href="/teacher/login" style={{ color: '#1E293B', fontWeight: 600 }}>
+              <Link href="/teacher/login" style={{ color: '#5B21B6', fontWeight: 600 }}>
                 Tutor
+              </Link>
+            </div>
+          )}
+          {portalType === 'student' && (
+            <div
+              style={{
+                marginTop: '20px',
+                paddingTop: '16px',
+                borderTop: '1px solid #DDE4E0',
+                fontSize: '12px',
+                color: '#879E9D',
+                textAlign: 'center',
+              }}
+            >
+              Need a different portal?{' '}
+              <Link href="/teacher/login" style={{ color: '#5B21B6', fontWeight: 600 }}>
+                Tutor
+              </Link>{' '}
+              •{' '}
+              <Link href="/admin/login" style={{ color: '#681329', fontWeight: 600 }}>
+                Admin
+              </Link>
+            </div>
+          )}
+          {portalType === 'teacher' && (
+            <div
+              style={{
+                marginTop: '20px',
+                paddingTop: '16px',
+                borderTop: '1px solid #DDE4E0',
+                fontSize: '12px',
+                color: '#879E9D',
+                textAlign: 'center',
+              }}
+            >
+              Need a different portal?{' '}
+              <Link href="/student/login" style={{ color: '#0D4A47', fontWeight: 600 }}>
+                Student
+              </Link>{' '}
+              •{' '}
+              <Link href="/admin/login" style={{ color: '#681329', fontWeight: 600 }}>
+                Admin
               </Link>
             </div>
           )}

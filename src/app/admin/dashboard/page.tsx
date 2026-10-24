@@ -94,6 +94,9 @@ export default function AdminDashboard() {
              <ShieldCheck className="h-5 w-5 text-green-600" />
              <span className="font-extrabold text-foreground text-lg">Admin Portal</span>
           </div>
+          <span className="sm:hidden text-[11px] font-bold text-green-800 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
+            Admin
+          </span>
         </div>
         <LogoutButton />
       </header>
