@@ -5,10 +5,14 @@ import { createClient as createServerSupabaseClient } from '@/lib/supabase/serve
 export async function POST(request: Request) {
   try {
     const supabase = await createServerSupabaseClient()
+    const authHeader = request.headers.get('Authorization')
+    const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser()
+    } = bearerToken
+      ? await supabase.auth.getUser(bearerToken)
+      : await supabase.auth.getUser()
 
     if (userError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

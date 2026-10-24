@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/admin'
+import { createClient as createServerSupabaseClient } from '@/lib/supabase/server'
 
 function getAdminClient() {
   return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -11,8 +12,41 @@ function getAdminClient() {
   })
 }
 
+async function verifySuperAdmin(request: Request): Promise<{ authorized: boolean; error?: string; status?: number }> {
+  try {
+    const supabase = await createServerSupabaseClient()
+    const authHeader = request.headers.get('Authorization')
+    const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null
+    const { data: { user }, error: authError } = bearerToken
+      ? await supabase.auth.getUser(bearerToken)
+      : await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return { authorized: false, error: 'Unauthorized: Session required', status: 401 }
+    }
+    const supabaseAdmin = getAdminClient()
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || profile?.role !== 'superadmin') {
+      return { authorized: false, error: 'Forbidden: Superadmin privileges required', status: 403 }
+    }
+    return { authorized: true }
+  } catch (err: any) {
+    return { authorized: false, error: err?.message || 'Authentication error', status: 500 }
+  }
+}
+
 export async function POST(request: Request) {
   try {
+    const authCheck = await verifySuperAdmin(request)
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status || 401 })
+    }
+
     const supabaseAdmin = getAdminClient()
 
     const body = await request.json()
@@ -26,12 +60,9 @@ export async function POST(request: Request) {
       className
     } = body
 
-    console.log('Received body:', { 
-      fullName, email, role, teacherId, 
-      registrationNumber, className 
-    })
-
-    console.log('Full name received:', fullName)
+    if (!email || !password || !fullName || !role) {
+      return NextResponse.json({ error: 'fullName, email, password, and role are required' }, { status: 400 })
+    }
 
     // 1. Create the user in Auth (or reuse existing account by email)
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -80,7 +111,6 @@ export async function POST(request: Request) {
       .upsert({ id: userId, email: email, role }, { onConflict: 'id' })
 
     if (profileError) {
-      console.log('Profile insert result error:', profileError)
       throw profileError
     }
 
@@ -97,7 +127,6 @@ export async function POST(request: Request) {
           joined_date: new Date().toISOString().split('T')[0]
         })
 
-      console.log('student_profiles insert error:', spError)
       if (spError) throw spError
     }
 
@@ -110,7 +139,6 @@ export async function POST(request: Request) {
           date_of_joining: new Date().toISOString().split('T')[0]
         })
 
-      console.log('teacher_profiles insert error:', tpError)
       if (tpError) throw tpError
     }
 
@@ -125,6 +153,11 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const authCheck = await verifySuperAdmin(request)
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status || 401 })
+    }
+
     const supabaseAdmin = getAdminClient()
 
     const { userId } = await request.json()
@@ -136,48 +169,46 @@ export async function DELETE(request: Request) {
       )
     }
 
-    // Delete from student_profiles first
+    // 1. Delete from attendance first (due to foreign key to classes)
+    await supabaseAdmin
+      .from('attendance')
+      .delete()
+      .eq('student_id', userId)
+
+    await supabaseAdmin
+      .from('attendance')
+      .delete()
+      .eq('teacher_id', userId)
+
+    // 2. Delete from classes
+    await supabaseAdmin
+      .from('classes')
+      .delete()
+      .eq('student_id', userId)
+
+    await supabaseAdmin
+      .from('classes')
+      .delete()
+      .eq('teacher_id', userId)
+
+    // 3. Delete from student_profiles and teacher_profiles
     await supabaseAdmin
       .from('student_profiles')
       .delete()
       .eq('user_id', userId)
 
-    // Delete from teacher_profiles
     await supabaseAdmin
       .from('teacher_profiles')
       .delete()
       .eq('user_id', userId)
 
-    // Delete from classes (as student)
-    await supabaseAdmin
-      .from('classes')
-      .delete()
-      .eq('student_id', userId)
-
-    // Delete from classes (as teacher)
-    await supabaseAdmin
-      .from('classes')
-      .delete()
-      .eq('teacher_id', userId)
-
-    // Delete from attendance
-    await supabaseAdmin
-      .from('attendance')
-      .delete()
-      .eq('student_id', userId)
-
-    await supabaseAdmin
-      .from('attendance')
-      .delete()
-      .eq('teacher_id', userId)
-
-    // Delete from profiles
+    // 4. Delete from profiles
     await supabaseAdmin
       .from('profiles')
       .delete()
       .eq('id', userId)
 
-    // Finally delete from Supabase Auth
+    // 5. Finally delete from Supabase Auth
     const { error: authError } = await supabaseAdmin
       .auth.admin.deleteUser(userId)
 
@@ -202,6 +233,11 @@ export async function DELETE(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
+    const authCheck = await verifySuperAdmin(request)
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status || 401 })
+    }
+
     const supabaseAdmin = getAdminClient()
 
     const body = await request.json()
@@ -222,15 +258,11 @@ export async function PATCH(request: Request) {
 
     const oldTeacherId = existingStudentProfile?.teacher_id || null
 
-    console.log('Reassigning student:', studentId)
-    console.log('New teacher:', newTeacherId)
-
     const { error } = await supabaseAdmin
       .from('student_profiles')
       .update({ teacher_id: newTeacherId })
       .eq('user_id', studentId)
 
-    console.log('Update result:', error)
     if (error) throw error
 
     if (oldTeacherId && oldTeacherId !== newTeacherId) {

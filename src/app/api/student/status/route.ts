@@ -5,11 +5,14 @@ import { NextResponse } from 'next/server'
 export async function POST(request: Request) {
   try {
     const supabase = await createServerSupabaseClient()
-
+    const authHeader = request.headers.get('Authorization')
+    const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser()
+    } = bearerToken
+      ? await supabase.auth.getUser(bearerToken)
+      : await supabase.auth.getUser()
 
     if (userError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -44,6 +47,19 @@ export async function POST(request: Request) {
 
     if (!profile || (profile.role !== 'teacher' && profile.role !== 'superadmin')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    // If teacher, verify that student is assigned to this teacher
+    if (profile.role === 'teacher') {
+      const { data: studentRecord, error: sErr } = await supabaseAdmin
+        .from('student_profiles')
+        .select('teacher_id')
+        .eq('user_id', studentId)
+        .maybeSingle()
+
+      if (sErr || !studentRecord || studentRecord.teacher_id !== user.id) {
+        return NextResponse.json({ error: 'Forbidden: You can only update enrolment status for your assigned students' }, { status: 403 })
+      }
     }
 
     const updateData: any = {

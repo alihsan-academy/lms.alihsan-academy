@@ -6,11 +6,14 @@ import { addWeeks } from 'date-fns'
 export async function POST(request: Request) {
   try {
     const supabase = await createServerSupabaseClient()
-
+    const authHeader = request.headers.get('Authorization')
+    const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser()
+    } = bearerToken
+      ? await supabase.auth.getUser(bearerToken)
+      : await supabase.auth.getUser()
 
     if (userError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -24,6 +27,30 @@ export async function POST(request: Request) {
     }
 
     const supabaseAdmin = getAdminClient()
+
+    // Verify caller role
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile || (profile.role !== 'teacher' && profile.role !== 'superadmin' && profile.role !== 'admin')) {
+      return NextResponse.json({ error: 'Forbidden: Only teachers and admins can schedule classes' }, { status: 403 })
+    }
+
+    // If teacher, ensure the student is assigned to this teacher
+    if (profile.role === 'teacher') {
+      const { data: studentProfile, error: studentError } = await supabaseAdmin
+        .from('student_profiles')
+        .select('teacher_id')
+        .eq('user_id', studentId)
+        .maybeSingle()
+
+      if (studentError || !studentProfile || studentProfile.teacher_id !== user.id) {
+        return NextResponse.json({ error: 'Forbidden: You can only schedule classes for your assigned students' }, { status: 403 })
+      }
+    }
 
     const dateTimeString = `${date}T${time}:00`
     const ukDate = new Date(

@@ -278,15 +278,14 @@ export default function SharedLogin({
             <div>
               <div
                 style={{
-                  fontSize: '26px',
+                  fontSize: '24px',
                   fontWeight: 700,
                   color: '#FFFFFF',
                   letterSpacing: '-0.02em',
                   lineHeight: 1.1,
                 }}
               >
-                al <span style={{ fontWeight: 800 }}>ihsan</span>{' '}
-                <span style={{ fontSize: '16px', fontWeight: 500, opacity: 0.85 }}>academy</span>
+                AL IHSAN Academy <span style={{ fontSize: '14px', fontWeight: 500, opacity: 0.85 }}>of Moral Education</span>
               </div>
               <div
                 style={{
@@ -544,7 +543,7 @@ export default function SharedLogin({
                     fontFamily: 'inherit',
                   }}
                 >
-                  Forgot password?
+                  Forgot Password?
                 </button>
               </div>
               <div style={{ position: 'relative', width: '100%' }}>
@@ -652,9 +651,9 @@ export default function SharedLogin({
                 borderTop: '1px solid #DDE4E0',
               }}
             >
-              <div style={{ fontSize: '13px', fontWeight: 700, color: '#112221', marginBottom: '4px' }}>
+              <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#112221', marginBottom: '4px' }}>
                 Reset Password
-              </div>
+              </h3>
               <div style={{ fontSize: '12px', color: '#4A6362', marginBottom: '10px' }}>
                 Enter your email address to receive reset instructions.
               </div>

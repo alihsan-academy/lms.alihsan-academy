@@ -45,8 +45,8 @@ export default async function proxy(request: NextRequest) {
                            (request.nextUrl.pathname.startsWith('/admin') && request.nextUrl.pathname !== '/admin/login') ||
                            request.nextUrl.pathname.startsWith('/superadmin')
 
-  // Redirect authenticated users away from their own login page to their dashboard
-  if (user && isLoginPage) {
+  // Redirect authenticated users away from login / landing pages to their dashboard
+  if (user && (isLoginPage || request.nextUrl.pathname === '/')) {
     const serviceKey = SUPABASE_SERVICE_ROLE_KEY
     const supabaseAdmin = createServerClient(
       supabaseUrl,
@@ -70,6 +70,7 @@ export default async function proxy(request: NextRequest) {
     const pathname = request.nextUrl.pathname
 
     const isOwnLoginPage = 
+      pathname === '/' ||
       pathname === '/login' ||
       (pathname === '/student/login' && role === 'student') ||
       (pathname === '/teacher/login' && role === 'teacher') ||

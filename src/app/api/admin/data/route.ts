@@ -25,7 +25,11 @@ export async function GET(request: Request) {
       }
     )
 
-    const { data: { user } } = await supabaseAuth.auth.getUser()
+    const authHeader = request.headers.get('Authorization')
+    const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null
+    const { data: { user } } = bearerToken
+      ? await supabaseAuth.auth.getUser(bearerToken)
+      : await supabaseAuth.auth.getUser()
     
     if (!user) {
       return NextResponse.json(
