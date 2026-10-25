@@ -311,7 +311,7 @@ export default function SuperAdminDashboard() {
             <PageTransition key="statistics" className="space-y-8">
               <section>
                 <h3 className="text-2xl font-black text-foreground mb-4">Academy Overview</h3>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 sm:gap-4">
                   <DashboardStatCard title="Total Students" value={statsLoading ? null : students.length} index={0} gradient="from-blue-400 to-blue-600" />
                   <DashboardStatCard title="Total Teachers" value={statsLoading ? null : teachers.length} index={1} gradient="from-primary to-emerald-600" />
                   <DashboardStatCard title="Total Classes" value={statsLoading ? null : classes.length} index={2} gradient="from-purple-400 to-indigo-600" />
@@ -942,10 +942,10 @@ export default function SuperAdminDashboard() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col border-4 border-border"
+              className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col border-2 sm:border-4 border-border"
             >
-            <div className="p-6 border-b-2 border-border flex justify-between items-center bg-muted/50">
-              <h3 className="text-2xl font-black text-foreground">
+            <div className="p-4 sm:p-6 border-b-2 border-border flex justify-between items-center bg-muted/50">
+              <h3 className="text-xl sm:text-2xl font-black text-foreground">
                 {selectedProfile.role === 'student' ? 'Student Profile' : 'Teacher Profile'}
               </h3>
               <BouncyButton variant="ghost" size="icon" onClick={() => setIsProfileModalOpen(false)}>
@@ -953,7 +953,7 @@ export default function SuperAdminDashboard() {
               </BouncyButton>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-6 md:p-8">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
               <div className="flex flex-col items-center mb-8 text-center">
                 <Avatar photoUrl={selectedProfile.profile_photo} name={selectedProfile.name} size="lg" className="border-4 border-primary shadow-xl mb-4" />
                 <h4 className="text-3xl font-black text-foreground">{selectedProfile.name}</h4>
@@ -1118,12 +1118,12 @@ export default function SuperAdminDashboard() {
 
 function DashboardStatCard({ title, value, index, gradient }: { title: string, value: any, index: number, gradient: string }) {
   return (
-    <AnimatedCard delay={index * 0.1} className={`border-none text-white p-5 relative overflow-hidden bg-gradient-to-br ${gradient}`}>
-      <p className="text-white/80 text-[10px] font-black tracking-widest uppercase mb-1">{title}</p>
+    <AnimatedCard delay={index * 0.1} className={`border-none text-white p-3.5 sm:p-5 relative overflow-hidden bg-gradient-to-br ${gradient}`}>
+      <p className="text-white/80 text-[10px] font-black tracking-widest uppercase mb-1 truncate">{title}</p>
       {value === null ? (
-        <div className="animate-pulse bg-white/30 h-8 w-12 rounded mt-1" />
+        <div className="animate-pulse bg-white/30 h-7 sm:h-8 w-12 rounded mt-1" />
       ) : (
-        <p className="text-4xl font-black">{value}</p>
+        <p className="text-2xl sm:text-3xl md:text-4xl font-black">{value}</p>
       )}
     </AnimatedCard>
   )

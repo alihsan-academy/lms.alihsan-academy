@@ -536,49 +536,49 @@ function AttendanceTab({
       )}
 
       {/* Primary KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <AnimatedCard delay={0.1} className="bg-primary border-none text-white p-5 text-center flex flex-col items-center justify-center">
-          <p className="text-primary-foreground/80 text-xs font-bold tracking-widest uppercase mb-1">Scheduled</p>
-          <p className="text-3xl md:text-5xl font-black">{summary.totalScheduled}</p>
-          <span className="text-[10px] text-white/70 mt-1">Total in period</span>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
+        <AnimatedCard delay={0.1} className="bg-primary border-none text-white p-3.5 sm:p-5 text-center flex flex-col items-center justify-center">
+          <p className="text-primary-foreground/80 text-[11px] sm:text-xs font-bold tracking-widest uppercase mb-1">Scheduled</p>
+          <p className="text-2xl sm:text-3xl md:text-5xl font-black">{summary.totalScheduled}</p>
+          <span className="text-[9px] sm:text-[10px] text-white/70 mt-1">Total in period</span>
         </AnimatedCard>
 
-        <AnimatedCard delay={0.2} className="bg-green-600 border-none text-white p-5 text-center flex flex-col items-center justify-center">
-          <p className="text-green-100 text-xs font-bold tracking-widest uppercase mb-1">Attended</p>
-          <p className="text-3xl md:text-5xl font-black">{summary.attendedCount}</p>
-          <span className="text-[10px] text-green-100/80 mt-1">Classes completed</span>
+        <AnimatedCard delay={0.2} className="bg-green-600 border-none text-white p-3.5 sm:p-5 text-center flex flex-col items-center justify-center">
+          <p className="text-green-100 text-[11px] sm:text-xs font-bold tracking-widest uppercase mb-1">Attended</p>
+          <p className="text-2xl sm:text-3xl md:text-5xl font-black">{summary.attendedCount}</p>
+          <span className="text-[9px] sm:text-[10px] text-green-100/80 mt-1">Classes done</span>
         </AnimatedCard>
 
-        <AnimatedCard delay={0.3} className="bg-destructive border-none text-white p-5 text-center flex flex-col items-center justify-center">
-          <p className="text-destructive-foreground/80 text-xs font-bold tracking-widest uppercase mb-1">Not Attended</p>
-          <p className="text-3xl md:text-5xl font-black">{summary.notAttendedCount}</p>
-          <span className="text-[10px] text-white/70 mt-1">Absent / Missed</span>
+        <AnimatedCard delay={0.3} className="bg-destructive border-none text-white p-3.5 sm:p-5 text-center flex flex-col items-center justify-center">
+          <p className="text-destructive-foreground/80 text-[11px] sm:text-xs font-bold tracking-widest uppercase mb-1">Not Attended</p>
+          <p className="text-2xl sm:text-3xl md:text-5xl font-black">{summary.notAttendedCount}</p>
+          <span className="text-[9px] sm:text-[10px] text-white/70 mt-1">Absent / Missed</span>
         </AnimatedCard>
 
-        <AnimatedCard delay={0.4} className="bg-secondary border-none text-secondary-foreground p-5 text-center flex flex-col items-center justify-center">
-          <p className="text-secondary-foreground/70 text-xs font-bold tracking-widest uppercase mb-1">Score</p>
-          <p className="text-3xl md:text-5xl font-black">{summary.attendanceRate}%</p>
-          <span className="text-[10px] text-secondary-foreground/70 mt-1">Mastery level</span>
+        <AnimatedCard delay={0.4} className="bg-secondary border-none text-secondary-foreground p-3.5 sm:p-5 text-center flex flex-col items-center justify-center">
+          <p className="text-secondary-foreground/70 text-[11px] sm:text-xs font-bold tracking-widest uppercase mb-1">Score</p>
+          <p className="text-2xl sm:text-3xl md:text-5xl font-black">{summary.attendanceRate}%</p>
+          <span className="text-[9px] sm:text-[10px] text-secondary-foreground/70 mt-1">Mastery level</span>
         </AnimatedCard>
       </div>
 
       {/* Secondary Metrics Breakdown Banner */}
-      <div className="bg-white p-4 rounded-2xl border-2 border-border shadow-sm grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
-        <div className="p-3 bg-red-50 rounded-xl border border-red-100">
-          <span className="text-[11px] font-bold text-red-700 block uppercase">Teacher Unavailable</span>
-          <span className="text-xl font-black text-red-900">{summary.teacherUnavailableCount}</span>
+      <div className="bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-border shadow-sm grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 text-center">
+        <div className="p-2 sm:p-3 bg-red-50 rounded-lg sm:rounded-xl border border-red-100">
+          <span className="text-[10px] sm:text-[11px] font-bold text-red-700 block uppercase">Teacher Missed</span>
+          <span className="text-lg sm:text-xl font-black text-red-900">{summary.teacherUnavailableCount}</span>
         </div>
-        <div className="p-3 bg-orange-50 rounded-xl border border-orange-100">
-          <span className="text-[11px] font-bold text-orange-700 block uppercase">Student Unavailable</span>
-          <span className="text-xl font-black text-orange-900">{summary.studentUnavailableCount}</span>
+        <div className="p-2 sm:p-3 bg-orange-50 rounded-lg sm:rounded-xl border border-orange-100">
+          <span className="text-[10px] sm:text-[11px] font-bold text-orange-700 block uppercase">Student Absent</span>
+          <span className="text-lg sm:text-xl font-black text-orange-900">{summary.studentUnavailableCount}</span>
         </div>
-        <div className="p-3 bg-amber-50 rounded-xl border border-amber-100">
-          <span className="text-[11px] font-bold text-amber-700 block uppercase">On Break</span>
-          <span className="text-xl font-black text-amber-900">{summary.breakCount}</span>
+        <div className="p-2 sm:p-3 bg-amber-50 rounded-lg sm:rounded-xl border border-amber-100">
+          <span className="text-[10px] sm:text-[11px] font-bold text-amber-700 block uppercase">On Break</span>
+          <span className="text-lg sm:text-xl font-black text-amber-900">{summary.breakCount}</span>
         </div>
-        <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
-          <span className="text-[11px] font-bold text-blue-700 block uppercase">Upcoming Scheduled</span>
-          <span className="text-xl font-black text-blue-900">{summary.scheduledUpcomingCount}</span>
+        <div className="p-2 sm:p-3 bg-blue-50 rounded-lg sm:rounded-xl border border-blue-100">
+          <span className="text-[10px] sm:text-[11px] font-bold text-blue-700 block uppercase">Scheduled</span>
+          <span className="text-lg sm:text-xl font-black text-blue-900">{summary.scheduledUpcomingCount}</span>
         </div>
       </div>
 

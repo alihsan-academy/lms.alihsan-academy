@@ -765,7 +765,7 @@ export default function TeacherDashboard() {
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-white rounded-3xl p-6 max-w-lg w-full border-2 border-border shadow-2xl relative my-8"
+                className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 max-w-lg w-full border-2 border-border shadow-2xl relative my-auto max-h-[90vh] overflow-y-auto"
               >
                 <button 
                   onClick={() => setPendingCompleteClass(null)} 
@@ -859,7 +859,7 @@ export default function TeacherDashboard() {
                         placeholder="https://tldv.io/app/meetings/... or Zoom link"
                         value={recordingUrl}
                         onChange={(e) => setRecordingUrl(e.target.value)}
-                        className="pl-9 h-11 rounded-xl border-2 font-medium text-xs"
+                        className="pl-9 h-11 rounded-xl border-2 font-medium text-base md:text-sm"
                       />
                     </div>
                   </div>
@@ -871,7 +871,7 @@ export default function TeacherDashboard() {
                       placeholder="e.g. Completed Surah Al-Mulk, internet connectivity issue, etc."
                       value={classRemarks}
                       onChange={(e) => setClassRemarks(e.target.value)}
-                      className="h-11 rounded-xl border-2 font-medium text-xs"
+                      className="h-11 rounded-xl border-2 font-medium text-base md:text-sm"
                     />
                   </div>
 
@@ -1003,13 +1003,13 @@ export default function TeacherDashboard() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-3.5 sm:p-4 overflow-y-auto"
             >
               <motion.div 
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-white rounded-3xl p-6 max-w-md w-full border-2 border-border shadow-2xl relative"
+                className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 max-w-md w-full border-2 border-border shadow-2xl relative my-auto max-h-[90vh] overflow-y-auto"
               >
                 <button onClick={() => setStatusEditTarget(null)} className="absolute right-4 top-4 p-2 hover:bg-muted rounded-full transition-colors">
                   <X className="h-5 w-5 text-muted-foreground" />

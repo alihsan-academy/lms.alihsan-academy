@@ -145,17 +145,17 @@ export default function StudentProfilePage() {
   const barColor = completion.percent >= 100 ? 'bg-green-500' : completion.percent >= 50 ? 'bg-secondary' : 'bg-destructive'
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
+    <div className="max-w-3xl mx-auto space-y-6 sm:space-y-8 px-3.5 sm:px-6 pb-24 md:pb-8 pt-4">
       {/* Profile XP Completion Bar */}
-      <AnimatedCard delay={0.1} className="sticky top-20 z-20 bg-background/90 backdrop-blur-md p-5 rounded-2xl border-2 border-primary/20 shadow-[0_8px_30px_rgba(0,0,0,0.05)]">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Star className="h-5 w-5 text-secondary fill-secondary" />
-            <span className="text-sm font-black text-foreground">Profile XP: {completion.percent}%</span>
+      <AnimatedCard delay={0.1} className="sticky top-20 z-20 bg-background/90 backdrop-blur-md p-4 sm:p-5 rounded-xl sm:rounded-2xl border-2 border-primary/20 shadow-[0_8px_30px_rgba(0,0,0,0.05)]">
+        <div className="flex items-center justify-between mb-2 sm:mb-3">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Star className="h-4 w-4 sm:h-5 sm:w-5 text-secondary fill-secondary" />
+            <span className="text-xs sm:text-sm font-black text-foreground">Profile XP: {completion.percent}%</span>
           </div>
-          <span className="text-xs font-bold text-muted-foreground bg-muted px-3 py-1 rounded-full">{completion.filled}/{completion.total} Quests Complete</span>
+          <span className="text-[11px] sm:text-xs font-bold text-muted-foreground bg-muted px-2.5 sm:px-3 py-1 rounded-full">{completion.filled}/{completion.total} Quests</span>
         </div>
-        <div className="w-full h-4 bg-muted rounded-full overflow-hidden border-2 border-border p-0.5">
+        <div className="w-full h-3.5 sm:h-4 bg-muted rounded-full overflow-hidden border-2 border-border p-0.5">
           <motion.div 
             initial={{ width: 0 }}
             animate={{ width: `${completion.percent}%` }}
@@ -169,106 +169,106 @@ export default function StudentProfilePage() {
       </AnimatedCard>
 
       {/* Profile Card Section */}
-      <AnimatedCard delay={0.2} className="bg-[#0D4A47] p-6 flex flex-col items-center text-center relative overflow-hidden border border-[#145955] text-white rounded-xl shadow-sm">
+      <AnimatedCard delay={0.2} className="bg-[#0D4A47] p-5 sm:p-6 flex flex-col items-center text-center relative overflow-hidden border border-[#145955] text-white rounded-xl sm:rounded-2xl shadow-sm">
         <div className="absolute top-0 right-0 p-4 opacity-10">
           <Shield className="h-24 w-24" />
         </div>
         <div className="relative mb-4 z-10">
-          <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center overflow-hidden border-4 border-white/20 shadow-md">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white flex items-center justify-center overflow-hidden border-4 border-white/20 shadow-md">
             {profile.profile_photo ? (
               <img src={profile.profile_photo} alt="Profile" className="w-full h-full object-cover" />
             ) : (
-              <span className="text-3xl font-bold text-[#0D4A47]">{profile.full_name?.charAt(0) || 'U'}</span>
+              <span className="text-2xl sm:text-3xl font-bold text-[#0D4A47]">{profile.full_name?.charAt(0) || 'U'}</span>
             )}
           </div>
-          <label className="absolute bottom-0 right-0 p-2 bg-[#E8A020] rounded-full text-white cursor-pointer hover:bg-[#D97706] transition-colors shadow-sm border-2 border-white">
+          <label className="absolute bottom-0 right-0 p-2 bg-[#E8A020] rounded-full text-white cursor-pointer hover:bg-[#D97706] transition-colors shadow-sm border-2 border-white w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center">
             <Upload className="h-3.5 w-3.5" />
             <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={saving} />
           </label>
         </div>
         
-        <h3 className="text-xl font-bold z-10">{profile.full_name || 'Your Name'}</h3>
+        <h3 className="text-lg sm:text-xl font-bold z-10">{profile.full_name || 'Your Name'}</h3>
         <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white font-medium text-xs gap-1.5">
           <Award className="h-3.5 w-3.5 text-[#FCD34D]" /> Reg No: {profile.registration_number || 'N/A'}
         </div>
       </AnimatedCard>
 
-      <AnimatedCard delay={0.3} className="p-8 space-y-8">
+      <AnimatedCard delay={0.3} className="p-4 sm:p-8 space-y-6 sm:space-y-8 rounded-xl sm:rounded-2xl">
         <div>
-          <h4 className="font-black text-foreground text-xl mb-4 flex items-center gap-2">
-            <span className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-sm">1</span>
+          <h4 className="font-black text-foreground text-lg sm:text-xl mb-4 flex items-center gap-2">
+            <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs sm:text-sm">1</span>
             Personal Information
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted/30 p-6 rounded-2xl border-2 border-border/50">
-            <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 bg-muted/30 p-3.5 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-border/50">
+            <div className="space-y-1.5 sm:space-y-2">
               <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">Registered Email <Lock className="h-3 w-3" /></Label>
-              <Input value={profile.registered_email} disabled className="bg-muted border-none opacity-70 font-medium" />
+              <Input value={profile.registered_email} disabled className="bg-muted border-none opacity-70 font-medium h-11 text-base md:text-sm" />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">Registration Number <Lock className="h-3 w-3" /></Label>
-              <Input value={profile.registration_number} disabled className="bg-primary/5 border-primary/20 font-black text-primary" />
+              <Input value={profile.registration_number} disabled className="bg-primary/5 border-primary/20 font-black text-primary h-11 text-base md:text-sm" />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <Label className="font-bold text-foreground">Full Name</Label>
-              <Input name="full_name" value={profile.full_name} onChange={handleChange} placeholder="Enter your full name" className="font-medium bg-white" />
+              <Input name="full_name" value={profile.full_name} onChange={handleChange} placeholder="Enter your full name" className="font-medium bg-white h-11 text-base md:text-sm" />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <Label className="font-bold text-foreground">Date of Birth</Label>
-              <Input type="date" name="dob" value={profile.dob} onChange={handleChange} className="font-medium bg-white" />
+              <Input type="date" name="dob" value={profile.dob} onChange={handleChange} className="font-medium bg-white h-11 text-base md:text-sm" />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <Label className="font-bold text-foreground">Guardian Name</Label>
-              <Input name="guardian_name" value={profile.guardian_name} onChange={handleChange} placeholder="Father/Guardian name" className="font-medium bg-white" />
+              <Input name="guardian_name" value={profile.guardian_name} onChange={handleChange} placeholder="Father/Guardian name" className="font-medium bg-white h-11 text-base md:text-sm" />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <Label className="font-bold text-foreground">Guardian Mobile Number</Label>
-              <Input name="guardian_mobile" value={profile.guardian_mobile} onChange={handleChange} placeholder="e.g. +44 1234 567890" className="font-medium bg-white" />
+              <Input name="guardian_mobile" value={profile.guardian_mobile} onChange={handleChange} placeholder="e.g. +44 1234 567890" className="font-medium bg-white h-11 text-base md:text-sm" />
             </div>
 
-            <div className="space-y-2 md:col-span-2">
+            <div className="space-y-1.5 sm:space-y-2 md:col-span-2">
               <Label className="font-bold text-foreground">Home Address</Label>
-              <Textarea name="address" value={profile.address} onChange={handleChange} placeholder="Enter your full residential address" rows={3} className="font-medium bg-white resize-none" />
+              <Textarea name="address" value={profile.address} onChange={handleChange} placeholder="Enter your full residential address" rows={3} className="font-medium bg-white resize-none text-base md:text-sm" />
             </div>
           </div>
         </div>
 
         <div>
-          <h4 className="font-black text-foreground text-xl mb-4 flex items-center gap-2">
-             <span className="w-8 h-8 rounded-full bg-secondary/20 text-secondary flex items-center justify-center text-sm">2</span>
+          <h4 className="font-black text-foreground text-lg sm:text-xl mb-4 flex items-center gap-2">
+             <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-secondary/20 text-secondary flex items-center justify-center text-xs sm:text-sm">2</span>
             Academy Details
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted/30 p-6 rounded-2xl border-2 border-border/50">
-            <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 bg-muted/30 p-3.5 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-border/50">
+            <div className="space-y-1.5 sm:space-y-2">
               <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">Assigned Teacher <Lock className="h-3 w-3" /></Label>
-              <Input value={profile.assigned_teacher_name} disabled className="bg-muted border-none opacity-70 font-medium" />
+              <Input value={profile.assigned_teacher_name} disabled className="bg-muted border-none opacity-70 font-medium h-11 text-base md:text-sm" />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <Label className="font-bold text-foreground">Academy Joined Date</Label>
-              <Input type="date" name="academy_joined_date" value={profile.academy_joined_date} onChange={handleChange} className="font-medium bg-white" />
+              <Input type="date" name="academy_joined_date" value={profile.academy_joined_date} onChange={handleChange} className="font-medium bg-white h-11 text-base md:text-sm" />
             </div>
 
-            <div className="space-y-2 md:col-span-2 mt-2">
+            <div className="space-y-1.5 sm:space-y-2 md:col-span-2 mt-2">
               <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider mb-2">
                 Enrolment Status <Lock className="h-3 w-3" />
               </Label>
-              <div className="flex flex-col gap-2 bg-white/50 rounded-xl p-4 border-2 border-border/30">
+              <div className="flex flex-col gap-2 bg-white/50 rounded-xl p-3.5 sm:p-4 border-2 border-border/30">
                 <div className="flex items-center">
                   <StatusBadge status={profile.enrolment_status || 'ongoing'} />
                 </div>
                 {profile.enrolment_status === 'break' && (
-                  <p className="text-sm text-muted-foreground font-semibold mt-1">
+                  <p className="text-xs sm:text-sm text-muted-foreground font-semibold mt-1">
                     Break: {profile.break_from_date} → {profile.break_to_date}
                     {profile.break_reason && <> · <em className="text-foreground/80">{profile.break_reason}</em></>}
                   </p>
                 )}
                 {profile.enrolment_status === 'stopped' && (
-                  <p className="text-sm text-muted-foreground font-semibold mt-1">
+                  <p className="text-xs sm:text-sm text-muted-foreground font-semibold mt-1">
                     Last class: {profile.last_class_date}
                     {profile.stopped_reason && <> · <em className="text-foreground/80">{profile.stopped_reason}</em></>}
                   </p>
@@ -278,9 +278,9 @@ export default function StudentProfilePage() {
           </div>
         </div>
 
-        <div className="pt-4">
-          <BouncyButton onClick={handleSave} disabled={saving} className="w-full h-16 text-xl shadow-[0_6px_0_oklch(0.5_0.19_255)] hover:shadow-[0_2px_0_oklch(0.5_0.19_255)] active:shadow-none bg-primary hover:bg-primary/90 text-white rounded-2xl active:translate-y-1 hover:translate-y-1">
-            {saving ? <Loader2 className="animate-spin mr-2 h-6 w-6" /> : null}
+        <div className="pt-2 sm:pt-4">
+          <BouncyButton onClick={handleSave} disabled={saving} className="w-full h-13 sm:h-16 text-base sm:text-xl shadow-[0_6px_0_oklch(0.5_0.19_255)] hover:shadow-[0_2px_0_oklch(0.5_0.19_255)] active:shadow-none bg-primary hover:bg-primary/90 active:scale-[0.98] text-white rounded-xl sm:rounded-2xl active:translate-y-1 hover:translate-y-1 min-h-[48px]">
+            {saving ? <Loader2 className="animate-spin mr-2 h-5 w-5 sm:h-6 sm:w-6" /> : null}
             Save Profile XP
           </BouncyButton>
         </div>

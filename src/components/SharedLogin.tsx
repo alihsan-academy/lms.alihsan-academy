@@ -394,8 +394,8 @@ export default function SharedLogin({
       </div>
 
       {/* UPPER HALF ON MOBILE / RIGHT SIDE ON DESKTOP: CREDENTIALS CARD */}
-      <div className="order-1 lg:order-2 flex-1 flex items-center justify-center p-4 sm:p-8 lg:p-12 bg-[#F8F9FA] box-border w-full">
-        <div className="bg-white rounded-2xl border border-[#DDE4E0] p-6 sm:p-8 w-full max-w-[420px] shadow-sm relative z-10 box-border">
+      <div className="order-1 lg:order-2 flex-1 flex items-center justify-center p-3.5 sm:p-8 lg:p-12 bg-[#F8F9FA] box-border w-full">
+        <div className="bg-white rounded-2xl border border-[#DDE4E0] p-5 sm:p-8 w-full max-w-[420px] shadow-sm relative z-10 box-border">
           {/* Mobile Top Brand Bar (Visible on mobile screens before credentials) */}
           <div className="flex items-center gap-3 mb-4 lg:hidden pb-3.5 border-b border-[#DDE4E0]">
             <svg
@@ -470,7 +470,7 @@ export default function SharedLogin({
                 <button
                   type="button"
                   onClick={() => setShowForgotPassword(!showForgotPassword)}
-                  className="bg-transparent border-0 p-0 text-xs text-[#4A6362] cursor-pointer underline hover:text-[#112221] font-sans"
+                  className="bg-transparent border-0 py-2 px-1 text-xs text-[#4A6362] cursor-pointer underline hover:text-[#112221] font-sans min-h-[44px] inline-flex items-center -mr-1"
                 >
                   Forgot Password?
                 </button>
@@ -488,7 +488,7 @@ export default function SharedLogin({
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-transparent border-0 p-1.5 cursor-pointer text-[#5C7066] hover:text-[#112221] flex items-center justify-center min-w-[36px] min-h-[36px]"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 bg-transparent border-0 cursor-pointer text-[#5C7066] hover:text-[#112221] flex items-center justify-center w-11 h-11"
                 >
                   {showPassword ? (
                     <svg className="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -513,7 +513,7 @@ export default function SharedLogin({
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-11 min-h-[44px] rounded-lg text-sm font-semibold border-none cursor-pointer mt-5 text-white flex items-center justify-center gap-2 transition-opacity active:opacity-90 font-sans shadow-sm"
+              className="w-full h-11 min-h-[44px] rounded-lg text-sm font-semibold border-none cursor-pointer mt-5 text-white flex items-center justify-center gap-2 transition-all active:scale-[0.98] font-sans shadow-sm"
               style={{
                 backgroundColor: themeColor,
                 opacity: loading ? 0.7 : 1,
@@ -545,16 +545,7 @@ export default function SharedLogin({
                   onChange={(e) => setResetEmail(e.target.value)}
                   placeholder="name@alihsanacademy.uk"
                   disabled={resetLoading}
-                  style={{
-                    width: '100%',
-                    border: '1px solid #DDE4E0',
-                    borderRadius: '6px',
-                    padding: '8px 12px',
-                    fontSize: '13px',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                    marginBottom: '8px',
-                  }}
+                  className="w-full h-11 border border-[#DDE4E0] rounded-lg px-3.5 py-2.5 text-base md:text-sm text-[#112221] outline-none bg-white focus:border-[#1A6B4A] transition-all box-border font-sans mb-2"
                 />
                 {resetMessage.text && (
                   <div
@@ -570,17 +561,7 @@ export default function SharedLogin({
                 <button
                   type="submit"
                   disabled={resetLoading}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    backgroundColor: '#112221',
-                    color: '#FFFFFF',
-                    borderRadius: '6px',
-                    border: 'none',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
+                  className="w-full h-11 min-h-[44px] rounded-lg bg-[#112221] hover:bg-[#1A2B23] active:scale-[0.98] text-white text-xs sm:text-sm font-semibold border-none cursor-pointer flex items-center justify-center transition-all shadow-xs"
                 >
                   {resetLoading ? 'Sending...' : 'Send Reset Link'}
                 </button>
@@ -589,64 +570,37 @@ export default function SharedLogin({
           )}
 
           {portalType === 'admin' && (
-            <div
-              style={{
-                marginTop: '20px',
-                paddingTop: '16px',
-                borderTop: '1px solid #DDE4E0',
-                fontSize: '12px',
-                color: '#879E9D',
-                textAlign: 'center',
-              }}
-            >
-              Need a different portal?{' '}
-              <Link href="/student/login" style={{ color: '#0D4A47', fontWeight: 600 }}>
+            <div className="mt-5 pt-4 border-t border-[#DDE4E0] text-xs text-[#879E9D] flex flex-wrap items-center justify-center gap-1">
+              <span>Need a different portal?</span>
+              <Link href="/student/login" className="py-1 px-1.5 font-bold hover:underline" style={{ color: '#0D4A47' }}>
                 Student
-              </Link>{' '}
-              •{' '}
-              <Link href="/teacher/login" style={{ color: '#5B21B6', fontWeight: 600 }}>
+              </Link>
+              <span>•</span>
+              <Link href="/teacher/login" className="py-1 px-1.5 font-bold hover:underline" style={{ color: '#5B21B6' }}>
                 Tutor
               </Link>
             </div>
           )}
           {portalType === 'student' && (
-            <div
-              style={{
-                marginTop: '20px',
-                paddingTop: '16px',
-                borderTop: '1px solid #DDE4E0',
-                fontSize: '12px',
-                color: '#879E9D',
-                textAlign: 'center',
-              }}
-            >
-              Need a different portal?{' '}
-              <Link href="/teacher/login" style={{ color: '#5B21B6', fontWeight: 600 }}>
+            <div className="mt-5 pt-4 border-t border-[#DDE4E0] text-xs text-[#879E9D] flex flex-wrap items-center justify-center gap-1">
+              <span>Need a different portal?</span>
+              <Link href="/teacher/login" className="py-1 px-1.5 font-bold hover:underline" style={{ color: '#5B21B6' }}>
                 Tutor
-              </Link>{' '}
-              •{' '}
-              <Link href="/admin/login" style={{ color: '#681329', fontWeight: 600 }}>
+              </Link>
+              <span>•</span>
+              <Link href="/admin/login" className="py-1 px-1.5 font-bold hover:underline" style={{ color: '#681329' }}>
                 Admin
               </Link>
             </div>
           )}
           {portalType === 'teacher' && (
-            <div
-              style={{
-                marginTop: '20px',
-                paddingTop: '16px',
-                borderTop: '1px solid #DDE4E0',
-                fontSize: '12px',
-                color: '#879E9D',
-                textAlign: 'center',
-              }}
-            >
-              Need a different portal?{' '}
-              <Link href="/student/login" style={{ color: '#0D4A47', fontWeight: 600 }}>
+            <div className="mt-5 pt-4 border-t border-[#DDE4E0] text-xs text-[#879E9D] flex flex-wrap items-center justify-center gap-1">
+              <span>Need a different portal?</span>
+              <Link href="/student/login" className="py-1 px-1.5 font-bold hover:underline" style={{ color: '#0D4A47' }}>
                 Student
-              </Link>{' '}
-              •{' '}
-              <Link href="/admin/login" style={{ color: '#681329', fontWeight: 600 }}>
+              </Link>
+              <span>•</span>
+              <Link href="/admin/login" className="py-1 px-1.5 font-bold hover:underline" style={{ color: '#681329' }}>
                 Admin
               </Link>
             </div>

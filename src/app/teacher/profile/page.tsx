@@ -141,17 +141,17 @@ export default function TeacherProfilePage() {
   const barColor = completion.percent >= 100 ? 'bg-green-500' : completion.percent >= 50 ? 'bg-secondary' : 'bg-destructive'
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
+    <div className="max-w-3xl mx-auto space-y-6 sm:space-y-8 px-3.5 sm:px-6 pb-24 md:pb-8 pt-4">
       {/* Profile Completion Bar */}
-      <AnimatedCard delay={0.1} className="sticky top-20 z-20 bg-background/90 backdrop-blur-md p-5 rounded-2xl border-2 border-primary/20 shadow-[0_8px_30px_rgba(0,0,0,0.05)]">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Star className="h-5 w-5 text-secondary fill-secondary" />
-            <span className="text-sm font-black text-foreground">Profile Status: {completion.percent}%</span>
+      <AnimatedCard delay={0.1} className="sticky top-20 z-20 bg-background/90 backdrop-blur-md p-4 sm:p-5 rounded-xl sm:rounded-2xl border-2 border-primary/20 shadow-[0_8px_30px_rgba(0,0,0,0.05)]">
+        <div className="flex items-center justify-between mb-2 sm:mb-3">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Star className="h-4 w-4 sm:h-5 sm:w-5 text-secondary fill-secondary" />
+            <span className="text-xs sm:text-sm font-black text-foreground">Profile Status: {completion.percent}%</span>
           </div>
-          <span className="text-xs font-bold text-muted-foreground bg-muted px-3 py-1 rounded-full">{completion.filled}/{completion.total} Sections Complete</span>
+          <span className="text-[11px] sm:text-xs font-bold text-muted-foreground bg-muted px-2.5 sm:px-3 py-1 rounded-full">{completion.filled}/{completion.total} Sections</span>
         </div>
-        <div className="w-full h-4 bg-muted rounded-full overflow-hidden border-2 border-border p-0.5">
+        <div className="w-full h-3.5 sm:h-4 bg-muted rounded-full overflow-hidden border-2 border-border p-0.5">
           <motion.div 
             initial={{ width: 0 }}
             animate={{ width: `${completion.percent}%` }}
@@ -165,131 +165,131 @@ export default function TeacherProfilePage() {
       </AnimatedCard>
 
       {/* Profile Card Section */}
-      <AnimatedCard delay={0.2} className="bg-[#1E293B] p-6 flex flex-col items-center text-center relative overflow-hidden border border-[#334155] text-white rounded-xl shadow-sm">
+      <AnimatedCard delay={0.2} className="bg-[#1E293B] p-5 sm:p-6 flex flex-col items-center text-center relative overflow-hidden border border-[#334155] text-white rounded-xl sm:rounded-2xl shadow-sm">
         <div className="absolute top-0 right-0 p-4 opacity-10">
           <GraduationCap className="h-24 w-24" />
         </div>
         <div className="relative mb-4 z-10">
-          <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center overflow-hidden border-4 border-white/20 shadow-md">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white flex items-center justify-center overflow-hidden border-4 border-white/20 shadow-md">
             {profile.profile_photo ? (
               <img src={profile.profile_photo} alt="Profile" className="w-full h-full object-cover" />
             ) : (
-              <span className="text-3xl font-bold text-[#1E293B]">{profile.full_name?.charAt(0) || 'U'}</span>
+              <span className="text-2xl sm:text-3xl font-bold text-[#1E293B]">{profile.full_name?.charAt(0) || 'U'}</span>
             )}
           </div>
-          <label className="absolute bottom-0 right-0 p-2 bg-[#E8A020] rounded-full text-white cursor-pointer hover:bg-[#D97706] transition-colors shadow-sm border-2 border-white">
+          <label className="absolute bottom-0 right-0 p-2 bg-[#E8A020] rounded-full text-white cursor-pointer hover:bg-[#D97706] transition-colors shadow-sm border-2 border-white w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center">
             <Upload className="h-3.5 w-3.5" />
             <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={saving} />
           </label>
         </div>
         
-        <h3 className="text-xl font-bold z-10">{profile.full_name || 'Your Name'}</h3>
+        <h3 className="text-lg sm:text-xl font-bold z-10">{profile.full_name || 'Your Name'}</h3>
         <p className="mt-1 text-white/70 font-medium text-xs">Islamic Online Academy Educator</p>
       </AnimatedCard>
 
-      <AnimatedCard delay={0.3} className="p-8 space-y-8">
+      <AnimatedCard delay={0.3} className="p-4 sm:p-8 space-y-6 sm:space-y-8 rounded-xl sm:rounded-2xl">
         <div>
-          <h4 className="font-black text-foreground text-xl mb-4 flex items-center gap-2">
-            <span className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-sm"><Award className="h-4 w-4" /></span>
+          <h4 className="font-black text-foreground text-lg sm:text-xl mb-4 flex items-center gap-2">
+            <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs sm:text-sm"><Award className="h-4 w-4" /></span>
             Professional Information
           </h4>
           
-          <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-4 mb-6 shadow-sm">
-            <p className="text-sm font-bold text-orange-800 flex items-center gap-2">
+          <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-3.5 sm:p-4 mb-4 sm:mb-6 shadow-sm">
+            <p className="text-xs sm:text-sm font-bold text-orange-800 flex items-center gap-2">
               ⏰ Important: Class Time Policy
             </p>
-            <p className="text-xs text-orange-700 mt-1 font-semibold">
+            <p className="text-[11px] sm:text-xs text-orange-700 mt-1 font-semibold leading-relaxed">
               All classes at Al-Ihsan Academy are scheduled in UK time (GMT/BST). 
               Please always enter class times in UK timezone when creating sessions.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted/30 p-6 rounded-2xl border-2 border-border/50">
-            <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 bg-muted/30 p-3.5 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-border/50">
+            <div className="space-y-1.5 sm:space-y-2">
               <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">Registered Email <Lock className="h-3 w-3" /></Label>
-              <Input value={profile.registered_email} disabled className="bg-muted border-none opacity-70 font-medium" />
+              <Input value={profile.registered_email} disabled className="bg-muted border-none opacity-70 font-medium h-11 text-base md:text-sm" />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <Label className="font-bold text-foreground">Full Name</Label>
-              <Input name="full_name" value={profile.full_name} onChange={handleChange} placeholder="Enter your full name" className="font-medium bg-white" />
+              <Input name="full_name" value={profile.full_name} onChange={handleChange} placeholder="Enter your full name" className="font-medium bg-white h-11 text-base md:text-sm" />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <Label className="font-bold text-foreground">Date of Joining Academy</Label>
-              <Input type="date" name="date_of_joining" value={profile.date_of_joining} onChange={handleChange} className="font-medium bg-white" />
+              <Input type="date" name="date_of_joining" value={profile.date_of_joining} onChange={handleChange} className="font-medium bg-white h-11 text-base md:text-sm" />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <Label className="font-bold text-foreground">Mobile Number</Label>
-              <Input name="mobile_number" value={profile.mobile_number} onChange={handleChange} placeholder="e.g. +44 1234 567890" className="font-medium bg-white" />
+              <Input name="mobile_number" value={profile.mobile_number} onChange={handleChange} placeholder="e.g. +44 1234 567890" className="font-medium bg-white h-11 text-base md:text-sm" />
             </div>
 
-            <div className="space-y-2 md:col-span-2">
+            <div className="space-y-1.5 sm:space-y-2 md:col-span-2">
               <Label className="font-bold text-foreground">Educational Qualifications</Label>
-              <Textarea name="educational_qualifications" value={profile.educational_qualifications} onChange={handleChange} placeholder="Your degrees, certifications, etc." rows={3} className="font-medium bg-white resize-none" />
+              <Textarea name="educational_qualifications" value={profile.educational_qualifications} onChange={handleChange} placeholder="Your degrees, certifications, etc." rows={3} className="font-medium bg-white resize-none text-base md:text-sm" />
             </div>
           </div>
         </div>
 
         <div>
-          <h4 className="font-black text-foreground text-xl mb-4 flex items-center gap-2">
-             <span className="w-8 h-8 rounded-full bg-secondary/20 text-secondary flex items-center justify-center text-sm"><MapPin className="h-4 w-4" /></span>
+          <h4 className="font-black text-foreground text-lg sm:text-xl mb-4 flex items-center gap-2">
+             <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-secondary/20 text-secondary flex items-center justify-center text-xs sm:text-sm"><MapPin className="h-4 w-4" /></span>
             Location & Bank Details
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted/30 p-6 rounded-2xl border-2 border-border/50">
-            <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 bg-muted/30 p-3.5 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-border/50">
+            <div className="space-y-1.5 sm:space-y-2">
               <Label className="font-bold text-foreground">Current Country</Label>
-              <Input name="current_country" value={profile.current_country} onChange={handleChange} placeholder="e.g. United Kingdom" className="font-medium bg-white" />
+              <Input name="current_country" value={profile.current_country} onChange={handleChange} placeholder="e.g. United Kingdom" className="font-medium bg-white h-11 text-base md:text-sm" />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <Label className="font-bold text-foreground">Current State/Region</Label>
-              <Input name="current_state" value={profile.current_state} onChange={handleChange} placeholder="e.g. London" className="font-medium bg-white" />
+              <Input name="current_state" value={profile.current_state} onChange={handleChange} placeholder="e.g. London" className="font-medium bg-white h-11 text-base md:text-sm" />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <Label className="font-bold text-foreground">Bank Name</Label>
               <div className="relative">
                 <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input name="bank_name" value={profile.bank_name} onChange={handleChange} placeholder="e.g. Barclays" className="pl-9 font-medium bg-white" />
+                <Input name="bank_name" value={profile.bank_name} onChange={handleChange} placeholder="e.g. Barclays" className="pl-9 font-medium bg-white h-11 text-base md:text-sm" />
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <Label className="font-bold text-foreground">Bank Account Number / IBAN</Label>
-              <Input name="bank_account_number" value={profile.bank_account_number} onChange={handleChange} placeholder="Enter account number" className="font-medium bg-white" />
+              <Input name="bank_account_number" value={profile.bank_account_number} onChange={handleChange} placeholder="Enter account number" className="font-medium bg-white h-11 text-base md:text-sm" />
             </div>
           </div>
         </div>
 
         <div>
-          <h4 className="font-black text-foreground text-xl mb-4 flex items-center gap-2">
-             <span className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-500 flex items-center justify-center text-sm"><Users className="h-4 w-4" /></span>
+          <h4 className="font-black text-foreground text-lg sm:text-xl mb-4 flex items-center gap-2">
+             <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-500/20 text-blue-500 flex items-center justify-center text-xs sm:text-sm"><Users className="h-4 w-4" /></span>
              Student Roster
           </h4>
-          <div className="bg-muted/30 p-6 rounded-2xl border-2 border-border/50 space-y-6">
-            <div className="space-y-2">
+          <div className="bg-muted/30 p-3.5 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-border/50 space-y-4 sm:space-y-6">
+            <div className="space-y-1.5 sm:space-y-2">
               <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">Total Students <Lock className="h-3 w-3" /></Label>
-              <div className="p-4 bg-primary/10 border-2 border-primary/20 rounded-xl font-black text-primary text-xl">
+              <div className="p-3 sm:p-4 bg-primary/10 border-2 border-primary/20 rounded-xl font-black text-primary text-lg sm:text-xl">
                 {profile.total_students} Active Students
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">Assigned Students <Lock className="h-3 w-3" /></Label>
-              <div className="p-5 bg-white border-2 border-border rounded-xl space-y-2 max-h-60 overflow-y-auto shadow-inner">
+              <div className="p-3 sm:p-5 bg-white border-2 border-border rounded-xl space-y-2 max-h-60 overflow-y-auto shadow-inner">
                 {profile.assigned_students.length > 0 ? (
                   profile.assigned_students.map((name: string, i: number) => (
-                    <div key={i} className="text-base font-bold text-foreground flex items-center gap-3 p-2 hover:bg-muted rounded-lg transition-colors">
-                      <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">
+                    <div key={i} className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2.5 sm:gap-3 p-2 hover:bg-muted rounded-lg transition-colors">
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs shrink-0">
                         {name.charAt(0)}
                       </div>
-                      {name}
+                      <span className="truncate">{name}</span>
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-4 text-muted-foreground font-bold">
+                  <div className="text-center py-4 text-muted-foreground font-bold text-xs sm:text-sm">
                     No students assigned yet.
                   </div>
                 )}
@@ -298,9 +298,9 @@ export default function TeacherProfilePage() {
           </div>
         </div>
 
-        <div className="pt-4">
-          <BouncyButton onClick={handleSave} disabled={saving} className="w-full h-16 text-xl shadow-[0_6px_0_oklch(0.5_0.19_255)] hover:shadow-[0_2px_0_oklch(0.5_0.19_255)] active:shadow-none bg-primary hover:bg-primary/90 text-white rounded-2xl active:translate-y-1 hover:translate-y-1">
-            {saving ? <Loader2 className="animate-spin mr-2 h-6 w-6" /> : null}
+        <div className="pt-2 sm:pt-4">
+          <BouncyButton onClick={handleSave} disabled={saving} className="w-full h-13 sm:h-16 text-base sm:text-xl shadow-[0_6px_0_oklch(0.5_0.19_255)] hover:shadow-[0_2px_0_oklch(0.5_0.19_255)] active:shadow-none bg-primary hover:bg-primary/90 active:scale-[0.98] text-white rounded-xl sm:rounded-2xl active:translate-y-1 hover:translate-y-1 min-h-[48px]">
+            {saving ? <Loader2 className="animate-spin mr-2 h-5 w-5 sm:h-6 sm:w-6" /> : null}
             Save Profile Updates
           </BouncyButton>
         </div>

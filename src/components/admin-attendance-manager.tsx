@@ -1122,7 +1122,7 @@ export function AdminAttendanceManager({
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-3xl p-6 max-w-2xl w-full border-2 border-border shadow-2xl relative my-8 max-h-[90vh] flex flex-col"
+              className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 max-w-2xl w-full border-2 border-border shadow-2xl relative my-auto max-h-[90vh] flex flex-col"
             >
               <div className="flex items-center justify-between pb-4 border-b-2 border-border">
                 <div className="flex items-center gap-3">
@@ -1145,7 +1145,7 @@ export function AdminAttendanceManager({
 
               <div className="overflow-y-auto py-4 space-y-4 flex-1">
                 {/* KPI Mini-cards */}
-                <div className="grid grid-cols-4 gap-2 text-center">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
                   <div className="p-2.5 bg-muted/40 rounded-xl border border-border">
                     <span className="text-[10px] uppercase font-bold text-muted-foreground block">Scheduled</span>
                     <span className="text-lg font-black text-foreground">{modalStudentData.summary.totalScheduled}</span>

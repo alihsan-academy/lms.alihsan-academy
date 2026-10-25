@@ -100,7 +100,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] text-[#1A2B23] flex flex-col justify-between p-6 md:p-12 relative overflow-hidden font-sans selection:bg-[#1A6B4A]/15 selection:text-[#1A6B4A]">
+    <div className="min-h-screen bg-[#F8F9FA] text-[#1A2B23] flex flex-col justify-between p-4 sm:p-6 md:p-12 relative overflow-hidden font-sans selection:bg-[#1A6B4A]/15 selection:text-[#1A6B4A]">
       {/* Geometric background overlay */}
       <div 
         className="absolute inset-0 pointer-events-none opacity-[0.04]"
@@ -115,8 +115,8 @@ export default function ResetPasswordPage() {
       />
 
       {/* Header */}
-      <header className="relative z-10 max-w-xl mx-auto w-full flex items-center justify-between py-4 border-b border-[#DDE4E0]">
-        <Link href="/login" className="flex items-center gap-3 group">
+      <header className="relative z-10 max-w-xl mx-auto w-full flex items-center justify-between py-3 sm:py-4 border-b border-[#DDE4E0]">
+        <Link href="/login" className="flex items-center gap-2.5 sm:gap-3 group">
           <svg
             style={{ width: '32px', height: '38px', flexShrink: 0 }}
             viewBox="0 0 100 120"
@@ -130,31 +130,31 @@ export default function ResetPasswordPage() {
             <rect x="25" y="90" width="8" height="8" fill="#E8A020" />
           </svg>
           <div>
-            <div className="text-base font-bold tracking-tight text-[#1A6B4A] leading-tight">
+            <div className="text-sm sm:text-base font-bold tracking-tight text-[#1A6B4A] leading-tight">
               AL IHSAN Academy
             </div>
-            <div className="text-[10px] text-[#5C7066] uppercase tracking-[0.12em] font-bold">
+            <div className="text-[9px] sm:text-[10px] text-[#5C7066] uppercase tracking-[0.12em] font-bold">
               Moral Education
             </div>
           </div>
         </Link>
         <Link 
           href="/login" 
-          className="text-xs font-semibold text-[#5C7066] hover:text-[#1A6B4A] flex items-center gap-1 transition-colors"
+          className="text-xs font-semibold text-[#5C7066] hover:text-[#1A6B4A] flex items-center gap-1 transition-colors min-h-[44px] py-2 px-1"
         >
           <ArrowLeft className="w-3.5 h-3.5" /> Back to Login
         </Link>
       </header>
 
       {/* Main card */}
-      <main className="relative z-10 max-w-md mx-auto w-full my-auto py-10">
-        <div className="bg-white rounded-2xl border border-[#DDE4E0] p-8 shadow-sm">
+      <main className="relative z-10 max-w-md mx-auto w-full my-auto py-6 sm:py-10">
+        <div className="bg-white rounded-2xl border border-[#DDE4E0] p-5 sm:p-8 shadow-sm">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-[#E8F5EE] border border-[#1A6B4A]/20 flex items-center justify-center text-[#1A6B4A]">
+            <div className="w-10 h-10 rounded-xl bg-[#E8F5EE] border border-[#1A6B4A]/20 flex items-center justify-center text-[#1A6B4A] shrink-0">
               <KeyRound className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-[#1A2B23]">Set New Password</h1>
+              <h1 className="text-lg sm:text-xl font-bold text-[#1A2B23]">Set New Password</h1>
               <p className="text-xs text-[#5C7066]">Enter and confirm your new secure password.</p>
             </div>
           </div>
@@ -170,7 +170,7 @@ export default function ResetPasswordPage() {
               </div>
               <Link
                 href="/login"
-                className="w-full h-11 rounded-lg bg-[#1A6B4A] hover:bg-[#15583D] text-white text-sm font-semibold flex items-center justify-center transition-colors shadow-xs"
+                className="w-full h-11 min-h-[44px] rounded-lg bg-[#1A6B4A] hover:bg-[#15583D] active:scale-[0.98] text-white text-sm font-semibold flex items-center justify-center transition-all shadow-xs"
               >
                 Proceed to Login
               </Link>
@@ -195,12 +195,12 @@ export default function ResetPasswordPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="At least 6 characters"
                     disabled={isSubmitting}
-                    className="w-full border border-[#DDE4E0] rounded-lg px-3 py-2.5 pr-10 text-sm text-[#112221] outline-none focus:border-[#1A6B4A] transition-colors"
+                    className="w-full h-11 border border-[#DDE4E0] rounded-lg pl-3.5 pr-11 text-base md:text-sm text-[#112221] outline-none focus:border-[#1A6B4A] transition-colors box-border"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5C7066] hover:text-[#1A2B23]"
+                    className="w-11 h-11 flex items-center justify-center absolute right-0 top-1/2 -translate-y-1/2 text-[#5C7066] hover:text-[#1A2B23] transition-colors"
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -219,12 +219,12 @@ export default function ResetPasswordPage() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Re-enter your new password"
                     disabled={isSubmitting}
-                    className="w-full border border-[#DDE4E0] rounded-lg px-3 py-2.5 pr-10 text-sm text-[#112221] outline-none focus:border-[#1A6B4A] transition-colors"
+                    className="w-full h-11 border border-[#DDE4E0] rounded-lg pl-3.5 pr-11 text-base md:text-sm text-[#112221] outline-none focus:border-[#1A6B4A] transition-colors box-border"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5C7066] hover:text-[#1A2B23]"
+                    className="w-11 h-11 flex items-center justify-center absolute right-0 top-1/2 -translate-y-1/2 text-[#5C7066] hover:text-[#1A2B23] transition-colors"
                     aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                   >
                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -235,7 +235,7 @@ export default function ResetPasswordPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full h-11 rounded-lg bg-[#1A6B4A] hover:bg-[#15583D] text-white text-sm font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-60 shadow-xs mt-6"
+                className="w-full h-11 min-h-[44px] rounded-lg bg-[#1A6B4A] hover:bg-[#15583D] active:scale-[0.98] text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-60 shadow-xs mt-6"
               >
                 {isSubmitting ? (
                   <>
