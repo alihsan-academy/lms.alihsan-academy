@@ -366,7 +366,30 @@ async function runLiveAudit() {
     !!createdClassId && createdClasses[0].status === 'scheduled',
     `Class ID: ${createdClassId}`);
 
-  // Teacher marks class completed with attendance
+  // Teacher attempts to mark attendance for a future class -> MUST be blocked with 400
+  const futureCompleteRes = await request('/api/classes/complete', {
+    method: 'POST',
+    headers: teachHeaders,
+    body: {
+      classId: createdClassId,
+      studentId: studentUserId,
+      status: 'present',
+      recordingUrl: 'https://youtube.com/watch?v=sample-recording',
+      remarks: 'Attempt before class time'
+    }
+  });
+
+  logTest('Teacher blocked from marking attendance before class date & time (400 Bad Request)',
+    futureCompleteRes.status === 400 && futureCompleteRes.json?.error?.includes('Attendance cannot be marked before'),
+    `Got status ${futureCompleteRes.status}: ${futureCompleteRes.json?.error}`);
+
+  // Update class scheduled_at to past (1 hour ago) to simulate class time having arrived
+  await supabaseAdmin
+    .from('classes')
+    .update({ scheduled_at: new Date(Date.now() - 3600000).toISOString() })
+    .eq('id', createdClassId);
+
+  // Teacher marks class completed with attendance after class time has arrived
   const completeClassRes = await request('/api/classes/complete', {
     method: 'POST',
     headers: teachHeaders,
@@ -379,7 +402,7 @@ async function runLiveAudit() {
     }
   });
 
-  logTest('Teacher marks class completed with attendance (200 OK)',
+  logTest('Teacher marks class completed after class time has arrived (200 OK)',
     completeClassRes.status === 200 && completeClassRes.json?.success);
 
   // Verify class status is 'completed' and attendance is recorded

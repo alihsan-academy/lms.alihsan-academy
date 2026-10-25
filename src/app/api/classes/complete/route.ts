@@ -34,10 +34,10 @@ export async function POST(request: Request) {
 
     const isPrivileged = userProfile?.role === 'superadmin' || userProfile?.role === 'admin'
 
-    // Verify class exists and get teacher_id
+    // Verify class exists and get teacher_id and scheduled_at
     const { data: classRecord, error: fetchClassError } = await supabaseAdmin
       .from('classes')
-      .select('id, teacher_id')
+      .select('id, teacher_id, scheduled_at')
       .eq('id', classId)
       .single()
 
@@ -47,6 +47,17 @@ export async function POST(request: Request) {
 
     if (!isPrivileged && classRecord.teacher_id !== user.id) {
       return NextResponse.json({ error: 'Forbidden - not your class' }, { status: 403 })
+    }
+
+    // Teachers can only mark attendance after the class scheduled date & time has arrived
+    if (!isPrivileged && classRecord.scheduled_at) {
+      const scheduledTime = new Date(classRecord.scheduled_at).getTime()
+      if (scheduledTime > Date.now()) {
+        return NextResponse.json(
+          { error: 'Attendance cannot be marked before the scheduled class date and time.' },
+          { status: 400 }
+        )
+      }
     }
 
     // Prepare JSON metadata for recording_url column

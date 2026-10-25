@@ -52,6 +52,14 @@ export default function TeacherDashboard() {
   const [classes, setClasses] = useState<any[]>([])
   const [allTeacherClasses, setAllTeacherClasses] = useState<any[]>([])
   const [allAttendance, setAllAttendance] = useState<any[]>([])
+  const [currentTime, setCurrentTime] = useState<number>(() => Date.now())
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(Date.now())
+    }, 10000)
+    return () => clearInterval(timer)
+  }, [])
 
   // Modal for completing/marking class
   const [pendingCompleteClass, setPendingCompleteClass] = useState<any>(null)
@@ -156,6 +164,11 @@ export default function TeacherDashboard() {
   async function handleCompleteClassSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!pendingCompleteClass) return
+
+    if (new Date(pendingCompleteClass.scheduled_at).getTime() > Date.now()) {
+      toast.error('Attendance can only be marked after the scheduled class date and time.')
+      return
+    }
 
     setIsCompleting(true)
     try {
@@ -486,6 +499,7 @@ export default function TeacherDashboard() {
                   classes.map((c, index) => {
                     const parsed = parseClassMetadata(c, allAttendance.find(a => a.class_id === c.id), students.find(s => s.id === c.student_id))
                     const student = students.find(s => s.id === c.student_id)
+                    const isClassTimeReached = new Date(c.scheduled_at).getTime() <= currentTime
                     return (
                       <AnimatedCard key={c.id} delay={index * 0.03} className="p-0 overflow-hidden hover:border-primary/40 transition-colors rounded-xl border border-border shadow-sm">
                         <div className="p-3.5 md:p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
@@ -532,18 +546,25 @@ export default function TeacherDashboard() {
                               )}
                             </div>
 
-                            <button
-                              onClick={() => {
-                                setPendingCompleteClass(c)
-                                setCompletionStatus(c.status === 'completed' && parsed.status !== 'present' && parsed.status !== 'scheduled' ? parsed.status : 'present')
-                                setRecordingUrl(parsed.recording_url || '')
-                                setClassRemarks(parsed.remarks || '')
-                              }} 
-                              className="w-full sm:w-auto px-3 py-2 rounded-md text-xs font-semibold bg-[#1E293B] hover:bg-[#0F172A] text-white transition-colors flex items-center justify-center gap-1.5 shadow-sm min-h-[38px]"
-                            >
-                              <CheckCircle className="h-3.5 w-3.5" />
-                              {c.status === 'completed' ? 'Update Status' : 'Mark Attendance'}
-                            </button>
+                            {isClassTimeReached ? (
+                              <button
+                                onClick={() => {
+                                  setPendingCompleteClass(c)
+                                  setCompletionStatus(c.status === 'completed' && parsed.status !== 'present' && parsed.status !== 'scheduled' ? parsed.status : 'present')
+                                  setRecordingUrl(parsed.recording_url || '')
+                                  setClassRemarks(parsed.remarks || '')
+                                }} 
+                                className="w-full sm:w-auto px-3 py-2 rounded-md text-xs font-semibold bg-[#1E293B] hover:bg-[#0F172A] text-white transition-colors flex items-center justify-center gap-1.5 shadow-sm min-h-[38px]"
+                              >
+                                <CheckCircle className="h-3.5 w-3.5" />
+                                {c.status === 'completed' ? 'Update Status' : 'Mark Attendance'}
+                              </button>
+                            ) : (
+                              <div className="w-full sm:w-auto px-3 py-1.5 rounded-md text-xs font-semibold bg-muted/70 text-muted-foreground border border-border/70 flex items-center justify-center gap-1.5 min-h-[38px]">
+                                <Clock className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                                <span>Attendance opens after class time</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </AnimatedCard>
