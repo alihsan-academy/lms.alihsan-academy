@@ -1060,9 +1060,11 @@ export default function SuperAdminDashboard() {
                     <div className="md:col-span-2">
                       <ProfileItem label="Educational Qualifications" value={selectedProfile.educational_qualifications} />
                     </div>
-                    <div className="md:col-span-2">
-                      <ProfileItem label="Bank Account Details" value={selectedProfile.bank_account_number ? `${selectedProfile.bank_name} - ${selectedProfile.bank_account_number}` : 'N/A'} />
-                    </div>
+                    {selectedProfile.bank_account_number ? (
+                      <div className="md:col-span-2">
+                        <ProfileItem label="Bank Account Details" value={`${selectedProfile.bank_name || ''} - ${selectedProfile.bank_account_number}`} />
+                      </div>
+                    ) : null}
 
                     {/* Teacher Performance */}
                     <div className="md:col-span-2 mt-4 pt-6 border-t-2 border-border">

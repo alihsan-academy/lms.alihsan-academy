@@ -2,7 +2,7 @@
 
 import { useState, useEffect, ChangeEvent } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Upload, Lock, Users, Star, Award, GraduationCap, MapPin, Building } from 'lucide-react'
+import { Loader2, Upload, Lock, Users, Star, Award, GraduationCap, MapPin } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -20,8 +20,6 @@ function calculateCompletion(data: any) {
     !!data.mobile_number,
     !!data.current_country,
     !!data.current_state,
-    !!data.bank_account_number,
-    !!data.bank_name,
     !!data.profile_photo
   ]
   const total = fields.length
@@ -62,8 +60,6 @@ export default function TeacherProfilePage() {
         mobile_number: teach?.mobile_number || '',
         current_country: teach?.current_country || '',
         current_state: teach?.current_state || '',
-        bank_account_number: teach?.bank_account_number || '',
-        bank_name: teach?.bank_name || '',
         profile_photo: teach?.profile_photo || '',
         assigned_students: studentNames,
         total_students: studentNames.length
@@ -117,8 +113,6 @@ export default function TeacherProfilePage() {
       mobile_number: profile.mobile_number,
       current_country: profile.current_country,
       current_state: profile.current_state,
-      bank_account_number: profile.bank_account_number,
-      bank_name: profile.bank_name,
       profile_photo: profile.profile_photo
     }).eq('user_id', user.id)
 
@@ -235,7 +229,7 @@ export default function TeacherProfilePage() {
         <div>
           <h4 className="font-black text-foreground text-lg sm:text-xl mb-4 flex items-center gap-2">
              <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-secondary/20 text-secondary flex items-center justify-center text-xs sm:text-sm"><MapPin className="h-4 w-4" /></span>
-            Location & Bank Details
+            Location Details
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 bg-muted/30 p-3.5 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-border/50">
             <div className="space-y-1.5 sm:space-y-2">
@@ -246,19 +240,6 @@ export default function TeacherProfilePage() {
             <div className="space-y-1.5 sm:space-y-2">
               <Label className="font-bold text-foreground">Current State/Region</Label>
               <Input name="current_state" value={profile.current_state} onChange={handleChange} placeholder="e.g. London" className="font-medium bg-white h-11 text-base md:text-sm" />
-            </div>
-
-            <div className="space-y-1.5 sm:space-y-2">
-              <Label className="font-bold text-foreground">Bank Name</Label>
-              <div className="relative">
-                <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input name="bank_name" value={profile.bank_name} onChange={handleChange} placeholder="e.g. Barclays" className="pl-9 font-medium bg-white h-11 text-base md:text-sm" />
-              </div>
-            </div>
-
-            <div className="space-y-1.5 sm:space-y-2">
-              <Label className="font-bold text-foreground">Bank Account Number / IBAN</Label>
-              <Input name="bank_account_number" value={profile.bank_account_number} onChange={handleChange} placeholder="Enter account number" className="font-medium bg-white h-11 text-base md:text-sm" />
             </div>
           </div>
         </div>
