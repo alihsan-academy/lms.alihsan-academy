@@ -581,30 +581,6 @@ export default function SharedLogin({
               </Link>
             </div>
           )}
-          {portalType === 'student' && (
-            <div className="mt-5 pt-4 border-t border-[#DDE4E0] text-xs text-[#879E9D] flex flex-wrap items-center justify-center gap-1">
-              <span>Need a different portal?</span>
-              <Link href="/teacher/login" className="py-1 px-1.5 font-bold hover:underline" style={{ color: '#5B21B6' }}>
-                Tutor
-              </Link>
-              <span>•</span>
-              <Link href="/admin/login" className="py-1 px-1.5 font-bold hover:underline" style={{ color: '#681329' }}>
-                Admin
-              </Link>
-            </div>
-          )}
-          {portalType === 'teacher' && (
-            <div className="mt-5 pt-4 border-t border-[#DDE4E0] text-xs text-[#879E9D] flex flex-wrap items-center justify-center gap-1">
-              <span>Need a different portal?</span>
-              <Link href="/student/login" className="py-1 px-1.5 font-bold hover:underline" style={{ color: '#0D4A47' }}>
-                Student
-              </Link>
-              <span>•</span>
-              <Link href="/admin/login" className="py-1 px-1.5 font-bold hover:underline" style={{ color: '#681329' }}>
-                Admin
-              </Link>
-            </div>
-          )}
         </div>
       </div>
     </div>

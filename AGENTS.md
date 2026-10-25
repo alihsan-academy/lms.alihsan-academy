@@ -35,3 +35,8 @@ All UI components, dashboards, modals, navigation bars, and forms across all 4 r
    - Form inputs must have minimum font-size 16px (`text-base` or `text-sm sm:text-base`) to prevent iOS Safari auto-zoom on focus.
 4. **Header & Navigation:**
    - Headers, role badges, and logout/action buttons must wrap or collapse cleanly into a mobile drawer or mobile bottom bar without overlapping or clipping.
+
+## 3. LOGIN PORTAL SWITCHER VISIBILITY (PERMANENT RULE)
+- The "Need a different portal? / Need another portal?" switch option MUST ONLY be displayed on the **Admin Login Portal** (`/admin/login` / `portalType === 'admin'`).
+- It MUST NEVER be displayed on the **Student Login Portal** (`/student/login`) or the **Teacher Login Portal** (`/teacher/login`).
+- Student and Teacher authentication cards must remain completely dedicated to entering credentials for their respective portal with no other portal navigation links.
