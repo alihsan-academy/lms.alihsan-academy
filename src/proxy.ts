@@ -55,45 +55,63 @@ export default async function proxy(request: NextRequest) {
                              (request.nextUrl.pathname.startsWith('/admin') && request.nextUrl.pathname !== '/admin/login') ||
                              request.nextUrl.pathname.startsWith('/superadmin')
 
-    // Redirect authenticated users away from login / landing pages to their dashboard (unless recovering password)
-    if (user && (isLoginPage || request.nextUrl.pathname === '/') && !isRecoveryMode) {
-      const serviceKey = SUPABASE_SERVICE_ROLE_KEY || (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
-      if (serviceKey) {
-        const supabaseAdmin = createServerClient(
-          supabaseUrl,
-          serviceKey,
-          {
-            cookies: {
-              getAll() { return [] },
-              setAll() {}
-            }
-          }
-        )
+    const getUserRole = async (): Promise<string | null> => {
+      if (!user) return null
+      if (user.user_metadata?.role) return user.user_metadata.role
 
-        const { data: profile } = await supabaseAdmin
+      try {
+        const { data: profile } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', user.id)
           .single()
+        if (profile?.role) return profile.role
+      } catch {}
 
-        const role = profile?.role
-        const pathname = request.nextUrl.pathname
+      const serviceKey = SUPABASE_SERVICE_ROLE_KEY || (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
+      if (serviceKey && !serviceKey.includes('[SENSITIVE]')) {
+        try {
+          const supabaseAdmin = createServerClient(
+            supabaseUrl,
+            serviceKey,
+            {
+              cookies: {
+                getAll() { return [] },
+                setAll() {}
+              }
+            }
+          )
+          const { data: adminProfile } = await supabaseAdmin
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single()
+          if (adminProfile?.role) return adminProfile.role
+        } catch {}
+      }
 
-        const isOwnLoginPage = 
-          pathname === '/' ||
-          pathname === '/login' ||
-          (pathname === '/student/login' && role === 'student') ||
-          (pathname === '/teacher/login' && role === 'teacher') ||
-          (pathname === '/admin/login' && (role === 'admin' || role === 'superadmin'))
+      return null
+    }
 
-        if (role && isOwnLoginPage) {
-          let redirectUrl = request.nextUrl.clone()
-          if (role === 'student') redirectUrl.pathname = '/student/dashboard'
-          else if (role === 'teacher') redirectUrl.pathname = '/teacher/dashboard'
-          else if (role === 'admin') redirectUrl.pathname = '/admin/dashboard'
-          else if (role === 'superadmin') redirectUrl.pathname = '/superadmin/dashboard'
-          return NextResponse.redirect(redirectUrl)
-        }
+    // Redirect authenticated users away from login / landing pages to their dashboard (unless recovering password)
+    if (user && (isLoginPage || request.nextUrl.pathname === '/') && !isRecoveryMode) {
+      const role = await getUserRole()
+      const pathname = request.nextUrl.pathname
+
+      const isOwnLoginPage = 
+        pathname === '/' ||
+        pathname === '/login' ||
+        (pathname === '/student/login' && role === 'student') ||
+        (pathname === '/teacher/login' && role === 'teacher') ||
+        (pathname === '/admin/login' && (role === 'admin' || role === 'superadmin'))
+
+      if (role && isOwnLoginPage) {
+        let redirectUrl = request.nextUrl.clone()
+        if (role === 'student') redirectUrl.pathname = '/student/dashboard'
+        else if (role === 'teacher') redirectUrl.pathname = '/teacher/dashboard'
+        else if (role === 'admin') redirectUrl.pathname = '/admin/dashboard'
+        else if (role === 'superadmin') redirectUrl.pathname = '/superadmin/dashboard'
+        return NextResponse.redirect(redirectUrl)
       }
     }
 
@@ -115,40 +133,20 @@ export default async function proxy(request: NextRequest) {
 
     // Role-based route protection
     if (user && isProtectedRoute) {
-      const serviceKey = SUPABASE_SERVICE_ROLE_KEY || (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
-      if (serviceKey) {
-        const supabaseAdmin = createServerClient(
-          supabaseUrl,
-          serviceKey,
-          {
-            cookies: {
-              getAll() { return [] },
-              setAll() {}
-            }
-          }
-        )
+      const role = await getUserRole()
+      const pathname = request.nextUrl.pathname
 
-        const { data: profile } = await supabaseAdmin
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single()
-
-        const role = profile?.role
-        const pathname = request.nextUrl.pathname
-
-        if (pathname.startsWith('/student') && role !== 'student') {
-          return NextResponse.redirect(new URL('/student/login', request.url))
-        }
-        if (pathname.startsWith('/teacher') && role !== 'teacher') {
-          return NextResponse.redirect(new URL('/teacher/login', request.url))
-        }
-        if (pathname.startsWith('/admin') && role !== 'admin' && role !== 'superadmin') {
-          return NextResponse.redirect(new URL('/admin/login', request.url))
-        }
-        if (pathname.startsWith('/superadmin') && role !== 'superadmin') {
-          return NextResponse.redirect(new URL('/admin/login', request.url))
-        }
+      if (pathname.startsWith('/student') && role !== 'student') {
+        return NextResponse.redirect(new URL('/student/login', request.url))
+      }
+      if (pathname.startsWith('/teacher') && role !== 'teacher') {
+        return NextResponse.redirect(new URL('/teacher/login', request.url))
+      }
+      if (pathname.startsWith('/admin') && role !== 'admin' && role !== 'superadmin') {
+        return NextResponse.redirect(new URL('/admin/login', request.url))
+      }
+      if (pathname.startsWith('/superadmin') && role !== 'superadmin') {
+        return NextResponse.redirect(new URL('/admin/login', request.url))
       }
     }
 
