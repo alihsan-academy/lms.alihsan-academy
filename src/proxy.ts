@@ -64,9 +64,8 @@ export default async function proxy(request: NextRequest) {
           serviceKey,
           {
             cookies: {
-              get(name: string) { return undefined },
-              set(name: string, value: string, options: any) {},
-              remove(name: string, options: any) {}
+              getAll() { return [] },
+              setAll() {}
             }
           }
         )
@@ -123,9 +122,8 @@ export default async function proxy(request: NextRequest) {
           serviceKey,
           {
             cookies: {
-              get(name: string) { return undefined },
-              set(name: string, value: string, options: any) {},
-              remove(name: string, options: any) {}
+              getAll() { return [] },
+              setAll() {}
             }
           }
         )
