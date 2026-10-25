@@ -19,6 +19,7 @@ import { PageTransition } from '@/components/page-transition'
 import { DateRangeFilter } from '@/components/date-range-filter'
 import { DateFilterType, getDateRange, calculateStudentAttendanceSummary, formatUKDateTime, isDateWithinRange, parseClassMetadata } from '@/lib/attendance-utils'
 import { generateStudentAttendancePDF, generateTeacherAttendancePDF } from '@/lib/pdf-generator'
+import { ClassDatePicker, ClassTimePicker } from '@/components/class-date-time-picker'
 
 import TeacherProfilePage from '@/app/teacher/profile/page'
 
@@ -1163,7 +1164,19 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!teacherId || !formData.studentId || !formData.date || !formData.time) return
+    if (!teacherId) return
+    if (!formData.studentId) {
+      toast.error('Please select a student')
+      return
+    }
+    if (!formData.date) {
+      toast.error('Please select a class date')
+      return
+    }
+    if (!formData.time) {
+      toast.error('Please select a class time')
+      return
+    }
     
     setIsSubmitting(true)
     try {
@@ -1285,32 +1298,21 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label className="text-foreground font-bold">Class Date</Label>
-            <Input 
-              type="date"
-              min={format(startOfToday(), "yyyy-MM-dd")}
-              value={formData.date}
-              onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-              required
-              className="h-14 rounded-xl border-2 font-medium"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-foreground font-bold">Class Time</Label>
-            <Input 
-              type="time"
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+          <ClassDatePicker
+            value={formData.date}
+            onChange={(dateStr) => setFormData(prev => ({ ...prev, date: dateStr }))}
+          />
+          <div className="space-y-3">
+            <ClassTimePicker
               value={formData.time}
-              onChange={(e) => setFormData(prev => ({ ...prev, time: e.target.value }))}
-              required
-              className="h-14 rounded-xl border-2 font-medium"
+              onChange={(timeStr) => setFormData(prev => ({ ...prev, time: timeStr }))}
             />
-            <div className="bg-primary/10 border-2 border-primary/20 rounded-xl p-3 mt-3">
-              <p className="text-sm text-primary font-bold flex items-center gap-2">
-                <Globe className="h-4 w-4" /> Schedule in UK Time!
+            <div className="bg-primary/10 border-2 border-primary/20 rounded-xl p-3">
+              <p className="text-xs sm:text-sm text-primary font-bold flex items-center gap-1.5">
+                <Globe className="h-4 w-4 shrink-0" /> Schedule in UK Time!
               </p>
-              <p className="text-xs text-primary/80 mt-1 font-medium">
+              <p className="text-[11px] sm:text-xs text-primary/80 mt-0.5 font-medium leading-relaxed">
                 All classes are scheduled in UK timezone (GMT/BST).
               </p>
             </div>
