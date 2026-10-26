@@ -34,10 +34,10 @@ export async function POST(request: Request) {
 
     const isPrivileged = userProfile?.role === 'superadmin' || userProfile?.role === 'admin'
 
-    // Verify class exists and get teacher_id and scheduled_at
+    // Verify class exists and get teacher_id, scheduled_at, and recording_url
     const { data: classRecord, error: fetchClassError } = await supabaseAdmin
       .from('classes')
-      .select('id, teacher_id, scheduled_at')
+      .select('id, teacher_id, scheduled_at, recording_url')
       .eq('id', classId)
       .single()
 
@@ -60,8 +60,18 @@ export async function POST(request: Request) {
       }
     }
 
+    let existingMeta: any = {}
+    if (classRecord.recording_url && typeof classRecord.recording_url === 'string' && classRecord.recording_url.trim().startsWith('{')) {
+      try {
+        existingMeta = JSON.parse(classRecord.recording_url)
+      } catch (e) {}
+    }
+    const sessionTitle = existingMeta.title || 'Moral Class Alihsan Academy'
+
     // Prepare JSON metadata for recording_url column
     const metaPayload = JSON.stringify({
+      ...existingMeta,
+      title: sessionTitle,
       recording_url: recordingUrl || null,
       status_detail: status || 'present',
       reason: status || 'present',

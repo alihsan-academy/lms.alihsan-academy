@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
 import { AcademyHeader } from '@/components/academy-header'
-import { Calendar, Plus, BarChart3, Loader2, Video, CheckCircle, Clock, User, Globe, AlertCircle, ChevronDown, Users, Copy, Sparkles, Pencil, X, Download, FileText, CheckCircle2, XCircle, Search } from 'lucide-react'
+import { Calendar, Plus, BarChart3, Loader2, Video, CheckCircle, Clock, User, Globe, AlertCircle, ChevronDown, Users, Copy, Sparkles, Pencil, X, Download, FileText, CheckCircle2, XCircle, Search, BookOpen } from 'lucide-react'
 import { format, parseISO, addWeeks, isAfter, startOfToday } from 'date-fns'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -507,10 +507,14 @@ export default function TeacherDashboard() {
                           <div className="flex items-center gap-3.5">
                             <Avatar photoUrl={student?.profile_photo} name={student?.name} size="md" />
                             <div className="space-y-0.5">
-                              <h4 className="font-bold text-foreground text-sm md:text-base leading-tight">{student?.name || 'Unknown Student'}</h4>
-                              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                                <Clock className="h-3.5 w-3.5 text-muted-foreground/70" />
-                                <span>{formatUKTime(c.scheduled_at)} (UK Time)</span>
+                              <h4 className="font-bold text-foreground text-sm md:text-base leading-tight">{parsed.title || 'Moral Class Alihsan Academy'}</h4>
+                              <div className="flex flex-wrap items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                                <span className="font-bold text-primary">{student?.name || 'Unknown Student'}</span>
+                                <span>•</span>
+                                <div className="inline-flex items-center gap-1">
+                                  <Clock className="h-3.5 w-3.5 text-muted-foreground/70" />
+                                  <span>{formatUKTime(c.scheduled_at)} (UK Time)</span>
+                                </div>
                               </div>
                               {parsed.remarks && (
                                 <p className="text-[11px] bg-muted/60 text-muted-foreground px-2 py-0.5 rounded font-medium inline-block">
@@ -1154,7 +1158,14 @@ function NavBtn({ active, onClick, icon, label }: { active: boolean, onClick: ()
 }
 
 function CreateClassForm({ students, teacherId, onCreated }: { students: any[], teacherId: string | null, onCreated: (studentId: string) => void }) {
-  const [formData, setFormData] = useState({ studentId: '', meetLink: '', date: '', time: '', repeatWeekly: false })
+  const [formData, setFormData] = useState({ 
+    studentId: '', 
+    title: 'Moral Class Alihsan Academy',
+    meetLink: '', 
+    date: '', 
+    time: '', 
+    repeatWeekly: false 
+  })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
@@ -1189,11 +1200,14 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
       const utcOffset = new Date(dateTimeString).getTime() - ukDate.getTime()
       const scheduledUTC = new Date(new Date(dateTimeString).getTime() + utcOffset)
 
+      const sessionTitle = formData.title.trim() || 'Moral Class Alihsan Academy'
+
       const response = await fetch('/api/classes/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           studentId: formData.studentId,
+          title: sessionTitle,
           meetLink: formData.meetLink,
           date: formData.date,
           time: formData.time,
@@ -1213,10 +1227,11 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
         minute: '2-digit',
         hour12: true
       })
-      toast.success(`Class created for ${ukDisplay} UK time! 🚀`)
+      toast.success(`"${sessionTitle}" scheduled for ${ukDisplay} UK time! 🚀`)
 
       setFormData(prev => ({
         ...prev,
+        title: 'Moral Class Alihsan Academy',
         meetLink: '',
         date: '',
         time: '',
@@ -1282,6 +1297,22 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
                 )}
               </div>
             )}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-foreground font-bold">Session Title</Label>
+            <span className="text-[11px] font-semibold text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md">Default: Moral Class Alihsan Academy</span>
+          </div>
+          <div className="relative">
+            <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input 
+              placeholder="Moral Class Alihsan Academy"
+              value={formData.title}
+              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+              className="pl-10 h-14 rounded-xl border-2 font-medium"
+            />
           </div>
         </div>
 

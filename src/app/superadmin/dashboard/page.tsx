@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
 import { AcademyHeader } from '@/components/academy-header'
-import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, Search, AlertCircle, X, RefreshCw, Trash } from 'lucide-react'
+import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, Search, AlertCircle, X, RefreshCw, Trash, Pencil, Save } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { Avatar } from '@/components/avatar'
@@ -56,6 +57,86 @@ export default function SuperAdminDashboard() {
   const [selectedTeacherId, setSelectedTeacherId] = useState('')
   const [selectedProfile, setSelectedProfile] = useState<any>(null)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [isEditingTeacher, setIsEditingTeacher] = useState(false)
+  const [isSavingTeacher, setIsSavingTeacher] = useState(false)
+  const [editTeacherForm, setEditTeacherForm] = useState({
+    name: '',
+    date_of_joining: '',
+    mobile_number: '',
+    current_country: '',
+    current_state: '',
+    educational_qualifications: '',
+  })
+
+  const startEditTeacher = () => {
+    if (!selectedProfile) return
+    const rawDoj = selectedProfile.date_of_joining || selectedProfile.joined_date || selectedProfile.doj || ''
+    const cleanDoj = rawDoj.includes('T') ? rawDoj.split('T')[0] : rawDoj
+    setEditTeacherForm({
+      name: selectedProfile.name || '',
+      date_of_joining: cleanDoj,
+      mobile_number: selectedProfile.mobile_number || selectedProfile.mobile || '',
+      current_country: selectedProfile.current_country || selectedProfile.country || '',
+      current_state: selectedProfile.current_state || selectedProfile.state || '',
+      educational_qualifications: selectedProfile.educational_qualifications || selectedProfile.qualification || '',
+    })
+    setIsEditingTeacher(true)
+  }
+
+  async function handleSaveTeacherProfile(e?: React.FormEvent) {
+    if (e) e.preventDefault()
+    if (!selectedProfile) return
+    if (!editTeacherForm.name.trim()) {
+      toast.error('Teacher full name cannot be empty')
+      return
+    }
+
+    setIsSavingTeacher(true)
+    try {
+      const response = await fetch('/api/admin/teacher-profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          teacherId: selectedProfile.id,
+          name: editTeacherForm.name.trim(),
+          dateOfJoining: editTeacherForm.date_of_joining || null,
+          mobileNumber: editTeacherForm.mobile_number || null,
+          country: editTeacherForm.current_country || null,
+          state: editTeacherForm.current_state || null,
+          educationalQualifications: editTeacherForm.educational_qualifications || null
+        })
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update teacher profile')
+      }
+
+      const updatedProfile = {
+        ...selectedProfile,
+        name: editTeacherForm.name.trim(),
+        date_of_joining: editTeacherForm.date_of_joining || null,
+        mobile_number: editTeacherForm.mobile_number || null,
+        current_country: editTeacherForm.current_country || null,
+        current_state: editTeacherForm.current_state || null,
+        educational_qualifications: editTeacherForm.educational_qualifications || null
+      }
+      setSelectedProfile(updatedProfile)
+
+      // Update local teachers array
+      setTeachers(prev => prev.map(t => t.id === selectedProfile.id ? { ...t, ...updatedProfile } : t))
+      // Update local allUsers array
+      setAllUsers(prev => prev.map(u => u.id === selectedProfile.id ? { ...u, name: editTeacherForm.name.trim() } : u))
+
+      toast.success('Teacher profile updated successfully! 🎉')
+      setIsEditingTeacher(false)
+    } catch (err: any) {
+      console.error('Error saving teacher profile:', err)
+      toast.error(err.message || 'Failed to save teacher details')
+    } finally {
+      setIsSavingTeacher(false)
+    }
+  }
 
   useEffect(() => {
     fetchData()
@@ -96,10 +177,16 @@ export default function SuperAdminDashboard() {
         const tp = t.teacher_profiles?.[0] || {}
         return {
           ...t,
-          name: tp.name || t.email,
-          profile_photo: tp.profile_photo || null,
-          mobile_number: tp.mobile_number || tp.mobile || null,
-          date_of_joining: tp.date_of_joining || tp.doj || null,
+          ...tp,
+          name: tp.name || tp.full_name || t.email,
+          profile_photo: tp.profile_photo || tp.photo_url || null,
+          mobile_number: tp.mobile_number || tp.mobile || '',
+          date_of_joining: tp.date_of_joining || tp.joined_date || tp.doj || '',
+          educational_qualifications: tp.educational_qualifications || tp.qualification || '',
+          current_country: tp.current_country || tp.country || '',
+          current_state: tp.current_state || tp.state || '',
+          bank_name: tp.bank_name || '',
+          bank_account_number: tp.bank_account_number || tp.bank_account || '',
         }
       }) || []
 
@@ -482,8 +569,8 @@ export default function SuperAdminDashboard() {
             <PageTransition key="students" className="space-y-6">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-5 rounded-2xl shadow-sm border-2 border-border">
                 <h3 className="text-2xl font-black text-foreground">All Students <span className="text-primary">({students.length})</span></h3>
-                <div className="flex w-full md:w-auto items-center gap-3">
-                  <div className="relative w-full md:w-80">
+                <div className="flex flex-col sm:flex-row w-full md:w-auto items-stretch sm:items-center gap-3">
+                  <div className="relative w-full sm:w-72">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input 
                       placeholder="Search students..." 
@@ -492,105 +579,114 @@ export default function SuperAdminDashboard() {
                       className="pl-10 border-2 bg-muted/30 font-medium h-12"
                     />
                   </div>
-                  <select
-                    className="p-3 border-2 border-border rounded-xl bg-white font-bold text-foreground focus:ring-4 focus:ring-primary/20 outline-none h-12"
-                    value={studentStatusFilter}
-                    onChange={(e) => setStudentStatusFilter(e.target.value)}
-                  >
-                    <option value="all">All Status</option>
-                    <option value="ongoing">Ongoing</option>
-                    <option value="break">Break</option>
-                    <option value="stopped">Stopped</option>
-                  </select>
+                  <div className="relative min-w-[140px]">
+                    <select
+                      className="w-full p-3 pr-8 border-2 border-border rounded-xl bg-white font-bold text-foreground focus:ring-4 focus:ring-primary/20 outline-none h-12 appearance-none cursor-pointer text-sm"
+                      value={studentStatusFilter}
+                      onChange={(e) => setStudentStatusFilter(e.target.value)}
+                    >
+                      <option value="all">All Status</option>
+                      <option value="ongoing">Ongoing</option>
+                      <option value="break">Break</option>
+                      <option value="stopped">Stopped</option>
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  </div>
                 </div>
               </div>
 
               <AnimatedCard delay={0.1} className="p-0 overflow-hidden border-2 border-border">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse min-w-[650px]">
+                  <table className="w-full text-left border-collapse min-w-[1050px]">
                     <thead>
                       <tr className="bg-muted border-b-2 border-border">
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Reg No</th>
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Student Name</th>
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Status</th>
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Class</th>
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Assigned Teacher</th>
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Joined Date</th>
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest text-right">Actions</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest whitespace-nowrap min-w-[100px]">Reg No</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest whitespace-nowrap min-w-[200px]">Student Name</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest whitespace-nowrap min-w-[130px]">Status</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest whitespace-nowrap min-w-[180px]">Class</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest whitespace-nowrap min-w-[320px]">Assigned Teacher</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest whitespace-nowrap min-w-[130px]">Joined Date</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest text-right whitespace-nowrap min-w-[130px]">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y-2 divide-border">
                       {filteredStudents.length > 0 ? filteredStudents.map((s) => (
                         <tr key={s.id} className="hover:bg-muted/30 transition-colors">
-                          <td className="p-4 font-black text-primary">{s.registration_number}</td>
-                          <td className="p-4">
+                          <td className="p-4 font-black text-primary whitespace-nowrap">{s.registration_number}</td>
+                          <td className="p-4 whitespace-nowrap">
                             <div className="flex items-center gap-3">
                               <Avatar photoUrl={s.profile_photo} name={s.name} size="sm" />
                               <div>
-                                <p className="font-bold text-foreground">{s.name}</p>
+                                <p className="font-bold text-foreground text-sm leading-tight">{s.name}</p>
                               </div>
                             </div>
                           </td>
-                          <td className="p-4">
+                          <td className="p-4 whitespace-nowrap">
                             <StatusBadge status={s.enrolment_status} />
                           </td>
-                          <td className="p-4 font-bold text-foreground">
-                            <span className="bg-primary/10 text-primary border-2 border-primary/20 px-3 py-1 rounded-xl text-xs uppercase">{s.class_name}</span>
+                          <td className="p-4 whitespace-nowrap font-bold text-foreground">
+                            <span className="inline-flex items-center bg-primary/10 text-primary border-2 border-primary/20 px-3 py-1 rounded-xl text-xs uppercase font-black tracking-wide whitespace-nowrap">
+                              {s.class_name}
+                            </span>
                           </td>
-                          <td className="p-4 text-sm font-medium text-foreground">
+                          <td className="p-4 text-sm font-medium text-foreground whitespace-nowrap">
                             {editingStudentId === s.id ? (
-                              <div className="flex items-center gap-2">
-                                <select
-                                  className="bg-muted border-2 border-border rounded-lg outline-none focus:border-primary text-sm py-1.5 px-2 w-full max-w-[220px]"
-                                  value={selectedTeacherId}
-                                  onChange={(e) => setSelectedTeacherId(e.target.value)}
-                                >
-                                  <option value="" className="text-muted-foreground italic">Unassigned</option>
-                                  {teachers.map(t => (
-                                    <option key={t.id} value={t.id}>{t.name}</option>
-                                  ))}
-                                </select>
-                                <BouncyButton
-                                  size="sm"
+                              <div className="flex items-center gap-2 max-w-[340px]">
+                                <div className="relative flex-1 min-w-[180px]">
+                                  <select
+                                    className="w-full bg-white border-2 border-primary/50 focus:border-primary rounded-xl outline-none text-xs sm:text-sm font-semibold py-1.5 pl-3 pr-8 h-10 shadow-sm appearance-none cursor-pointer"
+                                    value={selectedTeacherId}
+                                    onChange={(e) => setSelectedTeacherId(e.target.value)}
+                                  >
+                                    <option value="" className="text-muted-foreground italic">Unassigned</option>
+                                    {teachers.map(t => (
+                                      <option key={t.id} value={t.id}>{t.name}</option>
+                                    ))}
+                                  </select>
+                                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                                </div>
+                                <button
+                                  type="button"
                                   onClick={() => handleReassignTeacher(s.id, selectedTeacherId)}
                                   disabled={reassigningStudentId === s.id}
+                                  className="h-10 px-3 text-xs bg-primary hover:bg-primary/90 active:scale-95 text-white rounded-xl font-bold flex items-center justify-center gap-1 shadow-sm transition-all disabled:opacity-50 shrink-0"
                                 >
                                   {reassigningStudentId === s.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
-                                </BouncyButton>
-                                <BouncyButton
-                                  size="sm"
-                                  variant="outline"
+                                </button>
+                                <button
+                                  type="button"
                                   onClick={() => {
                                     setEditingStudentId(null)
                                     setSelectedTeacherId('')
                                   }}
+                                  className="h-10 px-2.5 text-xs border-2 border-border hover:bg-muted text-muted-foreground hover:text-foreground rounded-xl font-semibold transition-all shrink-0"
                                 >
                                   Cancel
-                                </BouncyButton>
+                                </button>
                               </div>
                             ) : (
                               <div className="flex items-center gap-3">
-                                <span className="font-bold text-foreground min-w-[140px]">
+                                <span className="font-bold text-foreground text-sm min-w-[130px] truncate">
                                   {teachers.find(t => t.id === s.teacher_id)?.name || 'Unassigned'}
                                 </span>
-                                <BouncyButton
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-xs py-1 h-8"
+                                <button
+                                  type="button"
+                                  className="px-2.5 py-1 text-xs font-bold rounded-lg border-2 border-border hover:border-primary/40 hover:bg-primary/10 hover:text-primary transition-all flex items-center gap-1 text-muted-foreground shrink-0 shadow-2xs"
                                   onClick={() => {
                                     setEditingStudentId(s.id)
                                     setSelectedTeacherId(s.teacher_id || '')
                                   }}
                                 >
-                                  Change Teacher
-                                </BouncyButton>
+                                  <Pencil className="h-3 w-3" />
+                                  Change
+                                </button>
                               </div>
                             )}
                           </td>
-                          <td className="p-4 text-sm text-muted-foreground font-bold">
+                          <td className="p-4 text-xs text-muted-foreground font-bold whitespace-nowrap">
                             {format(new Date(s.created_at), "MMM d, yyyy")}
                           </td>
-                          <td className="p-4 text-right">
+                          <td className="p-4 text-right whitespace-nowrap">
                             <BouncyButton 
                               size="sm" 
                               variant="ghost"
@@ -604,8 +700,12 @@ export default function SuperAdminDashboard() {
                           </td>
                         </tr>
                       )) : (
-                        <tr><td colSpan={6} className="p-8 text-center text-muted-foreground font-bold">No students found.</td></tr>
+                        <tr><td colSpan={7} className="p-8 text-center text-muted-foreground font-bold">No students found.</td></tr>
                       )}
+                    </tbody>
+                  </table>
+                </div>
+              </AnimatedCard>
                     </tbody>
                   </table>
                 </div>
@@ -946,11 +1046,34 @@ export default function SuperAdminDashboard() {
             >
             <div className="p-4 sm:p-6 border-b-2 border-border flex justify-between items-center bg-muted/50">
               <h3 className="text-xl sm:text-2xl font-black text-foreground">
-                {selectedProfile.role === 'student' ? 'Student Profile' : 'Teacher Profile'}
+                {selectedProfile.role === 'student' ? 'Student Profile' : (isEditingTeacher ? 'Edit Teacher Profile' : 'Teacher Profile')}
               </h3>
-              <BouncyButton variant="ghost" size="icon" onClick={() => setIsProfileModalOpen(false)}>
-                <X className="h-6 w-6" />
-              </BouncyButton>
+              <div className="flex items-center gap-2">
+                {selectedProfile.role === 'teacher' && !isEditingTeacher && (
+                  <BouncyButton 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={startEditTeacher}
+                    className="flex items-center gap-1.5 font-bold text-xs sm:text-sm h-9 px-3 border-2"
+                  >
+                    <Pencil className="h-3.5 w-3.5 text-primary" />
+                    <span>Edit</span>
+                  </BouncyButton>
+                )}
+                {selectedProfile.role === 'teacher' && isEditingTeacher && (
+                  <BouncyButton 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={() => setIsEditingTeacher(false)}
+                    className="font-bold text-xs sm:text-sm h-9 px-3 text-muted-foreground"
+                  >
+                    Cancel
+                  </BouncyButton>
+                )}
+                <BouncyButton variant="ghost" size="icon" onClick={() => { setIsProfileModalOpen(false); setIsEditingTeacher(false); }}>
+                  <X className="h-6 w-6" />
+                </BouncyButton>
+              </div>
             </div>
             
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
@@ -1053,18 +1176,148 @@ export default function SuperAdminDashboard() {
                   </>
                 ) : (
                   <>
-                    <ProfileItem label="Date of Joining" value={selectedProfile.date_of_joining ? format(parseISO(selectedProfile.date_of_joining), 'MMM d, yyyy') : (selectedProfile.created_at ? format(new Date(selectedProfile.created_at), 'MMM d, yyyy') : 'N/A')} />
-                    <ProfileItem label="Mobile Number" value={selectedProfile.mobile_number} />
-                    <ProfileItem label="Country" value={selectedProfile.current_country} />
-                    <ProfileItem label="State" value={selectedProfile.current_state} />
-                    <div className="md:col-span-2">
-                      <ProfileItem label="Educational Qualifications" value={selectedProfile.educational_qualifications} />
-                    </div>
-                    {selectedProfile.bank_account_number ? (
-                      <div className="md:col-span-2">
-                        <ProfileItem label="Bank Account Details" value={`${selectedProfile.bank_name || ''} - ${selectedProfile.bank_account_number}`} />
+                    {isEditingTeacher ? (
+                      <div className="md:col-span-2 space-y-5">
+                        <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-3 sm:p-4 text-xs font-semibold text-amber-900 flex items-start gap-2.5">
+                          <span className="text-sm shrink-0 mt-0.5">🔒</span>
+                          <p>
+                            <strong>Admin Note:</strong> Profile photos are personal to each educator and can only be updated by the teacher directly. All other profile details can be edited below.
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 bg-muted/30 p-4 sm:p-6 rounded-2xl border-2 border-border/60">
+                          <div className="space-y-1.5 sm:space-y-2">
+                            <Label className="font-bold text-foreground text-xs uppercase tracking-wider">
+                              Teacher Full Name <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                              value={editTeacherForm.name}
+                              onChange={(e) => setEditTeacherForm(prev => ({ ...prev, name: e.target.value }))}
+                              placeholder="e.g. Sheikh Ahmed"
+                              className="font-medium bg-white h-11 text-base md:text-sm"
+                            />
+                          </div>
+
+                          <div className="space-y-1.5 sm:space-y-2">
+                            <Label className="font-bold text-foreground text-xs uppercase tracking-wider">
+                              Date of Joining
+                            </Label>
+                            <Input
+                              type="date"
+                              value={editTeacherForm.date_of_joining}
+                              onChange={(e) => setEditTeacherForm(prev => ({ ...prev, date_of_joining: e.target.value }))}
+                              className="font-medium bg-white h-11 text-base md:text-sm"
+                            />
+                          </div>
+
+                          <div className="space-y-1.5 sm:space-y-2">
+                            <Label className="font-bold text-foreground text-xs uppercase tracking-wider">
+                              Mobile Number
+                            </Label>
+                            <Input
+                              value={editTeacherForm.mobile_number}
+                              onChange={(e) => setEditTeacherForm(prev => ({ ...prev, mobile_number: e.target.value }))}
+                              placeholder="e.g. +44 7123 456789"
+                              className="font-medium bg-white h-11 text-base md:text-sm"
+                            />
+                          </div>
+
+                          <div className="space-y-1.5 sm:space-y-2">
+                            <Label className="font-bold text-foreground text-xs uppercase tracking-wider">
+                              Country
+                            </Label>
+                            <Input
+                              value={editTeacherForm.current_country}
+                              onChange={(e) => setEditTeacherForm(prev => ({ ...prev, current_country: e.target.value }))}
+                              placeholder="e.g. United Kingdom"
+                              className="font-medium bg-white h-11 text-base md:text-sm"
+                            />
+                          </div>
+
+                          <div className="space-y-1.5 sm:space-y-2 md:col-span-2">
+                            <Label className="font-bold text-foreground text-xs uppercase tracking-wider">
+                              State / Region
+                            </Label>
+                            <Input
+                              value={editTeacherForm.current_state}
+                              onChange={(e) => setEditTeacherForm(prev => ({ ...prev, current_state: e.target.value }))}
+                              placeholder="e.g. London / Birmingham"
+                              className="font-medium bg-white h-11 text-base md:text-sm"
+                            />
+                          </div>
+
+                          <div className="space-y-1.5 sm:space-y-2 md:col-span-2">
+                            <Label className="font-bold text-foreground text-xs uppercase tracking-wider">
+                              Educational Qualifications
+                            </Label>
+                            <Textarea
+                              value={editTeacherForm.educational_qualifications}
+                              onChange={(e) => setEditTeacherForm(prev => ({ ...prev, educational_qualifications: e.target.value }))}
+                              placeholder="e.g. B.A. Islamic Studies, Hafiz-ul-Quran, Certified Tajweed Instructor"
+                              rows={3}
+                              className="font-medium bg-white resize-none text-base md:text-sm"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                          <BouncyButton
+                            onClick={handleSaveTeacherProfile}
+                            disabled={isSavingTeacher}
+                            className="flex-1 h-12 bg-primary hover:bg-primary/90 text-white font-black text-sm sm:text-base flex items-center justify-center gap-2 rounded-xl min-h-[44px]"
+                          >
+                            {isSavingTeacher ? (
+                              <Loader2 className="h-5 w-5 animate-spin" />
+                            ) : (
+                              <Save className="h-4 w-4" />
+                            )}
+                            {isSavingTeacher ? 'Saving Changes...' : 'Save Teacher Profile'}
+                          </BouncyButton>
+                          <BouncyButton
+                            variant="outline"
+                            onClick={() => setIsEditingTeacher(false)}
+                            disabled={isSavingTeacher}
+                            className="h-12 px-6 font-bold text-sm sm:text-base rounded-xl border-2 min-h-[44px]"
+                          >
+                            Cancel
+                          </BouncyButton>
+                        </div>
                       </div>
-                    ) : null}
+                    ) : (
+                      <>
+                        <ProfileItem 
+                          label="Date of Joining" 
+                          value={selectedProfile.date_of_joining ? (
+                            selectedProfile.date_of_joining.includes('-') 
+                              ? format(parseISO(selectedProfile.date_of_joining.split('T')[0]), 'MMM d, yyyy') 
+                              : selectedProfile.date_of_joining
+                          ) : (selectedProfile.created_at ? format(new Date(selectedProfile.created_at), 'MMM d, yyyy') : 'N/A')} 
+                        />
+                        <ProfileItem label="Mobile Number" value={selectedProfile.mobile_number || 'N/A'} />
+                        <ProfileItem label="Country" value={selectedProfile.current_country || 'N/A'} />
+                        <ProfileItem label="State" value={selectedProfile.current_state || 'N/A'} />
+                        <div className="md:col-span-2">
+                          <ProfileItem label="Educational Qualifications" value={selectedProfile.educational_qualifications || 'N/A'} />
+                        </div>
+                        {selectedProfile.bank_account_number ? (
+                          <div className="md:col-span-2">
+                            <ProfileItem label="Bank Account Details" value={`${selectedProfile.bank_name || ''} - ${selectedProfile.bank_account_number}`} />
+                          </div>
+                        ) : null}
+
+                        <div className="md:col-span-2 flex justify-end pt-2">
+                          <BouncyButton
+                            size="sm"
+                            variant="outline"
+                            onClick={startEditTeacher}
+                            className="flex items-center gap-1.5 font-black text-xs sm:text-sm px-4 py-2 border-2 text-primary border-primary/30 hover:bg-primary/5 min-h-[44px]"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                            <span>Edit Teacher Profile</span>
+                          </BouncyButton>
+                        </div>
+                      </>
+                    )}
 
                     {/* Teacher Performance */}
                     <div className="md:col-span-2 mt-4 pt-6 border-t-2 border-border">

@@ -51,10 +51,14 @@ export default function AdminDashboard() {
         const tp = t.teacher_profiles?.[0] || {}
         return {
           ...t,
-          name: tp.name || t.email,
-          profile_photo: tp.profile_photo || null,
-          mobile_number: tp.mobile_number || tp.mobile || null,
-          date_of_joining: tp.date_of_joining || tp.doj || null,
+          ...tp,
+          name: tp.name || tp.full_name || t.email,
+          profile_photo: tp.profile_photo || tp.photo_url || null,
+          mobile_number: tp.mobile_number || tp.mobile || '',
+          date_of_joining: tp.date_of_joining || tp.joined_date || tp.doj || '',
+          educational_qualifications: tp.educational_qualifications || tp.qualification || '',
+          current_country: tp.current_country || tp.country || '',
+          current_state: tp.current_state || tp.state || '',
         }
       }) || []
 

@@ -52,9 +52,27 @@ export default function StudentDashboard() {
 
       const sp = data.studentProfile
       const profile = data.profile
-      const classesData = data.classes || []
+      const rawClasses = data.classes || []
       const attendance = data.attendance || []
       const teacherProfiles = data.teachers || []
+
+      const classesData = rawClasses.map((c: any) => {
+        let title = 'Moral Class Alihsan Academy'
+        let recordingUrl = c.recording_url
+        if (c.title) title = c.title
+        if (c.recording_url && typeof c.recording_url === 'string' && c.recording_url.trim().startsWith('{')) {
+          try {
+            const parsed = JSON.parse(c.recording_url)
+            if (parsed.title) title = parsed.title
+            recordingUrl = parsed.recording_url || null
+          } catch (e) {}
+        }
+        return {
+          ...c,
+          title,
+          recording_url: recordingUrl,
+        }
+      })
 
       setStudentProfile(sp)
       setAllClasses(classesData)
@@ -333,7 +351,7 @@ function HomeTab({ studentName, todayClass, upcomingClasses, teachers, onRefresh
                     <Avatar photoUrl={teacher?.profile_photo} name={teacher?.name} size="lg" />
                     <div className="space-y-1">
                       <span className="inline-block px-3 py-1 bg-destructive text-white text-[10px] font-black rounded-full uppercase tracking-widest shadow-sm animate-pulse mb-1">Live Today</span>
-                      <h4 className="font-black text-xl sm:text-2xl md:text-3xl text-foreground">{todayClass.title || 'Live Session'}</h4>
+                      <h4 className="font-black text-xl sm:text-2xl md:text-3xl text-foreground">{todayClass.title || 'Moral Class Alihsan Academy'}</h4>
                       <p className="text-sm font-bold text-primary">Teacher {teacher?.name || 'Assigned'}</p>
                       <div className="text-muted-foreground font-semibold mt-1.5 flex items-center gap-2 text-xs sm:text-sm">
                         <Clock className="h-4 w-4 shrink-0" />
@@ -399,7 +417,7 @@ function HomeTab({ studentName, todayClass, upcomingClasses, teachers, onRefresh
                   <div className="flex items-center gap-4">
                     <Avatar photoUrl={teacher?.profile_photo} name={teacher?.name} size="md" />
                     <div>
-                      <h4 className="font-bold text-foreground text-lg leading-tight">{c.title || 'Live Session'}</h4>
+                      <h4 className="font-bold text-foreground text-lg leading-tight">{c.title || 'Moral Class Alihsan Academy'}</h4>
                       <p className="text-xs font-bold text-primary mb-1">{teacher?.name || 'Teacher'}</p>
                       <p className="font-semibold text-muted-foreground text-xs">
                         📅 {formatUKTime(c.scheduled_at)}
@@ -618,7 +636,7 @@ function AttendanceTab({
                     <div className="flex items-start md:items-center gap-4">
                       <Avatar photoUrl={teacher?.profile_photo} name={teacher?.name} size="md" />
                       <div>
-                        <p className="font-black text-foreground text-base md:text-lg">{item.title}</p>
+                        <p className="font-black text-foreground text-base md:text-lg">{item.title || 'Moral Class Alihsan Academy'}</p>
                         <p className="text-xs font-bold text-primary">Teacher {teacher?.name || 'Educator'}</p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground font-semibold mt-1">
                           <Clock className="h-3.5 w-3.5" />

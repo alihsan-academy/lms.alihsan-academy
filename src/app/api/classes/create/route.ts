@@ -20,11 +20,17 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { studentId, meetLink, date, time, repeatWeekly } = body
+    const { studentId, title, meetLink, date, time, repeatWeekly } = body
 
     if (!studentId || !date || !time) {
       return NextResponse.json({ error: 'studentId, date, and time are required' }, { status: 400 })
     }
+
+    const sessionTitle = (title && typeof title === 'string' && title.trim()) ? title.trim() : 'Moral Class Alihsan Academy'
+    const metaPayload = JSON.stringify({
+      title: sessionTitle,
+      recording_url: null,
+    })
 
     const supabaseAdmin = getAdminClient()
 
@@ -70,7 +76,8 @@ export async function POST(request: Request) {
           student_id: studentId,
           meet_link: meetLink || null,
           scheduled_at: addWeeks(scheduledUTC, i).toISOString(),
-          status: 'scheduled'
+          status: 'scheduled',
+          recording_url: metaPayload
         })
       }
     } else {
@@ -79,7 +86,8 @@ export async function POST(request: Request) {
         student_id: studentId,
         meet_link: meetLink || null,
         scheduled_at: scheduledUTC.toISOString(),
-        status: 'scheduled'
+        status: 'scheduled',
+        recording_url: metaPayload
       })
     }
 

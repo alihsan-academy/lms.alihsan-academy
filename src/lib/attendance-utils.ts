@@ -134,6 +134,7 @@ export function parseClassMetadata(
   let recording_url: string | null = null
   let remarks = ''
   let statusDetail = ''
+  let title = c.title || 'Moral Class Alihsan Academy'
 
   if (c.recording_url) {
     if (typeof c.recording_url === 'string' && c.recording_url.trim().startsWith('{')) {
@@ -142,6 +143,9 @@ export function parseClassMetadata(
         recording_url = parsed.recording_url || null
         remarks = parsed.remarks || ''
         statusDetail = parsed.status_detail || parsed.reason || ''
+        if (parsed.title) {
+          title = parsed.title
+        }
       } catch (e) {
         recording_url = c.recording_url
       }
@@ -221,7 +225,7 @@ export function parseClassMetadata(
     student_id: c.student_id,
     teacher_id: c.teacher_id,
     scheduled_at: c.scheduled_at,
-    title: c.title || 'Al-Ihsan Live Session',
+    title: title || 'Moral Class Alihsan Academy',
     meet_link: c.meet_link || null,
     recording_url,
     raw_status: c.status,

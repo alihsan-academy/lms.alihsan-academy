@@ -2,7 +2,7 @@
 
 import { useState, useEffect, ChangeEvent } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Upload, Lock, Users, Star, Award, GraduationCap, MapPin } from 'lucide-react'
+import { Loader2, Lock, Users, Star, Award, GraduationCap, MapPin, ShieldCheck, Camera } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -10,7 +10,6 @@ import { toast } from 'sonner'
 import { format, parseISO } from 'date-fns'
 import { motion } from 'framer-motion'
 import { AnimatedCard } from '@/components/animated-card'
-import { BouncyButton } from '@/components/bouncy-button'
 
 function calculateCompletion(data: any) {
   const fields = [
@@ -30,7 +29,7 @@ function calculateCompletion(data: any) {
 export default function TeacherProfilePage() {
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [profile, setProfile] = useState<any>(null)
   const [completion, setCompletion] = useState({ filled: 0, total: 0, percent: 0 })
 
@@ -54,13 +53,13 @@ export default function TeacherProfilePage() {
 
       const combined = {
         registered_email: user.email,
-        full_name: teach?.name || user.user_metadata?.full_name || '',
-        date_of_joining: teach?.date_of_joining ? format(parseISO(teach.date_of_joining), 'yyyy-MM-dd') : '',
-        educational_qualifications: teach?.educational_qualifications || '',
-        mobile_number: teach?.mobile_number || '',
-        current_country: teach?.current_country || '',
-        current_state: teach?.current_state || '',
-        profile_photo: teach?.profile_photo || '',
+        full_name: teach?.name || teach?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || '',
+        date_of_joining: teach?.date_of_joining ? format(parseISO(teach.date_of_joining), 'yyyy-MM-dd') : (teach?.joined_date || ''),
+        educational_qualifications: teach?.educational_qualifications || teach?.qualification || '',
+        mobile_number: teach?.mobile_number || teach?.mobile || '',
+        current_country: teach?.current_country || teach?.country || '',
+        current_state: teach?.current_state || teach?.state || '',
+        profile_photo: teach?.profile_photo || teach?.photo_url || '',
         assigned_students: studentNames,
         total_students: studentNames.length
       }
@@ -71,57 +70,56 @@ export default function TeacherProfilePage() {
     fetchProfile()
   }, [])
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    const updatedProfile = { ...profile, [name]: value }
-    setProfile(updatedProfile)
-    setCompletion(calculateCompletion(updatedProfile))
-  }
-
   const handlePhotoUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    
-    setSaving(true)
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${profile.full_name || 'profile'}_${Date.now()}.${fileExt}`
-    const { error: uploadError } = await supabase.storage.from('profiles').upload(fileName, file, { upsert: true })
-    
-    if (uploadError) {
-      toast.error('Photo upload failed')
-      setSaving(false)
+
+    // Quick file validation
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file (PNG, JPG, WebP).')
       return
     }
-    
-    const { data: urlData } = supabase.storage.from('profiles').getPublicUrl(fileName)
-    const updatedProfile = { ...profile, profile_photo: urlData.publicUrl }
-    setProfile(updatedProfile)
-    setCompletion(calculateCompletion(updatedProfile))
-    toast.success('Photo uploaded successfully! 📸')
-    setSaving(false)
-  }
 
-  const handleSave = async () => {
-    setSaving(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    setUploadingPhoto(true)
+    const toastId = toast.loading('Uploading profile photo...')
 
-    const { error: teacherError } = await supabase.from('teacher_profiles').update({
-      name: profile.full_name,
-      date_of_joining: profile.date_of_joining ? new Date(profile.date_of_joining).toISOString() : null,
-      educational_qualifications: profile.educational_qualifications,
-      mobile_number: profile.mobile_number,
-      current_country: profile.current_country,
-      current_state: profile.current_state,
-      profile_photo: profile.profile_photo
-    }).eq('user_id', user.id)
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `teacher_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+      
+      const { error: uploadError } = await supabase.storage
+        .from('profiles')
+        .upload(fileName, file, { upsert: true })
 
-    if (teacherError) {
-      toast.error('Failed to save teacher details')
-    } else {
-      toast.success('Profile saved successfully! ✨')
+      if (uploadError) {
+        throw uploadError
+      }
+
+      const { data: urlData } = supabase.storage.from('profiles').getPublicUrl(fileName)
+      const photoUrl = urlData.publicUrl
+
+      // Persist photo URL securely through the server endpoint
+      const response = await fetch('/api/teacher/photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photoUrl })
+      })
+
+      const result = await response.json()
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to save profile photo')
+      }
+
+      const updatedProfile = { ...profile, profile_photo: photoUrl }
+      setProfile(updatedProfile)
+      setCompletion(calculateCompletion(updatedProfile))
+      toast.success('Profile photo updated successfully! 📸', { id: toastId })
+    } catch (err: any) {
+      console.error('Photo upload error:', err)
+      toast.error(err.message || 'Photo upload failed. Please try again.', { id: toastId })
+    } finally {
+      setUploadingPhoto(false)
     }
-    setSaving(false)
   }
 
   if (loading || !profile) {
@@ -164,22 +162,55 @@ export default function TeacherProfilePage() {
           <GraduationCap className="h-24 w-24" />
         </div>
         <div className="relative mb-4 z-10">
-          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white flex items-center justify-center overflow-hidden border-4 border-white/20 shadow-md">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white flex items-center justify-center overflow-hidden border-4 border-white/20 shadow-md relative">
             {profile.profile_photo ? (
               <img src={profile.profile_photo} alt="Profile" className="w-full h-full object-cover" />
             ) : (
               <span className="text-2xl sm:text-3xl font-bold text-[#1E293B]">{profile.full_name?.charAt(0) || 'U'}</span>
             )}
+            {uploadingPhoto && (
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-white" />
+              </div>
+            )}
           </div>
-          <label className="absolute bottom-0 right-0 p-2 bg-[#E8A020] rounded-full text-white cursor-pointer hover:bg-[#D97706] transition-colors shadow-sm border-2 border-white w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center">
-            <Upload className="h-3.5 w-3.5" />
-            <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={saving} />
+          <label 
+            title="Change Profile Picture"
+            className="absolute bottom-0 right-0 p-2 bg-[#E8A020] rounded-full text-white cursor-pointer hover:bg-[#D97706] active:scale-95 transition-all shadow-md border-2 border-white w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center"
+          >
+            <Camera className="h-4 w-4" />
+            <input 
+              type="file" 
+              accept="image/*" 
+              className="hidden" 
+              onChange={handlePhotoUpload} 
+              disabled={uploadingPhoto} 
+            />
           </label>
         </div>
         
-        <h3 className="text-lg sm:text-xl font-bold z-10">{profile.full_name || 'Your Name'}</h3>
+        <h3 className="text-lg sm:text-xl font-bold z-10">{profile.full_name || 'Teacher Profile'}</h3>
         <p className="mt-1 text-white/70 font-medium text-xs">Islamic Online Academy Educator</p>
+        <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white/90 text-[11px] font-semibold border border-white/15">
+          <Camera className="h-3 w-3 text-secondary" />
+          <span>Tap the camera icon to update your profile photo</span>
+        </div>
       </AnimatedCard>
+
+      {/* Notice Banner */}
+      <div className="bg-amber-50/80 border-2 border-amber-200/90 rounded-xl p-3.5 sm:p-4 text-amber-900 shadow-sm flex items-start gap-3">
+        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0 mt-0.5 text-amber-800">
+          <ShieldCheck className="h-4 w-4" />
+        </div>
+        <div>
+          <p className="text-xs sm:text-sm font-black text-amber-950">
+            Official Academy Records (Read-Only)
+          </p>
+          <p className="text-[11px] sm:text-xs text-amber-800 mt-1 font-medium leading-relaxed">
+            Personal, contact, and qualification records are officially maintained by Academy Administration. To request changes to your name, contact information, or qualifications, please reach out to Administration. You can update your profile photo anytime using the camera button above.
+          </p>
+        </div>
+      </div>
 
       <AnimatedCard delay={0.3} className="p-4 sm:p-8 space-y-6 sm:space-y-8 rounded-xl sm:rounded-2xl">
         <div>
@@ -200,28 +231,69 @@ export default function TeacherProfilePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 bg-muted/30 p-3.5 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-border/50">
             <div className="space-y-1.5 sm:space-y-2">
-              <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">Registered Email <Lock className="h-3 w-3" /></Label>
-              <Input value={profile.registered_email} disabled className="bg-muted border-none opacity-70 font-medium h-11 text-base md:text-sm" />
+              <Label className="flex items-center gap-1.5 text-muted-foreground font-bold text-xs uppercase tracking-wider">
+                <span>Registered Email</span>
+                <Lock className="h-3 w-3 text-muted-foreground/70" />
+              </Label>
+              <Input 
+                value={profile.registered_email || ''} 
+                disabled 
+                readOnly
+                className="bg-muted/70 border-border/60 text-muted-foreground font-medium h-11 text-base md:text-sm cursor-not-allowed" 
+              />
             </div>
 
             <div className="space-y-1.5 sm:space-y-2">
-              <Label className="font-bold text-foreground">Full Name</Label>
-              <Input name="full_name" value={profile.full_name} onChange={handleChange} placeholder="Enter your full name" className="font-medium bg-white h-11 text-base md:text-sm" />
+              <Label className="flex items-center gap-1.5 text-muted-foreground font-bold text-xs uppercase tracking-wider">
+                <span>Full Name</span>
+                <Lock className="h-3 w-3 text-muted-foreground/70" />
+              </Label>
+              <Input 
+                value={profile.full_name || 'Not specified'} 
+                disabled 
+                readOnly
+                className="bg-muted/70 border-border/60 text-foreground font-medium h-11 text-base md:text-sm cursor-not-allowed" 
+              />
             </div>
 
             <div className="space-y-1.5 sm:space-y-2">
-              <Label className="font-bold text-foreground">Date of Joining Academy</Label>
-              <Input type="date" name="date_of_joining" value={profile.date_of_joining} onChange={handleChange} className="font-medium bg-white h-11 text-base md:text-sm" />
+              <Label className="flex items-center gap-1.5 text-muted-foreground font-bold text-xs uppercase tracking-wider">
+                <span>Date of Joining Academy</span>
+                <Lock className="h-3 w-3 text-muted-foreground/70" />
+              </Label>
+              <Input 
+                value={profile.date_of_joining ? (profile.date_of_joining.includes('-') ? format(parseISO(profile.date_of_joining), 'MMM d, yyyy') : profile.date_of_joining) : 'Not specified'} 
+                disabled 
+                readOnly
+                className="bg-muted/70 border-border/60 text-foreground font-medium h-11 text-base md:text-sm cursor-not-allowed" 
+              />
             </div>
 
             <div className="space-y-1.5 sm:space-y-2">
-              <Label className="font-bold text-foreground">Mobile Number</Label>
-              <Input name="mobile_number" value={profile.mobile_number} onChange={handleChange} placeholder="e.g. +44 1234 567890" className="font-medium bg-white h-11 text-base md:text-sm" />
+              <Label className="flex items-center gap-1.5 text-muted-foreground font-bold text-xs uppercase tracking-wider">
+                <span>Mobile Number</span>
+                <Lock className="h-3 w-3 text-muted-foreground/70" />
+              </Label>
+              <Input 
+                value={profile.mobile_number || 'Not specified'} 
+                disabled 
+                readOnly
+                className="bg-muted/70 border-border/60 text-foreground font-medium h-11 text-base md:text-sm cursor-not-allowed" 
+              />
             </div>
 
             <div className="space-y-1.5 sm:space-y-2 md:col-span-2">
-              <Label className="font-bold text-foreground">Educational Qualifications</Label>
-              <Textarea name="educational_qualifications" value={profile.educational_qualifications} onChange={handleChange} placeholder="Your degrees, certifications, etc." rows={3} className="font-medium bg-white resize-none text-base md:text-sm" />
+              <Label className="flex items-center gap-1.5 text-muted-foreground font-bold text-xs uppercase tracking-wider">
+                <span>Educational Qualifications</span>
+                <Lock className="h-3 w-3 text-muted-foreground/70" />
+              </Label>
+              <Textarea 
+                value={profile.educational_qualifications || 'Not specified'} 
+                disabled 
+                readOnly
+                rows={3} 
+                className="bg-muted/70 border-border/60 text-foreground font-medium resize-none text-base md:text-sm cursor-not-allowed" 
+              />
             </div>
           </div>
         </div>
@@ -233,13 +305,29 @@ export default function TeacherProfilePage() {
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 bg-muted/30 p-3.5 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-border/50">
             <div className="space-y-1.5 sm:space-y-2">
-              <Label className="font-bold text-foreground">Current Country</Label>
-              <Input name="current_country" value={profile.current_country} onChange={handleChange} placeholder="e.g. United Kingdom" className="font-medium bg-white h-11 text-base md:text-sm" />
+              <Label className="flex items-center gap-1.5 text-muted-foreground font-bold text-xs uppercase tracking-wider">
+                <span>Current Country</span>
+                <Lock className="h-3 w-3 text-muted-foreground/70" />
+              </Label>
+              <Input 
+                value={profile.current_country || 'Not specified'} 
+                disabled 
+                readOnly
+                className="bg-muted/70 border-border/60 text-foreground font-medium h-11 text-base md:text-sm cursor-not-allowed" 
+              />
             </div>
 
             <div className="space-y-1.5 sm:space-y-2">
-              <Label className="font-bold text-foreground">Current State/Region</Label>
-              <Input name="current_state" value={profile.current_state} onChange={handleChange} placeholder="e.g. London" className="font-medium bg-white h-11 text-base md:text-sm" />
+              <Label className="flex items-center gap-1.5 text-muted-foreground font-bold text-xs uppercase tracking-wider">
+                <span>Current State/Region</span>
+                <Lock className="h-3 w-3 text-muted-foreground/70" />
+              </Label>
+              <Input 
+                value={profile.current_state || 'Not specified'} 
+                disabled 
+                readOnly
+                className="bg-muted/70 border-border/60 text-foreground font-medium h-11 text-base md:text-sm cursor-not-allowed" 
+              />
             </div>
           </div>
         </div>
@@ -279,11 +367,17 @@ export default function TeacherProfilePage() {
           </div>
         </div>
 
-        <div className="pt-2 sm:pt-4">
-          <BouncyButton onClick={handleSave} disabled={saving} className="w-full h-13 sm:h-16 text-base sm:text-xl shadow-[0_6px_0_oklch(0.5_0.19_255)] hover:shadow-[0_2px_0_oklch(0.5_0.19_255)] active:shadow-none bg-primary hover:bg-primary/90 active:scale-[0.98] text-white rounded-xl sm:rounded-2xl active:translate-y-1 hover:translate-y-1 min-h-[48px]">
-            {saving ? <Loader2 className="animate-spin mr-2 h-5 w-5 sm:h-6 sm:w-6" /> : null}
-            Save Profile Updates
-          </BouncyButton>
+        {/* Informational Footer Card */}
+        <div className="p-4 sm:p-5 bg-muted/50 border-2 border-border/80 rounded-xl sm:rounded-2xl flex items-start gap-3">
+          <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+            <Lock className="h-4 w-4" />
+          </div>
+          <div className="space-y-1">
+            <h5 className="font-bold text-foreground text-sm">Official Record Verification</h5>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Teacher profiles are verified and maintained directly by the Al-Ihsan Academy Administration. If your name, contact information, or qualifications need updating, please contact an Administrator.
+            </p>
+          </div>
         </div>
       </AnimatedCard>
     </div>
