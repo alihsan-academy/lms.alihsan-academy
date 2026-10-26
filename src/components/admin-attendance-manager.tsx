@@ -33,6 +33,7 @@ import {
 import { generateStudentAttendancePDF, generateTeacherAttendancePDF, generateIntelligenceFilterPDF } from '@/lib/pdf-generator'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
+import { StudentStatusModal } from '@/components/student-status-modal'
 
 interface AdminAttendanceManagerProps {
   students: any[]
@@ -40,6 +41,7 @@ interface AdminAttendanceManagerProps {
   classes: any[]
   attendance: any[]
   allUsers: any[]
+  onRefresh?: () => void
 }
 
 type SearchMode = 'teacher' | 'student' | 'all' | 'filter'
@@ -50,6 +52,7 @@ export function AdminAttendanceManager({
   classes,
   attendance,
   allUsers,
+  onRefresh,
 }: AdminAttendanceManagerProps) {
   const [searchMode, setSearchMode] = useState<SearchMode>('teacher')
   
@@ -67,6 +70,9 @@ export function AdminAttendanceManager({
 
   // Modal for detailed student view from teacher mode
   const [modalStudentData, setModalStudentData] = useState<any>(null)
+  
+  // Modal for updating student enrolment status
+  const [statusModalStudent, setStatusModalStudent] = useState<any>(null)
   
   // PDF export loading state
   const [isExportingPDF, setIsExportingPDF] = useState(false)
@@ -637,15 +643,26 @@ export function AdminAttendanceManager({
                   </div>
                 </div>
 
-                <BouncyButton
-                  onClick={() => handleDownloadStudentPDF(currentStudent, currentStudentSummary)}
-                  disabled={isExportingPDF}
-                  variant="default"
-                  className="bg-primary hover:bg-primary/90 text-white font-black flex items-center gap-2 self-start md:self-auto shadow-md"
-                >
-                  {isExportingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                  Download Student PDF
-                </BouncyButton>
+                <div className="flex flex-wrap items-center gap-3 self-start md:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => setStatusModalStudent(currentStudent)}
+                    className="px-4 py-2.5 rounded-xl border-2 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-xs transition-all cursor-pointer min-h-[44px]"
+                  >
+                    <UserCheck className="h-4 w-4 text-emerald-700" />
+                    <span>Update Status</span>
+                  </button>
+
+                  <BouncyButton
+                    onClick={() => handleDownloadStudentPDF(currentStudent, currentStudentSummary)}
+                    disabled={isExportingPDF}
+                    variant="default"
+                    className="bg-primary hover:bg-primary/90 text-white font-black flex items-center gap-2 shadow-md"
+                  >
+                    {isExportingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                    Download Student PDF
+                  </BouncyButton>
+                </div>
               </div>
 
               {/* Student Break Notification if on break */}
@@ -1189,12 +1206,25 @@ export function AdminAttendanceManager({
                 </div>
               </div>
 
-              <div className="pt-4 border-t-2 border-border">
+              <div className="pt-4 border-t-2 border-border flex flex-col sm:flex-row items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const st = modalStudentData.student
+                    setModalStudentData(null)
+                    setStatusModalStudent(st)
+                  }}
+                  className="w-full sm:w-auto px-4 py-3 rounded-xl border-2 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer min-h-[48px]"
+                >
+                  <UserCheck className="h-4 w-4 text-emerald-700" />
+                  <span>Update Status</span>
+                </button>
+
                 <BouncyButton
                   onClick={() => handleDownloadStudentPDF(modalStudentData.student, modalStudentData.summary)}
                   disabled={isExportingPDF}
                   variant="default"
-                  className="w-full bg-primary hover:bg-primary/90 text-white font-black flex items-center justify-center gap-2"
+                  className="w-full sm:flex-1 bg-primary hover:bg-primary/90 text-white font-black flex items-center justify-center gap-2"
                 >
                   {isExportingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                   Download Student Attendance PDF
@@ -1204,6 +1234,16 @@ export function AdminAttendanceManager({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Dedicated Status Update Modal */}
+      <StudentStatusModal
+        isOpen={!!statusModalStudent}
+        onClose={() => setStatusModalStudent(null)}
+        student={statusModalStudent}
+        onSuccess={() => {
+          if (onRefresh) onRefresh()
+        }}
+      />
     </div>
   )
 }

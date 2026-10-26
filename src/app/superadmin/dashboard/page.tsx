@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
 import { AcademyHeader } from '@/components/academy-header'
-import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, Search, AlertCircle, X, RefreshCw, Trash, Pencil, Save, ChevronDown } from 'lucide-react'
+import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, Search, AlertCircle, X, RefreshCw, Trash, Pencil, Save, ChevronDown, UserCheck, Clock, XCircle } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -17,6 +17,7 @@ import { AnimatedCard } from '@/components/animated-card'
 import { BouncyButton } from '@/components/bouncy-button'
 import { PageTransition } from '@/components/page-transition'
 import { AdminAttendanceManager } from '@/components/admin-attendance-manager'
+import { StudentStatusModal } from '@/components/student-status-modal'
 
 type Tab = 'statistics' | 'students' | 'teachers' | 'attendance' | 'manage'
 
@@ -53,6 +54,7 @@ export default function SuperAdminDashboard() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [newUser, setNewUser] = useState({ email: '', password: '', role: 'student', name: '', className: '', teacherId: '', registrationNumber: '' })
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null)
+  const [statusModalStudent, setStatusModalStudent] = useState<any>(null)
   const [reassigningStudentId, setReassigningStudentId] = useState<string | null>(null)
   const [selectedTeacherId, setSelectedTeacherId] = useState('')
   const [selectedProfile, setSelectedProfile] = useState<any>(null)
@@ -627,7 +629,20 @@ export default function SuperAdminDashboard() {
                             </div>
                           </td>
                           <td className="p-4 whitespace-nowrap">
-                            <StatusBadge status={s.enrolment_status} />
+                            <div className="flex items-center gap-2">
+                              <StatusBadge status={s.enrolment_status} />
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setStatusModalStudent(s)
+                                }}
+                                className="p-1 rounded-lg hover:bg-emerald-50 text-muted-foreground hover:text-emerald-700 transition-colors cursor-pointer"
+                                title="Change enrolment status"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           </td>
                           <td className="p-4 whitespace-nowrap font-bold text-foreground">
                             <span className="inline-flex items-center bg-primary/10 text-primary border-2 border-primary/20 px-3 py-1 rounded-xl text-xs uppercase font-black tracking-wide whitespace-nowrap">
@@ -1102,53 +1117,42 @@ export default function SuperAdminDashboard() {
                     
                     {/* Status Management */}
                     <div className="md:col-span-2 mt-4 pt-6 border-t-2 border-border">
-                      <div className="flex items-center justify-between mb-4">
-                        <h5 className="font-black text-foreground text-xl">Enrolment Status</h5>
-                        <StatusBadge status={selectedProfile.enrolment_status} />
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                        <div>
+                          <h5 className="font-black text-foreground text-xl">Enrolment Status</h5>
+                          <p className="text-xs text-muted-foreground font-medium">Manage student course enrolment & schedules</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <StatusBadge status={selectedProfile.enrolment_status} />
+                          <button
+                            type="button"
+                            onClick={() => setStatusModalStudent(selectedProfile)}
+                            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer min-h-[40px]"
+                          >
+                            <UserCheck className="h-4 w-4" />
+                            <span>Change Status</span>
+                          </button>
+                        </div>
                       </div>
                       
                       {selectedProfile.enrolment_status === 'break' && (
-                        <div className="bg-amber-50 p-4 rounded-xl border-2 border-amber-200 text-amber-800 text-sm font-bold mb-4">
-                          On Break: {selectedProfile.break_from_date} to {selectedProfile.break_to_date}
-                          <br/>Reason: {selectedProfile.break_reason || 'N/A'}
+                        <div className="bg-amber-50 p-4 rounded-xl border-2 border-amber-200 text-amber-900 text-sm font-semibold mb-4 flex items-start gap-2.5">
+                          <Clock className="h-4 w-4 text-amber-700 mt-0.5 shrink-0" />
+                          <div>
+                            <span className="font-bold">On Approved Break:</span> {selectedProfile.break_from_date} to {selectedProfile.break_to_date}
+                            {selectedProfile.break_reason && <p className="text-xs text-amber-800 mt-0.5">Reason: <em>{selectedProfile.break_reason}</em></p>}
+                          </div>
                         </div>
                       )}
                       {selectedProfile.enrolment_status === 'stopped' && (
-                        <div className="bg-red-50 p-4 rounded-xl border-2 border-red-200 text-red-800 text-sm font-bold mb-4">
-                          Stopped on: {selectedProfile.last_class_date}
-                          <br/>Reason: {selectedProfile.stopped_reason || 'N/A'}
+                        <div className="bg-rose-50 p-4 rounded-xl border-2 border-rose-200 text-rose-900 text-sm font-semibold mb-4 flex items-start gap-2.5">
+                          <XCircle className="h-4 w-4 text-rose-700 mt-0.5 shrink-0" />
+                          <div>
+                            <span className="font-bold">Enrolment Stopped on:</span> {selectedProfile.last_class_date}
+                            {selectedProfile.stopped_reason && <p className="text-xs text-rose-800 mt-0.5">Reason: <em>{selectedProfile.stopped_reason}</em></p>}
+                          </div>
                         </div>
                       )}
-                      
-                      <div className="flex flex-wrap gap-2">
-                        {selectedProfile.enrolment_status !== 'ongoing' && (
-                          <BouncyButton size="sm" onClick={() => handleUpdateStatus(selectedProfile.id, 'ongoing')}>
-                            Set Ongoing
-                          </BouncyButton>
-                        )}
-                        {selectedProfile.enrolment_status !== 'break' && (
-                          <BouncyButton size="sm" variant="outline" onClick={() => {
-                            const from = prompt('Break from (YYYY-MM-DD):')
-                            if(!from) return
-                            const to = prompt('Break to (YYYY-MM-DD):')
-                            if(!to) return
-                            const reason = prompt('Reason (optional):')
-                            handleUpdateStatus(selectedProfile.id, 'break', { from, to, reason: reason || '' })
-                          }}>
-                            Set Break
-                          </BouncyButton>
-                        )}
-                        {selectedProfile.enrolment_status !== 'stopped' && (
-                          <BouncyButton size="sm" variant="destructive" onClick={() => {
-                            const date = prompt('Last class date (YYYY-MM-DD):')
-                            if(!date) return
-                            const reason = prompt('Reason (optional):')
-                            handleUpdateStatus(selectedProfile.id, 'stopped', { lastClassDate: date, reason: reason || '' })
-                          }}>
-                            Set Stopped
-                          </BouncyButton>
-                        )}
-                      </div>
                     </div>
                     
                     {/* Attendance Stats */}
@@ -1368,6 +1372,19 @@ export default function SuperAdminDashboard() {
         <NavBtn active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={<CheckCircle className="size-4" />} label="Attendance" />
         <NavBtn active={activeTab === 'manage'} onClick={() => setActiveTab('manage')} icon={<Users className="size-4" />} label="Users" />
       </nav>
+
+      {/* Student Status Modal */}
+      <StudentStatusModal
+        isOpen={!!statusModalStudent}
+        onClose={() => setStatusModalStudent(null)}
+        student={statusModalStudent}
+        onSuccess={(updatedRecord) => {
+          fetchData()
+          if (selectedProfile && updatedRecord && (selectedProfile.id === updatedRecord.id || selectedProfile.user_id === updatedRecord.user_id)) {
+            setSelectedProfile((prev: any) => ({ ...prev, ...updatedRecord }))
+          }
+        }}
+      />
     </div>
   )
 }

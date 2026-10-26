@@ -120,6 +120,7 @@ export default function AdminDashboard() {
             classes={classes}
             attendance={attendanceRecords}
             allUsers={allUsers}
+            onRefresh={fetchData}
           />
         )}
       </main>
