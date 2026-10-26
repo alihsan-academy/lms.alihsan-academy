@@ -398,9 +398,9 @@ export default function TeacherProfilePage() {
                   <table className="w-full text-left border-collapse min-w-[340px]">
                     <thead>
                       <tr className="bg-muted/70 border-b-2 border-border text-xs font-black text-foreground uppercase tracking-wider">
-                        <th className="py-3.5 px-4 text-center w-16 whitespace-nowrap">Sl No</th>
-                        <th className="py-3.5 px-4 w-36 whitespace-nowrap">Reg No</th>
-                        <th className="py-3.5 px-4 whitespace-nowrap">Name of the Student</th>
+                        <th className="py-3.5 px-4 text-center w-20 whitespace-nowrap font-black">Sl no</th>
+                        <th className="py-3.5 px-4 w-36 whitespace-nowrap font-black">Reg no</th>
+                        <th className="py-3.5 px-4 whitespace-nowrap font-black">Name of the student</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/60">
@@ -455,14 +455,14 @@ export default function TeacherProfilePage() {
         </div>
 
         {/* Redesigned Save Profile Updates Button */}
-        <div className="pt-3 sm:pt-5">
+        <div className="pt-4 sm:pt-6">
           <button
             type="button"
             onClick={handleSave}
             disabled={saving || uploadingPhoto}
-            className="group relative w-full h-13 sm:h-14 min-h-[52px] bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:via-teal-700 hover:to-emerald-800 active:scale-[0.99] text-white font-extrabold text-base sm:text-lg rounded-2xl shadow-[0_8px_25px_-4px_rgba(16,185,129,0.35)] hover:shadow-[0_12px_30px_-4px_rgba(16,185,129,0.5)] transition-all duration-200 border border-emerald-400/30 flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer overflow-hidden"
+            className="group relative w-full h-14 min-h-[56px] bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:via-teal-500 hover:to-emerald-600 active:scale-[0.99] text-white font-black text-base sm:text-lg rounded-2xl shadow-[0_10px_30px_-5px_rgba(16,185,129,0.4)] hover:shadow-[0_14px_35px_-5px_rgba(16,185,129,0.55)] transition-all duration-200 border border-emerald-400/30 flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer overflow-hidden"
           >
-            <span className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+            <span className="absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
             {saving ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin text-white" />
@@ -470,7 +470,7 @@ export default function TeacherProfilePage() {
               </>
             ) : (
               <>
-                <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/20 text-white shadow-inner group-hover:scale-110 transition-transform">
+                <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/20 text-white shadow-inner group-hover:scale-110 transition-transform">
                   <Save className="h-4 w-4" />
                 </span>
                 <span className="tracking-wide">Save Profile Updates</span>
