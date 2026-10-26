@@ -39,14 +39,34 @@ export default function TeacherProfilePage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       
-      const { data: teacherRows } = await supabase
-        .from('teacher_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
+      let teach: any = null
+      try {
+        const profileRes = await fetch('/api/teacher/profile', { cache: 'no-store' })
+        if (profileRes.ok) {
+          const profileData = await profileRes.json()
+          if (profileData.profile) {
+            teach = profileData.profile
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching /api/teacher/profile:', err)
+      }
 
-      const teach = teacherRows?.[0] || null
+      // Fallback if API returned null
+      if (!teach) {
+        try {
+          const { data: teacherRows } = await supabase
+            .from('teacher_profiles')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+
+          teach = teacherRows?.[0] || null
+        } catch (e) {
+          console.warn('Fallback teacher_profiles query failed:', e)
+        }
+      }
 
       // Fetch teacher's assigned students via API first for service-role RLS bypass & complete details
       let assignedList: any[] = []

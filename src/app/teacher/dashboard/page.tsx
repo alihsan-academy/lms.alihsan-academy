@@ -122,7 +122,17 @@ export default function TeacherDashboard() {
       }
       setTeacherId(user.id)
       setTeacherEmail(user.email || '')
-      setTeacherName(user.user_metadata?.full_name || user.user_metadata?.name || user.email)
+      let displayName = user.user_metadata?.full_name || user.user_metadata?.name || user.email
+      try {
+        const profRes = await fetch('/api/teacher/profile', { cache: 'no-store' })
+        if (profRes.ok) {
+          const profData = await profRes.json()
+          if (profData.name) displayName = profData.name
+        }
+      } catch (e) {
+        console.warn('Could not fetch teacher profile name:', e)
+      }
+      setTeacherName(displayName)
 
       const mappedStudents = await fetchStudentsList(user.id)
       if (mappedStudents.length > 0) {
