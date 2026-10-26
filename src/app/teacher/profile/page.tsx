@@ -48,17 +48,38 @@ export default function TeacherProfilePage() {
 
       const teach = teacherRows?.[0] || null
 
-      const { data: students } = await supabase
-        .from('student_profiles')
-        .select('name, registration_number')
-        .eq('teacher_id', user.id)
-        .order('name', { ascending: true })
+      // Fetch teacher's assigned students via API first for service-role RLS bypass & complete details
+      let assignedList: any[] = []
+      try {
+        const res = await fetch('/api/teacher/students', { cache: 'no-store' })
+        if (res.ok) {
+          const resData = await res.json()
+          if (resData.students && Array.isArray(resData.students)) {
+            assignedList = resData.students
+          }
+        }
+      } catch (e) {
+        console.error('Error fetching /api/teacher/students:', e)
+      }
 
-      const mappedStudents = students?.map((s, idx) => ({
+      // Fallback to direct supabase query if API returned empty
+      if (assignedList.length === 0) {
+        const { data: students } = await supabase
+          .from('student_profiles')
+          .select('name, registration_number')
+          .eq('teacher_id', user.id)
+          .order('name', { ascending: true })
+
+        if (students && students.length > 0) {
+          assignedList = students
+        }
+      }
+
+      const mappedStudents = assignedList.map((s: any, idx: number) => ({
         sl_no: idx + 1,
         reg_no: s.registration_number || 'N/A',
         name: s.name || 'Unnamed Student'
-      })) || []
+      }))
 
       const combined = {
         registered_email: user.email,
@@ -360,68 +381,62 @@ export default function TeacherProfilePage() {
         </div>
 
         <div>
-          <h4 className="font-black text-foreground text-lg sm:text-xl mb-4 flex items-center gap-2">
-             <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-500/20 text-blue-500 flex items-center justify-center text-xs sm:text-sm"><Users className="h-4 w-4" /></span>
-             Student Roster
-          </h4>
-          <div className="bg-muted/30 p-3.5 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-border/50 space-y-4 sm:space-y-6">
-            <div className="space-y-1.5 sm:space-y-2">
-              <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">Total Students <Lock className="h-3 w-3" /></Label>
-              <div className="p-3 sm:p-4 bg-primary/10 border-2 border-primary/20 rounded-xl font-black text-primary text-lg sm:text-xl flex items-center justify-between">
-                <span>{profile.total_students} Active Students</span>
-                <span className="text-xs font-bold text-primary/80 bg-white/70 px-2.5 py-1 rounded-full border border-primary/20">
-                  Assigned
-                </span>
-              </div>
-            </div>
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="font-black text-foreground text-lg sm:text-xl flex items-center gap-2">
+               <span className="w-8 h-8 rounded-xl bg-primary/15 text-primary flex items-center justify-center text-sm shadow-sm"><Users className="h-4 w-4" /></span>
+               Student Roster
+            </h4>
+            <span className="text-xs font-black text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-3 py-1 rounded-full shadow-xs">
+              {profile.total_students} {profile.total_students === 1 ? 'Student' : 'Students'} Assigned
+            </span>
+          </div>
 
-            <div className="space-y-1.5 sm:space-y-2">
-              <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">Assigned Students <Lock className="h-3 w-3" /></Label>
-              <div className="bg-white border-2 border-border rounded-xl overflow-hidden shadow-sm">
-                {profile.assigned_students && profile.assigned_students.length > 0 ? (
-                  <div className="overflow-x-auto w-full -mx-1 px-1 sm:mx-0 sm:px-0">
-                    <table className="w-full text-left border-collapse min-w-[340px]">
-                      <thead>
-                        <tr className="bg-muted/60 border-b-2 border-border text-xs font-black text-foreground uppercase tracking-wider">
-                          <th className="py-3 px-3 text-center w-16 whitespace-nowrap">Sl No</th>
-                          <th className="py-3 px-3 w-32 whitespace-nowrap">Reg No</th>
-                          <th className="py-3 px-3 whitespace-nowrap">Name of the Student</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border/60">
-                        {profile.assigned_students.map((student: any, i: number) => (
-                          <tr key={i} className="hover:bg-muted/30 transition-colors">
-                            <td className="py-3 px-3 text-center">
-                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-muted text-foreground font-bold text-xs">
-                                {student.sl_no || (i + 1)}
-                              </span>
-                            </td>
-                            <td className="py-3 px-3 whitespace-nowrap">
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-black text-xs border border-primary/20">
-                                {student.reg_no || 'N/A'}
-                              </span>
-                            </td>
-                            <td className="py-3 px-3">
-                              <div className="flex items-center gap-2.5">
-                                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-100 text-blue-700 font-bold rounded-full flex items-center justify-center text-xs shrink-0">
-                                  {(student.name || 'S').charAt(0).toUpperCase()}
-                                </div>
-                                <span className="font-bold text-foreground text-sm sm:text-base truncate">
-                                  {student.name}
-                                </span>
+          <div className="bg-muted/30 p-3.5 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-border/50 space-y-4">
+            <div className="bg-white border-2 border-border rounded-xl overflow-hidden shadow-sm">
+              {profile.assigned_students && profile.assigned_students.length > 0 ? (
+                <div className="overflow-x-auto w-full -mx-1 px-1 sm:mx-0 sm:px-0">
+                  <table className="w-full text-left border-collapse min-w-[340px]">
+                    <thead>
+                      <tr className="bg-muted/70 border-b-2 border-border text-xs font-black text-foreground uppercase tracking-wider">
+                        <th className="py-3.5 px-4 text-center w-16 whitespace-nowrap">Sl No</th>
+                        <th className="py-3.5 px-4 w-36 whitespace-nowrap">Reg No</th>
+                        <th className="py-3.5 px-4 whitespace-nowrap">Name of the Student</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/60">
+                      {profile.assigned_students.map((student: any, i: number) => (
+                        <tr key={i} className="hover:bg-muted/20 transition-colors">
+                          <td className="py-3.5 px-4 text-center">
+                            <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-muted font-black text-xs text-foreground/80 border border-border/60">
+                              {student.sl_no || (i + 1)}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 whitespace-nowrap">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 font-mono font-black text-xs border border-emerald-200/90 tracking-wide">
+                              {student.reg_no || 'N/A'}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-blue-100 text-blue-700 font-black rounded-full flex items-center justify-center text-xs shrink-0 shadow-xs border border-blue-200">
+                                {(student.name || 'S').charAt(0).toUpperCase()}
                               </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground font-bold text-xs sm:text-sm">
-                    No students assigned yet.
-                  </div>
-                )}
-              </div>
+                              <span className="font-extrabold text-foreground text-sm sm:text-base">
+                                {student.name}
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-10 px-4 text-muted-foreground font-bold text-xs sm:text-sm">
+                  <Users className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+                  No students assigned to your profile yet.
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -440,22 +455,25 @@ export default function TeacherProfilePage() {
         </div>
 
         {/* Redesigned Save Profile Updates Button */}
-        <div className="pt-2 sm:pt-4">
+        <div className="pt-3 sm:pt-5">
           <button
             type="button"
             onClick={handleSave}
             disabled={saving || uploadingPhoto}
-            className="w-full h-12 sm:h-14 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/95 hover:to-primary active:scale-[0.99] text-white font-extrabold text-base sm:text-lg rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 border border-primary/20 flex items-center justify-center gap-2.5 min-h-[48px] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+            className="group relative w-full h-13 sm:h-14 min-h-[52px] bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:via-teal-700 hover:to-emerald-800 active:scale-[0.99] text-white font-extrabold text-base sm:text-lg rounded-2xl shadow-[0_8px_25px_-4px_rgba(16,185,129,0.35)] hover:shadow-[0_12px_30px_-4px_rgba(16,185,129,0.5)] transition-all duration-200 border border-emerald-400/30 flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer overflow-hidden"
           >
+            <span className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
             {saving ? (
               <>
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <span>Saving Profile Updates...</span>
+                <Loader2 className="h-5 w-5 animate-spin text-white" />
+                <span className="tracking-wide">Saving Profile Updates...</span>
               </>
             ) : (
               <>
-                <Save className="h-5 w-5" />
-                <span>Save Profile Updates</span>
+                <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/20 text-white shadow-inner group-hover:scale-110 transition-transform">
+                  <Save className="h-4 w-4" />
+                </span>
+                <span className="tracking-wide">Save Profile Updates</span>
               </>
             )}
           </button>

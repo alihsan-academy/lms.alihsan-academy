@@ -278,22 +278,25 @@ export default function StudentProfilePage() {
           </div>
         </div>
 
-        <div className="pt-2 sm:pt-4">
+        <div className="pt-3 sm:pt-5">
           <button
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="w-full h-12 sm:h-14 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/95 hover:to-primary active:scale-[0.99] text-white font-extrabold text-base sm:text-lg rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 border border-primary/20 flex items-center justify-center gap-2.5 min-h-[48px] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+            className="group relative w-full h-13 sm:h-14 min-h-[52px] bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:via-teal-700 hover:to-emerald-800 active:scale-[0.99] text-white font-extrabold text-base sm:text-lg rounded-2xl shadow-[0_8px_25px_-4px_rgba(16,185,129,0.35)] hover:shadow-[0_12px_30px_-4px_rgba(16,185,129,0.5)] transition-all duration-200 border border-emerald-400/30 flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer overflow-hidden"
           >
+            <span className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
             {saving ? (
               <>
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <span>Saving Profile Updates...</span>
+                <Loader2 className="h-5 w-5 animate-spin text-white" />
+                <span className="tracking-wide">Saving Profile Updates...</span>
               </>
             ) : (
               <>
-                <Save className="h-5 w-5" />
-                <span>Save Profile Updates</span>
+                <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/20 text-white shadow-inner group-hover:scale-110 transition-transform">
+                  <Save className="h-4 w-4" />
+                </span>
+                <span className="tracking-wide">Save Profile Updates</span>
               </>
             )}
           </button>
