@@ -2,7 +2,7 @@
 
 import { useState, useEffect, ChangeEvent } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Lock, Users, Star, Award, GraduationCap, MapPin, ShieldCheck, Camera } from 'lucide-react'
+import { Loader2, Lock, Users, Star, Award, GraduationCap, MapPin, ShieldCheck, Camera, Save } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -29,6 +29,7 @@ function calculateCompletion(data: any) {
 export default function TeacherProfilePage() {
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [profile, setProfile] = useState<any>(null)
   const [completion, setCompletion] = useState({ filled: 0, total: 0, percent: 0 })
@@ -49,22 +50,27 @@ export default function TeacherProfilePage() {
 
       const { data: students } = await supabase
         .from('student_profiles')
-        .select('name')
+        .select('name, registration_number')
         .eq('teacher_id', user.id)
+        .order('name', { ascending: true })
 
-      const studentNames = students?.map(s => s.name) || []
+      const mappedStudents = students?.map((s, idx) => ({
+        sl_no: idx + 1,
+        reg_no: s.registration_number || 'N/A',
+        name: s.name || 'Unnamed Student'
+      })) || []
 
       const combined = {
         registered_email: user.email,
         full_name: teach?.name || teach?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || '',
-        date_of_joining: teach?.date_of_joining ? format(parseISO(teach.date_of_joining), 'yyyy-MM-dd') : (teach?.joined_date || ''),
+        date_of_joining: teach?.date_of_joining ? (teach.date_of_joining.includes('T') ? teach.date_of_joining.split('T')[0] : teach.date_of_joining) : (teach?.joined_date || ''),
         educational_qualifications: teach?.educational_qualifications || teach?.qualification || '',
         mobile_number: teach?.mobile_number || teach?.mobile || '',
         current_country: teach?.current_country || teach?.country || '',
         current_state: teach?.current_state || teach?.state || '',
         profile_photo: teach?.profile_photo || teach?.photo_url || '',
-        assigned_students: studentNames,
-        total_students: studentNames.length
+        assigned_students: mappedStudents,
+        total_students: mappedStudents.length
       }
       setProfile(combined)
       setCompletion(calculateCompletion(combined))
@@ -72,6 +78,24 @@ export default function TeacherProfilePage() {
     }
     fetchProfile()
   }, [])
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      if (profile?.profile_photo) {
+        await fetch('/api/teacher/photo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ photoUrl: profile.profile_photo })
+        })
+      }
+      toast.success('Profile updates saved successfully! ✨')
+    } catch (err: any) {
+      toast.error('Failed to save profile updates')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const handlePhotoUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -343,25 +367,57 @@ export default function TeacherProfilePage() {
           <div className="bg-muted/30 p-3.5 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-border/50 space-y-4 sm:space-y-6">
             <div className="space-y-1.5 sm:space-y-2">
               <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">Total Students <Lock className="h-3 w-3" /></Label>
-              <div className="p-3 sm:p-4 bg-primary/10 border-2 border-primary/20 rounded-xl font-black text-primary text-lg sm:text-xl">
-                {profile.total_students} Active Students
+              <div className="p-3 sm:p-4 bg-primary/10 border-2 border-primary/20 rounded-xl font-black text-primary text-lg sm:text-xl flex items-center justify-between">
+                <span>{profile.total_students} Active Students</span>
+                <span className="text-xs font-bold text-primary/80 bg-white/70 px-2.5 py-1 rounded-full border border-primary/20">
+                  Assigned
+                </span>
               </div>
             </div>
 
             <div className="space-y-1.5 sm:space-y-2">
               <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">Assigned Students <Lock className="h-3 w-3" /></Label>
-              <div className="p-3 sm:p-5 bg-white border-2 border-border rounded-xl space-y-2 max-h-60 overflow-y-auto shadow-inner">
-                {profile.assigned_students.length > 0 ? (
-                  profile.assigned_students.map((name: string, i: number) => (
-                    <div key={i} className="text-sm sm:text-base font-bold text-foreground flex items-center gap-2.5 sm:gap-3 p-2 hover:bg-muted rounded-lg transition-colors">
-                      <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs shrink-0">
-                        {name.charAt(0)}
-                      </div>
-                      <span className="truncate">{name}</span>
-                    </div>
-                  ))
+              <div className="bg-white border-2 border-border rounded-xl overflow-hidden shadow-sm">
+                {profile.assigned_students && profile.assigned_students.length > 0 ? (
+                  <div className="overflow-x-auto w-full -mx-1 px-1 sm:mx-0 sm:px-0">
+                    <table className="w-full text-left border-collapse min-w-[340px]">
+                      <thead>
+                        <tr className="bg-muted/60 border-b-2 border-border text-xs font-black text-foreground uppercase tracking-wider">
+                          <th className="py-3 px-3 text-center w-16 whitespace-nowrap">Sl No</th>
+                          <th className="py-3 px-3 w-32 whitespace-nowrap">Reg No</th>
+                          <th className="py-3 px-3 whitespace-nowrap">Name of the Student</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/60">
+                        {profile.assigned_students.map((student: any, i: number) => (
+                          <tr key={i} className="hover:bg-muted/30 transition-colors">
+                            <td className="py-3 px-3 text-center">
+                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-muted text-foreground font-bold text-xs">
+                                {student.sl_no || (i + 1)}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 whitespace-nowrap">
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-black text-xs border border-primary/20">
+                                {student.reg_no || 'N/A'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-100 text-blue-700 font-bold rounded-full flex items-center justify-center text-xs shrink-0">
+                                  {(student.name || 'S').charAt(0).toUpperCase()}
+                                </div>
+                                <span className="font-bold text-foreground text-sm sm:text-base truncate">
+                                  {student.name}
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 ) : (
-                  <div className="text-center py-4 text-muted-foreground font-bold text-xs sm:text-sm">
+                  <div className="text-center py-8 text-muted-foreground font-bold text-xs sm:text-sm">
                     No students assigned yet.
                   </div>
                 )}
@@ -381,6 +437,28 @@ export default function TeacherProfilePage() {
               Teacher profiles are verified and maintained directly by the Al-Ihsan Academy Administration. If your name, contact information, or qualifications need updating, please contact an Administrator.
             </p>
           </div>
+        </div>
+
+        {/* Redesigned Save Profile Updates Button */}
+        <div className="pt-2 sm:pt-4">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving || uploadingPhoto}
+            className="w-full h-12 sm:h-14 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/95 hover:to-primary active:scale-[0.99] text-white font-extrabold text-base sm:text-lg rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 border border-primary/20 flex items-center justify-center gap-2.5 min-h-[48px] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Saving Profile Updates...</span>
+              </>
+            ) : (
+              <>
+                <Save className="h-5 w-5" />
+                <span>Save Profile Updates</span>
+              </>
+            )}
+          </button>
         </div>
       </AnimatedCard>
     </div>

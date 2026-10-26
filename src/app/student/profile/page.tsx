@@ -2,7 +2,7 @@
 
 import { useState, useEffect, ChangeEvent } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Upload, Lock, Shield, Star, Award } from 'lucide-react'
+import { Loader2, Upload, Lock, Shield, Star, Award, Save } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -279,10 +279,24 @@ export default function StudentProfilePage() {
         </div>
 
         <div className="pt-2 sm:pt-4">
-          <BouncyButton onClick={handleSave} disabled={saving} className="w-full h-13 sm:h-16 text-base sm:text-xl shadow-[0_6px_0_oklch(0.5_0.19_255)] hover:shadow-[0_2px_0_oklch(0.5_0.19_255)] active:shadow-none bg-primary hover:bg-primary/90 active:scale-[0.98] text-white rounded-xl sm:rounded-2xl active:translate-y-1 hover:translate-y-1 min-h-[48px]">
-            {saving ? <Loader2 className="animate-spin mr-2 h-5 w-5 sm:h-6 sm:w-6" /> : null}
-            Save Profile XP
-          </BouncyButton>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full h-12 sm:h-14 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/95 hover:to-primary active:scale-[0.99] text-white font-extrabold text-base sm:text-lg rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 border border-primary/20 flex items-center justify-center gap-2.5 min-h-[48px] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Saving Profile Updates...</span>
+              </>
+            ) : (
+              <>
+                <Save className="h-5 w-5" />
+                <span>Save Profile Updates</span>
+              </>
+            )}
+          </button>
         </div>
       </AnimatedCard>
     </div>
