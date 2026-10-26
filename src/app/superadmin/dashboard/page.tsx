@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
 import { AcademyHeader } from '@/components/academy-header'
-import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, Search, AlertCircle, X, RefreshCw, Trash, Pencil, Save } from 'lucide-react'
+import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, Search, AlertCircle, X, RefreshCw, Trash, Pencil, Save, ChevronDown } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -706,10 +706,6 @@ export default function SuperAdminDashboard() {
                   </table>
                 </div>
               </AnimatedCard>
-                    </tbody>
-                  </table>
-                </div>
-              </AnimatedCard>
             </PageTransition>
           )}
 
@@ -730,13 +726,13 @@ export default function SuperAdminDashboard() {
 
               <AnimatedCard delay={0.1} className="p-0 overflow-hidden border-2 border-border">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse min-w-[650px]">
+                  <table className="w-full text-left border-collapse min-w-[750px]">
                     <thead>
                       <tr className="bg-muted border-b-2 border-border">
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Teacher Name</th>
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Students Count</th>
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Joined Date</th>
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest text-right">Actions</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest whitespace-nowrap min-w-[220px]">Teacher Name</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest whitespace-nowrap min-w-[140px]">Students Count</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest whitespace-nowrap min-w-[140px]">Joined Date</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest text-right whitespace-nowrap min-w-[120px]">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y-2 divide-border">
@@ -744,20 +740,20 @@ export default function SuperAdminDashboard() {
                         const studentCount = students.filter(s => s.teacher_id === t.id).length;
                         return (
                         <tr key={t.id} className="hover:bg-muted/30 transition-colors">
-                          <td className="p-4">
+                          <td className="p-4 whitespace-nowrap">
                             <div className="flex items-center gap-3">
                               <Avatar photoUrl={t.profile_photo} name={t.name} size="sm" />
                               <div>
-                                <p className="font-bold text-foreground text-lg">{t.name}</p>
+                                <p className="font-bold text-foreground text-sm sm:text-base leading-tight">{t.name}</p>
                                 <p className="text-xs font-medium text-muted-foreground">{t.email}</p>
                               </div>
                             </div>
                           </td>
-                          <td className="p-4 text-foreground font-black text-xl">{studentCount}</td>
-                          <td className="p-4 text-sm text-muted-foreground font-bold">
+                          <td className="p-4 text-foreground font-black text-lg whitespace-nowrap">{studentCount}</td>
+                          <td className="p-4 text-xs text-muted-foreground font-bold whitespace-nowrap">
                             {format(new Date(t.created_at), "MMM d, yyyy")}
                           </td>
-                          <td className="p-4 text-right">
+                          <td className="p-4 text-right whitespace-nowrap">
                             <BouncyButton 
                               size="sm" 
                               variant="ghost"
