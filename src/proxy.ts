@@ -106,6 +106,20 @@ export default async function proxy(request: NextRequest) {
         (pathname === '/admin/login' && (role === 'admin' || role === 'superadmin'))
 
       if (role && isOwnLoginPage) {
+        if (role === 'student') {
+          try {
+            const { data: studProfile } = await supabase
+              .from('student_profiles')
+              .select('enrolment_status')
+              .eq('user_id', user.id)
+              .maybeSingle()
+            if (studProfile?.enrolment_status === 'stopped') {
+              // Revoke student dashboard access and show notice
+              return NextResponse.redirect(new URL('/student/login?error=account_stopped', request.url))
+            }
+          } catch {}
+        }
+
         let redirectUrl = request.nextUrl.clone()
         if (role === 'student') redirectUrl.pathname = '/student/dashboard'
         else if (role === 'teacher') redirectUrl.pathname = '/teacher/dashboard'
@@ -136,8 +150,21 @@ export default async function proxy(request: NextRequest) {
       const role = await getUserRole()
       const pathname = request.nextUrl.pathname
 
-      if (pathname.startsWith('/student') && role !== 'student') {
-        return NextResponse.redirect(new URL('/student/login', request.url))
+      if (pathname.startsWith('/student')) {
+        if (role !== 'student') {
+          return NextResponse.redirect(new URL('/student/login', request.url))
+        }
+
+        try {
+          const { data: studProfile } = await supabase
+            .from('student_profiles')
+            .select('enrolment_status')
+            .eq('user_id', user.id)
+            .maybeSingle()
+          if (studProfile?.enrolment_status === 'stopped') {
+            return NextResponse.redirect(new URL('/student/login?error=account_stopped', request.url))
+          }
+        } catch {}
       }
       if (pathname.startsWith('/teacher') && role !== 'teacher') {
         return NextResponse.redirect(new URL('/teacher/login', request.url))

@@ -37,7 +37,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ role: profile.role })
+    let enrolmentStatus = 'ongoing'
+    if (profile.role === 'student') {
+      const { data: studentRecord } = await supabase
+        .from('student_profiles')
+        .select('enrolment_status')
+        .eq('user_id', userId)
+        .maybeSingle()
+
+      if (studentRecord?.enrolment_status) {
+        enrolmentStatus = studentRecord.enrolment_status
+      }
+    }
+
+    return NextResponse.json({ role: profile.role, enrolmentStatus })
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || 'Server error' }, { status: 500 })
   }

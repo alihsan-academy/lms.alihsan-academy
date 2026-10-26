@@ -63,6 +63,15 @@ export default function SharedLogin({
       .catch((err) => console.error('Failed to load daily quote:', err))
   }, [portalType])
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('error') === 'account_stopped') {
+        setError('Your enrolment at Al-Ihsan Academy has been marked as stopped. Access to the student portal has been discontinued. Please contact administration for further details.')
+      }
+    }
+  }, [])
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -139,6 +148,13 @@ export default function SharedLogin({
       if (portalType === 'student' && role !== 'student') {
         await supabase.auth.signOut()
         setError('This portal is exclusively for students. Tutors and Admins must use their respective login portals.')
+        setLoading(false)
+        return
+      }
+
+      if (portalType === 'student' && role === 'student' && profileData.enrolmentStatus === 'stopped') {
+        await supabase.auth.signOut()
+        setError('Your enrolment at Al-Ihsan Academy has been marked as stopped. Access to the student portal has been discontinued. Please contact administration for further details.')
         setLoading(false)
         return
       }

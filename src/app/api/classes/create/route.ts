@@ -49,12 +49,16 @@ export async function POST(request: Request) {
     if (profile.role === 'teacher') {
       const { data: studentProfile, error: studentError } = await supabaseAdmin
         .from('student_profiles')
-        .select('teacher_id')
+        .select('teacher_id, enrolment_status')
         .eq('user_id', studentId)
         .maybeSingle()
 
       if (studentError || !studentProfile || studentProfile.teacher_id !== user.id) {
         return NextResponse.json({ error: 'Forbidden: You can only schedule classes for your assigned students' }, { status: 403 })
+      }
+
+      if (studentProfile.enrolment_status === 'stopped') {
+        return NextResponse.json({ error: 'Cannot schedule class: This student has stopped / quit their enrolment.' }, { status: 400 })
       }
     }
 

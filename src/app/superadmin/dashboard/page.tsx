@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
 import { AcademyHeader } from '@/components/academy-header'
-import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, Search, AlertCircle, X, RefreshCw, Trash, Pencil, Save, ChevronDown, UserCheck, Clock, XCircle } from 'lucide-react'
+import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, CheckCircle2, Search, AlertCircle, X, RefreshCw, Trash, Pencil, Save, ChevronDown, UserCheck, Clock, XCircle } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -17,7 +17,6 @@ import { AnimatedCard } from '@/components/animated-card'
 import { BouncyButton } from '@/components/bouncy-button'
 import { PageTransition } from '@/components/page-transition'
 import { AdminAttendanceManager } from '@/components/admin-attendance-manager'
-import { StudentStatusModal } from '@/components/student-status-modal'
 
 type Tab = 'statistics' | 'students' | 'teachers' | 'attendance' | 'manage'
 
@@ -54,13 +53,109 @@ export default function SuperAdminDashboard() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [newUser, setNewUser] = useState({ email: '', password: '', role: 'student', name: '', className: '', teacherId: '', registrationNumber: '' })
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null)
-  const [statusModalStudent, setStatusModalStudent] = useState<any>(null)
   const [reassigningStudentId, setReassigningStudentId] = useState<string | null>(null)
   const [selectedTeacherId, setSelectedTeacherId] = useState('')
   const [selectedProfile, setSelectedProfile] = useState<any>(null)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [isEditingTeacher, setIsEditingTeacher] = useState(false)
   const [isSavingTeacher, setIsSavingTeacher] = useState(false)
+
+  // Simple inline status management state for Student Profile
+  const [inlineStatus, setInlineStatus] = useState<'ongoing' | 'break' | 'stopped'>('ongoing')
+  const [inlineBreakFrom, setInlineBreakFrom] = useState('')
+  const [inlineBreakTo, setInlineBreakTo] = useState('')
+  const [inlineBreakReason, setInlineBreakReason] = useState('')
+  const [inlineStoppedDate, setInlineStoppedDate] = useState('')
+  const [inlineStoppedReason, setInlineStoppedReason] = useState('')
+  const [isSavingStatus, setIsSavingStatus] = useState(false)
+
+  // Sync status form fields whenever selectedProfile changes
+  useEffect(() => {
+    if (selectedProfile && selectedProfile.role === 'student') {
+      const current = (selectedProfile.enrolment_status as any) || 'ongoing'
+      setInlineStatus(['ongoing', 'break', 'stopped'].includes(current) ? current : 'ongoing')
+      setInlineBreakFrom(selectedProfile.break_from_date || '')
+      setInlineBreakTo(selectedProfile.break_to_date || '')
+      setInlineBreakReason(selectedProfile.break_reason || '')
+      setInlineStoppedDate(selectedProfile.last_class_date || '')
+      setInlineStoppedReason(selectedProfile.stopped_reason || '')
+    }
+  }, [selectedProfile])
+
+  async function handleSaveInlineStatus() {
+    if (!selectedProfile) return
+    const studentIdentifier = selectedProfile.user_id || selectedProfile.id
+
+    if (inlineStatus === 'break') {
+      if (!inlineBreakFrom) {
+        toast.error('Please enter the break start date.')
+        return
+      }
+      if (!inlineBreakTo) {
+        toast.error('Please enter the break end date.')
+        return
+      }
+      if (new Date(inlineBreakFrom) > new Date(inlineBreakTo)) {
+        toast.error('Break start date cannot be after the end date.')
+        return
+      }
+    } else if (inlineStatus === 'stopped') {
+      if (!inlineStoppedDate) {
+        toast.error('Please enter the last class date.')
+        return
+      }
+      if (!inlineStoppedReason.trim()) {
+        toast.error('Please provide a reason for stopping / quitting.')
+        return
+      }
+    }
+
+    setIsSavingStatus(true)
+    try {
+      const response = await fetch('/api/student/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentId: studentIdentifier,
+          enrolmentStatus: inlineStatus,
+          breakFromDate: inlineStatus === 'break' ? inlineBreakFrom : null,
+          breakToDate: inlineStatus === 'break' ? inlineBreakTo : null,
+          breakReason: inlineStatus === 'break' ? inlineBreakReason.trim() : null,
+          lastClassDate: inlineStatus === 'stopped' ? inlineStoppedDate : null,
+          stoppedReason: inlineStatus === 'stopped' ? inlineStoppedReason.trim() : null,
+        })
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update student status')
+      }
+
+      const updatedRecord = {
+        ...selectedProfile,
+        enrolment_status: inlineStatus,
+        break_from_date: inlineStatus === 'break' ? inlineBreakFrom : null,
+        break_to_date: inlineStatus === 'break' ? inlineBreakTo : null,
+        break_reason: inlineStatus === 'break' ? inlineBreakReason : null,
+        last_class_date: inlineStatus === 'stopped' ? inlineStoppedDate : null,
+        stopped_reason: inlineStatus === 'stopped' ? inlineStoppedReason : null,
+      }
+
+      setSelectedProfile(updatedRecord)
+      setStudents(prev => prev.map(s => (s.id === selectedProfile.id || s.user_id === selectedProfile.user_id) ? { ...s, ...updatedRecord } : s))
+
+      if (inlineStatus === 'stopped') {
+        toast.success('Status set to STOPPED. Student portal access has been revoked. 🛑')
+      } else {
+        toast.success(`Status updated to "${inlineStatus.toUpperCase()}"! ✨`)
+      }
+      fetchData()
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update status')
+    } finally {
+      setIsSavingStatus(false)
+    }
+  }
   const [editTeacherForm, setEditTeacherForm] = useState({
     name: '',
     date_of_joining: '',
@@ -635,10 +730,11 @@ export default function SuperAdminDashboard() {
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  setStatusModalStudent(s)
+                                  setSelectedProfile(s)
+                                  setIsProfileModalOpen(true)
                                 }}
                                 className="p-1 rounded-lg hover:bg-emerald-50 text-muted-foreground hover:text-emerald-700 transition-colors cursor-pointer"
-                                title="Change enrolment status"
+                                title="Edit enrolment status"
                               >
                                 <Pencil className="h-3.5 w-3.5" />
                               </button>
@@ -1115,44 +1211,151 @@ export default function SuperAdminDashboard() {
                     <ProfileItem label="Address" value={selectedProfile.address} />
                     <ProfileItem label="Academy Joined Date" value={selectedProfile.academy_joined_date ? format(parseISO(selectedProfile.academy_joined_date), 'MMM d, yyyy') : (selectedProfile.created_at ? format(new Date(selectedProfile.created_at), 'MMM d, yyyy') : 'N/A')} />
                     
-                    {/* Status Management */}
+                    {/* Status Management - Simple & Inline directly in this window */}
                     <div className="md:col-span-2 mt-4 pt-6 border-t-2 border-border">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                         <div>
                           <h5 className="font-black text-foreground text-xl">Enrolment Status</h5>
-                          <p className="text-xs text-muted-foreground font-medium">Manage student course enrolment & schedules</p>
+                          <p className="text-xs text-muted-foreground font-medium">Select a status below to update immediately</p>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <StatusBadge status={selectedProfile.enrolment_status} />
+                        <StatusBadge status={selectedProfile.enrolment_status || 'ongoing'} />
+                      </div>
+
+                      <div className="bg-muted/40 p-4 rounded-2xl border-2 border-border/70 space-y-3.5">
+                        {/* 3 Simple Choice Buttons */}
+                        <div className="grid grid-cols-3 gap-2">
                           <button
                             type="button"
-                            onClick={() => setStatusModalStudent(selectedProfile)}
-                            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer min-h-[40px]"
+                            onClick={() => setInlineStatus('ongoing')}
+                            className={`py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer border-2 min-h-[44px] ${
+                              inlineStatus === 'ongoing'
+                                ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm'
+                                : 'bg-white text-muted-foreground border-border hover:bg-muted/60'
+                            }`}
                           >
-                            <UserCheck className="h-4 w-4" />
-                            <span>Change Status</span>
+                            <CheckCircle2 className="h-4 w-4" />
+                            <span>Ongoing</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setInlineStatus('break')}
+                            className={`py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer border-2 min-h-[44px] ${
+                              inlineStatus === 'break'
+                                ? 'bg-amber-600 text-white border-amber-700 shadow-sm'
+                                : 'bg-white text-muted-foreground border-border hover:bg-muted/60'
+                            }`}
+                          >
+                            <Clock className="h-4 w-4" />
+                            <span>On Break</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setInlineStatus('stopped')}
+                            className={`py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer border-2 min-h-[44px] ${
+                              inlineStatus === 'stopped'
+                                ? 'bg-rose-600 text-white border-rose-700 shadow-sm'
+                                : 'bg-white text-muted-foreground border-border hover:bg-muted/60'
+                            }`}
+                          >
+                            <XCircle className="h-4 w-4" />
+                            <span>Stopped (Quit)</span>
+                          </button>
+                        </div>
+
+                        {/* Ongoing note */}
+                        {inlineStatus === 'ongoing' && (
+                          <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-900 font-semibold flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-700 shrink-0" />
+                            <span>Student is active and attending regular classes. Previous break or stopped notes are cleared.</span>
+                          </div>
+                        )}
+
+                        {/* Break fields */}
+                        {inlineStatus === 'break' && (
+                          <div className="bg-white p-3.5 rounded-xl border-2 border-amber-200 space-y-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <Label className="text-xs font-bold text-amber-950">Break Start Date *</Label>
+                                <Input
+                                  type="date"
+                                  value={inlineBreakFrom}
+                                  onChange={(e) => setInlineBreakFrom(e.target.value)}
+                                  className="h-10 text-xs font-medium bg-amber-50/30 border-amber-300"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs font-bold text-amber-950">Break End Date *</Label>
+                                <Input
+                                  type="date"
+                                  value={inlineBreakTo}
+                                  onChange={(e) => setInlineBreakTo(e.target.value)}
+                                  className="h-10 text-xs font-medium bg-amber-50/30 border-amber-300"
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs font-bold text-amber-950">Reason (Optional)</Label>
+                              <Input
+                                placeholder="e.g. Travel, exams, medical..."
+                                value={inlineBreakReason}
+                                onChange={(e) => setInlineBreakReason(e.target.value)}
+                                className="h-10 text-xs font-medium bg-amber-50/30 border-amber-300"
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Stopped fields */}
+                        {inlineStatus === 'stopped' && (
+                          <div className="bg-white p-3.5 rounded-xl border-2 border-rose-200 space-y-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs font-bold text-rose-950">Last Class Date *</Label>
+                              <Input
+                                type="date"
+                                value={inlineStoppedDate}
+                                onChange={(e) => setInlineStoppedDate(e.target.value)}
+                                className="h-10 text-xs font-medium bg-rose-50/30 border-rose-300"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs font-bold text-rose-950">Reason for Stopping / Quitting *</Label>
+                              <Input
+                                placeholder="e.g. Course completed, relocated, quit classes..."
+                                value={inlineStoppedReason}
+                                onChange={(e) => setInlineStoppedReason(e.target.value)}
+                                className="h-10 text-xs font-medium bg-rose-50/30 border-rose-300"
+                              />
+                            </div>
+                            <p className="text-[11px] font-bold text-rose-700 bg-rose-50 p-2 rounded-lg border border-rose-200">
+                              🔒 Note: Marking as stopped will immediately revoke the student&apos;s login access to the student portal.
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Save Button */}
+                        <div className="flex justify-end pt-1">
+                          <button
+                            type="button"
+                            onClick={handleSaveInlineStatus}
+                            disabled={isSavingStatus}
+                            className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-sm transition-all cursor-pointer min-h-[44px] disabled:opacity-60"
+                          >
+                            {isSavingStatus ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin text-white" />
+                                <span>Saving...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Save className="h-4 w-4" />
+                                <span>Save Status</span>
+                              </>
+                            )}
                           </button>
                         </div>
                       </div>
-                      
-                      {selectedProfile.enrolment_status === 'break' && (
-                        <div className="bg-amber-50 p-4 rounded-xl border-2 border-amber-200 text-amber-900 text-sm font-semibold mb-4 flex items-start gap-2.5">
-                          <Clock className="h-4 w-4 text-amber-700 mt-0.5 shrink-0" />
-                          <div>
-                            <span className="font-bold">On Approved Break:</span> {selectedProfile.break_from_date} to {selectedProfile.break_to_date}
-                            {selectedProfile.break_reason && <p className="text-xs text-amber-800 mt-0.5">Reason: <em>{selectedProfile.break_reason}</em></p>}
-                          </div>
-                        </div>
-                      )}
-                      {selectedProfile.enrolment_status === 'stopped' && (
-                        <div className="bg-rose-50 p-4 rounded-xl border-2 border-rose-200 text-rose-900 text-sm font-semibold mb-4 flex items-start gap-2.5">
-                          <XCircle className="h-4 w-4 text-rose-700 mt-0.5 shrink-0" />
-                          <div>
-                            <span className="font-bold">Enrolment Stopped on:</span> {selectedProfile.last_class_date}
-                            {selectedProfile.stopped_reason && <p className="text-xs text-rose-800 mt-0.5">Reason: <em>{selectedProfile.stopped_reason}</em></p>}
-                          </div>
-                        </div>
-                      )}
                     </div>
                     
                     {/* Attendance Stats */}
@@ -1372,19 +1575,6 @@ export default function SuperAdminDashboard() {
         <NavBtn active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={<CheckCircle className="size-4" />} label="Attendance" />
         <NavBtn active={activeTab === 'manage'} onClick={() => setActiveTab('manage')} icon={<Users className="size-4" />} label="Users" />
       </nav>
-
-      {/* Student Status Modal */}
-      <StudentStatusModal
-        isOpen={!!statusModalStudent}
-        onClose={() => setStatusModalStudent(null)}
-        student={statusModalStudent}
-        onSuccess={(updatedRecord) => {
-          fetchData()
-          if (selectedProfile && updatedRecord && (selectedProfile.id === updatedRecord.id || selectedProfile.user_id === updatedRecord.user_id)) {
-            setSelectedProfile((prev: any) => ({ ...prev, ...updatedRecord }))
-          }
-        }}
-      />
     </div>
   )
 }
