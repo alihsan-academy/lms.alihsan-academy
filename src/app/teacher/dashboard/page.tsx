@@ -21,6 +21,7 @@ import { DateFilterType, getDateRange, calculateStudentAttendanceSummary, format
 import { generateStudentAttendancePDF, generateTeacherAttendancePDF } from '@/lib/pdf-generator'
 import { ClassDatePicker, ClassTimePicker } from '@/components/class-date-time-picker'
 import { StudentPreviewModal } from '@/components/StudentPreviewModal'
+import { StudentSelectDropdown } from '@/components/student-select-dropdown'
 
 import TeacherProfilePage from '@/app/teacher/profile/page'
 
@@ -476,22 +477,12 @@ export default function TeacherDashboard() {
                   <h3 className="font-black text-foreground text-xl">My Schedule</h3>
                   <p className="text-muted-foreground font-medium text-sm">Select a student to view their upcoming and past classes.</p>
                 </div>
-                <div className="flex flex-col gap-1.5 w-full md:w-72">
-                  <div className="relative w-full">
-                    <select 
-                      className="w-full h-9 px-3 pr-8 border border-border rounded-lg bg-white text-xs font-semibold text-foreground focus:ring-1 focus:ring-primary focus:border-primary outline-none appearance-none cursor-pointer shadow-sm"
-                      value={selectedStudentId}
-                      onChange={(e) => setSelectedStudentId(e.target.value)}
-                      disabled={students.length === 0}
-                    >
-                      {students.length > 0 ? (
-                        students.map(s => <option key={s.id} value={s.id}>{s.name} • #{s.registration_number || 'No Reg'}</option>)
-                      ) : (
-                        <option value="">No students assigned</option>
-                      )}
-                    </select>
-                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                  </div>
+                <div className="flex flex-col gap-1.5 w-full md:w-80">
+                  <StudentSelectDropdown
+                    students={students}
+                    selectedStudentId={selectedStudentId}
+                    onSelect={(id) => setSelectedStudentId(id)}
+                  />
                   {students.length > 0 && selectedStudentId && (() => {
                     const s = students.find(st => st.id === selectedStudentId)
                     return s ? (
@@ -1212,7 +1203,6 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
     repeatWeekly: false 
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
   useEffect(() => {
     if (students.length > 0) setFormData(prev => ({ ...prev, studentId: students[0].id }))
@@ -1299,50 +1289,11 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">
           <Label className="text-foreground font-bold">Select Student</Label>
-          <div className="relative">
-            <div 
-              className="w-full p-4 border-2 border-border rounded-xl bg-muted/30 focus:ring-4 focus:ring-primary/20 outline-none cursor-pointer flex items-center justify-between transition-all hover:bg-muted/50"
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            >
-              {(() => {
-                const s = students.find(st => st.id === formData.studentId);
-                return (
-                  <div className="flex items-center gap-3">
-                    <Avatar photoUrl={s?.profile_photo} name={s?.name} size="sm" />
-                    <span className="font-bold text-foreground">
-                      {students.length === 0 ? 'No assigned students found' : (s?.name || 'Select a student')}
-                      {s?.registration_number ? ` • ${s.registration_number}` : ''}
-                    </span>
-                  </div>
-                )
-              })()}
-              <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-            </div>
-            
-            {isDropdownOpen && (
-              <div className="absolute z-50 w-full mt-2 bg-white border-2 border-border rounded-xl shadow-xl max-h-60 overflow-y-auto">
-                {students.length > 0 ? (
-                  students.map(s => (
-                    <div 
-                      key={s.id} 
-                      className={`p-3 hover:bg-muted/50 cursor-pointer flex items-center gap-3 transition-colors ${formData.studentId === s.id ? 'bg-primary/10' : ''}`}
-                      onClick={() => {
-                        setFormData(prev => ({ ...prev, studentId: s.id }))
-                        setIsDropdownOpen(false)
-                      }}
-                    >
-                      <Avatar photoUrl={s.profile_photo} name={s.name} size="sm" />
-                      <span className="font-bold text-foreground">{s.name} <span className="text-muted-foreground">({s.registration_number || 'N/A'})</span></span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-4 text-center text-muted-foreground font-bold">
-                    No assigned students found
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          <StudentSelectDropdown
+            students={students}
+            selectedStudentId={formData.studentId}
+            onSelect={(id) => setFormData(prev => ({ ...prev, studentId: id }))}
+          />
         </div>
 
         <div className="space-y-2">
