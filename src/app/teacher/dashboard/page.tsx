@@ -207,7 +207,7 @@ export default function TeacherDashboard() {
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || "Failed to mark class status")
 
-      toast.success("Class status updated successfully! 🎉")
+      toast.success("Class status updated successfully.")
       setPendingCompleteClass(null)
       setRecordingUrl('')
       setClassRemarks('')
@@ -357,7 +357,7 @@ export default function TeacherDashboard() {
           percentage: item.percentage,
         })),
       })
-      toast.success('Teacher summary report downloaded! 📄')
+      toast.success('Teacher summary report downloaded.')
     } catch (e: any) {
       toast.error('Failed to generate PDF: ' + e.message)
     } finally {
@@ -379,7 +379,7 @@ export default function TeacherDashboard() {
         periodLabel: resolvedDateRange.label,
         summary: studentItem.summary,
       })
-      toast.success(`PDF downloaded for ${studentItem.name}! 📄`)
+      toast.success(`PDF downloaded for ${studentItem.name}.`)
     } catch (e: any) {
       toast.error('Failed to generate PDF: ' + e.message)
     } finally {
@@ -574,7 +574,8 @@ export default function TeacherDashboard() {
 
                               {parsed.recording_url && (
                                 <a href={parsed.recording_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded hover:bg-teal-100 transition-colors">
-                                  🎬 Recording
+                                  <Video className="h-3 w-3" />
+                                  <span>Recording</span>
                                 </a>
                               )}
                             </div>
@@ -636,7 +637,7 @@ export default function TeacherDashboard() {
               {/* Header and Download Summary Button */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <h3 className="font-black text-foreground text-2xl">Teacher Attendance & Performance 🌟</h3>
+                  <h3 className="font-black text-foreground text-2xl">Teacher Attendance & Performance</h3>
                   <p className="text-sm font-medium text-muted-foreground mt-0.5">
                     Track overall student turnout, individual student logs, and export summary transcripts.
                   </p>
@@ -827,53 +828,53 @@ export default function TeacherDashboard() {
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 max-w-lg w-full border-2 border-border shadow-2xl relative my-auto max-h-[90vh] overflow-y-auto"
+                className="bg-white rounded-2xl p-4 sm:p-5 max-w-md w-full border border-border shadow-xl relative my-auto max-h-[85vh] overflow-y-auto"
               >
                 <button 
                   onClick={() => setPendingCompleteClass(null)} 
-                  className="absolute right-4 top-4 p-2 hover:bg-muted rounded-full transition-colors"
+                  className="absolute right-3.5 top-3.5 p-1.5 hover:bg-muted rounded-lg text-muted-foreground transition-colors cursor-pointer"
                 >
-                  <X className="h-5 w-5 text-muted-foreground" />
+                  <X className="h-4 w-4" />
                 </button>
 
-                <h3 className="text-xl font-black mb-1">Mark Class Attendance</h3>
-                <p className="text-xs text-muted-foreground font-medium mb-5">
+                <h3 className="text-lg font-bold mb-0.5">Mark Class Attendance</h3>
+                <p className="text-xs text-muted-foreground font-medium mb-4">
                   Record attendance outcome, attach recording links, and provide notes.
                 </p>
 
                 <form onSubmit={handleCompleteClassSubmit} className="space-y-4">
                   {/* Status Selection */}
                   <div className="space-y-2">
-                    <Label className="text-foreground font-bold">Attendance Outcome *</Label>
+                    <Label className="text-foreground font-bold text-xs uppercase tracking-wider">Attendance Outcome *</Label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
                         onClick={() => setCompletionStatus('present')}
-                        className={`p-3 rounded-xl border-2 text-left font-bold text-xs transition-all flex items-center gap-2 ${
+                        className={`p-2.5 rounded-xl border text-left font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
                           completionStatus === 'present'
-                            ? 'border-green-500 bg-green-50 text-green-800 shadow-sm'
+                            ? 'border-emerald-500 bg-emerald-50 text-emerald-900 shadow-xs'
                             : 'border-border bg-white text-muted-foreground hover:bg-muted/30'
                         }`}
                       >
-                        <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
                         <div>
-                          <span>✅ Attended</span>
-                          <span className="block text-[10px] font-normal text-green-700">Class completed</span>
+                          <span>Attended</span>
+                          <span className="block text-[10px] font-normal text-emerald-700">Class completed</span>
                         </div>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setCompletionStatus('student_unavailable')}
-                        className={`p-3 rounded-xl border-2 text-left font-bold text-xs transition-all flex items-center gap-2 ${
+                        className={`p-2.5 rounded-xl border text-left font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
                           completionStatus === 'student_unavailable'
-                            ? 'border-orange-500 bg-orange-50 text-orange-800 shadow-sm'
+                            ? 'border-orange-500 bg-orange-50 text-orange-900 shadow-xs'
                             : 'border-border bg-white text-muted-foreground hover:bg-muted/30'
                         }`}
                       >
                         <XCircle className="h-4 w-4 text-orange-600 flex-shrink-0" />
                         <div>
-                          <span>⚠️ Student Absent</span>
+                          <span>Student Absent</span>
                           <span className="block text-[10px] font-normal text-orange-700">Student unavailable</span>
                         </div>
                       </button>
@@ -881,31 +882,31 @@ export default function TeacherDashboard() {
                       <button
                         type="button"
                         onClick={() => setCompletionStatus('teacher_unavailable')}
-                        className={`p-3 rounded-xl border-2 text-left font-bold text-xs transition-all flex items-center gap-2 ${
+                        className={`p-2.5 rounded-xl border text-left font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
                           completionStatus === 'teacher_unavailable'
-                            ? 'border-red-500 bg-red-50 text-red-800 shadow-sm'
+                            ? 'border-rose-500 bg-rose-50 text-rose-900 shadow-xs'
                             : 'border-border bg-white text-muted-foreground hover:bg-muted/30'
                         }`}
                       >
-                        <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
+                        <AlertCircle className="h-4 w-4 text-rose-600 flex-shrink-0" />
                         <div>
-                          <span>🚫 Teacher Missed</span>
-                          <span className="block text-[10px] font-normal text-red-700">Teacher unavailable</span>
+                          <span>Teacher Missed</span>
+                          <span className="block text-[10px] font-normal text-rose-700">Teacher unavailable</span>
                         </div>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setCompletionStatus('break')}
-                        className={`p-3 rounded-xl border-2 text-left font-bold text-xs transition-all flex items-center gap-2 ${
+                        className={`p-2.5 rounded-xl border text-left font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
                           completionStatus === 'break'
-                            ? 'border-amber-500 bg-amber-50 text-amber-800 shadow-sm'
+                            ? 'border-amber-500 bg-amber-50 text-amber-900 shadow-xs'
                             : 'border-border bg-white text-muted-foreground hover:bg-muted/30'
                         }`}
                       >
                         <Clock className="h-4 w-4 text-amber-600 flex-shrink-0" />
                         <div>
-                          <span>⏸️ On Break</span>
+                          <span>On Break</span>
                           <span className="block text-[10px] font-normal text-amber-700">Approved leave</span>
                         </div>
                       </button>
@@ -972,17 +973,17 @@ export default function TeacherDashboard() {
               className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto"
             >
               <motion.div 
-                initial={{ scale: 0.95, opacity: 0 }}
+                initial={{ scale: 0.96, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-white rounded-3xl p-6 max-w-2xl w-full border-2 border-border shadow-2xl relative my-8 max-h-[90vh] flex flex-col"
+                exit={{ scale: 0.96, opacity: 0 }}
+                className="bg-white rounded-2xl p-4 sm:p-5 max-w-xl w-full border border-border shadow-xl relative my-auto max-h-[85vh] flex flex-col"
               >
-                <div className="flex items-center justify-between pb-4 border-b-2 border-border">
+                <div className="flex items-center justify-between pb-3.5 border-b border-border">
                   <div className="flex items-center gap-3">
-                    <Avatar photoUrl={viewingStudentDetail.student?.profile_photo} name={viewingStudentDetail.name} size="md" />
+                    <Avatar photoUrl={viewingStudentDetail.student?.profile_photo} name={viewingStudentDetail.name} size="sm" />
                     <div>
-                      <h3 className="text-xl font-black text-foreground">{viewingStudentDetail.name}</h3>
-                      <p className="text-xs text-muted-foreground font-bold">
+                      <h3 className="text-base sm:text-lg font-bold text-foreground">{viewingStudentDetail.name}</h3>
+                      <p className="text-xs text-muted-foreground font-medium">
                         Reg: #{viewingStudentDetail.registration_number} • Period: {resolvedDateRange.label}
                       </p>
                     </div>
@@ -990,68 +991,68 @@ export default function TeacherDashboard() {
 
                   <button 
                     onClick={() => setViewingStudentDetail(null)} 
-                    className="p-2 hover:bg-muted rounded-full transition-colors"
+                    className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground transition-colors cursor-pointer"
                   >
-                    <X className="h-5 w-5 text-muted-foreground" />
+                    <X className="h-4 w-4" />
                   </button>
                 </div>
 
-                <div className="overflow-y-auto py-4 space-y-4 flex-1">
+                <div className="overflow-y-auto py-3.5 space-y-3.5 flex-1">
                   {/* KPI Mini-cards */}
                   <div className="grid grid-cols-4 gap-2 text-center">
-                    <div className="p-2.5 bg-muted/40 rounded-xl border border-border">
+                    <div className="p-2 bg-muted/40 rounded-xl border border-border/80">
                       <span className="text-[10px] uppercase font-bold text-muted-foreground block">Scheduled</span>
-                      <span className="text-lg font-black text-foreground">{viewingStudentDetail.summary.totalScheduled}</span>
+                      <span className="text-base font-bold text-foreground">{viewingStudentDetail.summary.totalScheduled}</span>
                     </div>
-                    <div className="p-2.5 bg-green-50 rounded-xl border border-green-200">
-                      <span className="text-[10px] uppercase font-bold text-green-700 block">Attended</span>
-                      <span className="text-lg font-black text-green-800">{viewingStudentDetail.summary.attendedCount}</span>
+                    <div className="p-2 bg-emerald-50 rounded-xl border border-emerald-200">
+                      <span className="text-[10px] uppercase font-bold text-emerald-700 block">Attended</span>
+                      <span className="text-base font-bold text-emerald-800">{viewingStudentDetail.summary.attendedCount}</span>
                     </div>
-                    <div className="p-2.5 bg-red-50 rounded-xl border border-red-200">
-                      <span className="text-[10px] uppercase font-bold text-red-700 block">Not Attended</span>
-                      <span className="text-lg font-black text-red-800">{viewingStudentDetail.summary.notAttendedCount}</span>
+                    <div className="p-2 bg-rose-50 rounded-xl border border-rose-200">
+                      <span className="text-[10px] uppercase font-bold text-rose-700 block">Absent</span>
+                      <span className="text-base font-bold text-rose-800">{viewingStudentDetail.summary.notAttendedCount}</span>
                     </div>
-                    <div className="p-2.5 bg-blue-50 rounded-xl border border-blue-200">
-                      <span className="text-[10px] uppercase font-bold text-blue-700 block">Score</span>
-                      <span className="text-lg font-black text-blue-800">{viewingStudentDetail.summary.attendanceRate}%</span>
+                    <div className="p-2 bg-blue-50 rounded-xl border border-blue-200">
+                      <span className="text-[10px] uppercase font-bold text-blue-700 block">Rate</span>
+                      <span className="text-base font-bold text-blue-800">{viewingStudentDetail.summary.attendanceRate}%</span>
                     </div>
                   </div>
 
                   {/* Sessions list */}
                   <div className="space-y-2">
-                    <h5 className="font-bold text-sm text-foreground">Class Sessions ({viewingStudentDetail.summary.filteredClasses.length})</h5>
-                    <div className="divide-y border-2 border-border rounded-xl overflow-hidden max-h-60 overflow-y-auto">
+                    <h5 className="font-bold text-xs uppercase tracking-wider text-foreground">Class Sessions ({viewingStudentDetail.summary.filteredClasses.length})</h5>
+                    <div className="divide-y border border-border rounded-xl overflow-hidden max-h-56 overflow-y-auto">
                       {viewingStudentDetail.summary.filteredClasses.length > 0 ? (
                         viewingStudentDetail.summary.filteredClasses.map((item: any, idx: number) => (
-                          <div key={idx} className="p-3 text-xs flex items-center justify-between hover:bg-muted/20">
+                          <div key={idx} className="p-2.5 text-xs flex items-center justify-between hover:bg-muted/20">
                             <div>
                               <span className="font-bold text-foreground block">{formatUKDateTime(item.scheduled_at)}</span>
                               {item.remarks && <span className="text-[11px] text-muted-foreground">{item.remarks}</span>}
                             </div>
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
-                              item.status === 'present' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                              item.status === 'present' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'
                             }`}>
                               {item.statusLabel}
                             </span>
                           </div>
                         ))
                       ) : (
-                        <div className="p-6 text-center text-xs text-muted-foreground font-semibold">No classes in this period.</div>
+                        <div className="p-4 text-center text-xs text-muted-foreground font-medium">No classes in this period.</div>
                       )}
                     </div>
                   </div>
                 </div>
 
-                <div className="pt-4 border-t-2 border-border flex gap-3">
-                  <BouncyButton
+                <div className="pt-3 border-t border-border flex justify-end">
+                  <button
+                    type="button"
                     onClick={() => handleDownloadSingleStudentPDF(viewingStudentDetail)}
                     disabled={isExportingStudentPDF}
-                    variant="default"
-                    className="w-full bg-primary hover:bg-primary/90 text-white font-black flex items-center justify-center gap-2"
+                    className="h-9 px-4 rounded-lg bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-60"
                   >
-                    {isExportingStudentPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                    Download Student Attendance PDF
-                  </BouncyButton>
+                    {isExportingStudentPDF ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                    <span>Download Attendance PDF</span>
+                  </button>
                 </div>
               </motion.div>
             </motion.div>
@@ -1068,37 +1069,38 @@ export default function TeacherDashboard() {
               className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-3.5 sm:p-4 overflow-y-auto"
             >
               <motion.div 
-                initial={{ scale: 0.95, opacity: 0 }}
+                initial={{ scale: 0.96, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 max-w-md w-full border-2 border-border shadow-2xl relative my-auto max-h-[90vh] overflow-y-auto"
+                exit={{ scale: 0.96, opacity: 0 }}
+                className="bg-white rounded-2xl p-4 sm:p-5 max-w-md w-full border border-border shadow-xl relative my-auto max-h-[85vh] overflow-y-auto"
               >
-                <button onClick={() => setStatusEditTarget(null)} className="absolute right-4 top-4 p-2 hover:bg-muted rounded-full transition-colors">
-                  <X className="h-5 w-5 text-muted-foreground" />
+                <button onClick={() => setStatusEditTarget(null)} className="absolute right-3.5 top-3.5 p-1.5 hover:bg-muted rounded-lg text-muted-foreground transition-colors cursor-pointer">
+                  <X className="h-4 w-4" />
                 </button>
-                <h3 className="text-xl font-black mb-4">Edit Student Status</h3>
+                <h3 className="text-base sm:text-lg font-bold mb-3">Edit Student Status</h3>
                 
-                <form onSubmit={handleUpdateStatus} className="space-y-4 mb-6">
+                <form onSubmit={handleUpdateStatus} className="space-y-4 mb-4">
                   <div className="space-y-2">
-                    <Label className="text-foreground font-semibold text-xs">Enrolment Status</Label>
-                    <div className="grid grid-cols-1 gap-2 pt-1">
+                    <Label className="text-foreground font-bold text-xs uppercase tracking-wider">Enrolment Status</Label>
+                    <div className="grid grid-cols-1 gap-2 pt-0.5">
                       {[
-                        { id: 'ongoing', label: 'Ongoing', desc: 'Regular active student attendance', icon: '✅', border: 'border-emerald-200 bg-emerald-50/50 text-emerald-900', activeRing: 'ring-2 ring-emerald-600 border-emerald-600 bg-emerald-50' },
-                        { id: 'break', label: 'On a Break', desc: 'Temporary leave with scheduled dates', icon: '🕐', border: 'border-amber-200 bg-amber-50/50 text-amber-900', activeRing: 'ring-2 ring-amber-600 border-amber-600 bg-amber-50' },
-                        { id: 'stopped', label: 'Stopped', desc: 'Completed or discontinued course', icon: '🛑', border: 'border-red-200 bg-red-50/50 text-red-900', activeRing: 'ring-2 ring-red-600 border-red-600 bg-red-50' }
+                        { id: 'ongoing', label: 'Ongoing', desc: 'Regular active student attendance', icon: CheckCircle2, iconColor: 'text-emerald-600', border: 'border-emerald-200 bg-emerald-50/50 text-emerald-900', activeRing: 'ring-2 ring-emerald-600 border-emerald-600 bg-emerald-50' },
+                        { id: 'break', label: 'On a Break', desc: 'Temporary leave with scheduled dates', icon: Clock, iconColor: 'text-amber-600', border: 'border-amber-200 bg-amber-50/50 text-amber-900', activeRing: 'ring-2 ring-amber-600 border-amber-600 bg-amber-50' },
+                        { id: 'stopped', label: 'Stopped', desc: 'Completed or discontinued course', icon: XCircle, iconColor: 'text-rose-600', border: 'border-rose-200 bg-rose-50/50 text-rose-900', activeRing: 'ring-2 ring-rose-600 border-rose-600 bg-rose-50' }
                       ].map(opt => {
+                        const IconComp = opt.icon
                         const isSelected = statusFormData.enrolmentStatus === opt.id
                         return (
                           <button
                             type="button"
                             key={opt.id}
                             onClick={() => setStatusFormData(prev => ({ ...prev, enrolmentStatus: opt.id }))}
-                            className={`flex items-center justify-between p-3 rounded-lg border text-left transition-all ${
+                            className={`flex items-center justify-between p-2.5 rounded-lg border text-left transition-all cursor-pointer ${
                               isSelected ? opt.activeRing : `${opt.border} hover:opacity-90`
                             }`}
                           >
                             <div className="flex items-center gap-2.5">
-                              <span className="text-base">{opt.icon}</span>
+                              <IconComp className={`h-4 w-4 ${opt.iconColor} shrink-0`} />
                               <div>
                                 <span className="font-bold text-xs block">{opt.label}</span>
                                 <span className="text-[10px] text-muted-foreground font-medium">{opt.desc}</span>
@@ -1270,7 +1272,7 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
         minute: '2-digit',
         hour12: true
       })
-      toast.success(`"${sessionTitle}" scheduled for ${ukDisplay} UK time! 🚀`)
+      toast.success(`"${sessionTitle}" scheduled for ${ukDisplay} UK time.`)
 
       setFormData(prev => ({
         ...prev,
@@ -1422,13 +1424,13 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string, className: string }> = {
-    ongoing:  { label: '✅ Ongoing',   className: 'bg-green-50 text-green-700 border-green-200' },
-    break:    { label: '🕐 On a Break', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-    stopped:  { label: '🛑 Stopped',   className: 'bg-red-50 text-red-700 border-red-200' },
+    ongoing:  { label: 'Ongoing',   className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    break:    { label: 'On a Break', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+    stopped:  { label: 'Stopped',   className: 'bg-rose-50 text-rose-700 border-rose-200' },
   }
   const s = map[status] || map.ongoing
   return (
-    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border-2 ${s.className}`}>
+    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${s.className}`}>
       {s.label}
     </span>
   )

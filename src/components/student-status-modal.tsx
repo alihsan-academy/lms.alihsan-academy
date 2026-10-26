@@ -121,7 +121,7 @@ export function StudentStatusModal({
         throw new Error(data.error || 'Failed to update student status')
       }
 
-      toast.success(`Enrolment status updated to "${selectedStatus.toUpperCase()}"! ✨`)
+      toast.success(`Enrolment status updated to "${selectedStatus.toUpperCase()}"`)
       if (onSuccess) {
         onSuccess(data.updatedRecord || {
           ...student,

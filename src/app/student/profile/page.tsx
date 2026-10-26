@@ -109,7 +109,7 @@ export default function StudentProfilePage() {
     const updatedProfile = { ...profile, profile_photo: urlData.publicUrl }
     setProfile(updatedProfile)
     setCompletion(calculateCompletion(updatedProfile))
-    toast.success('Photo uploaded! Looking good! 📸')
+    toast.success('Photo uploaded successfully.')
     setSaving(false)
   }
 
@@ -142,7 +142,7 @@ export default function StudentProfilePage() {
     if (studError) {
       toast.error('Failed to save your details.')
     } else {
-      toast.success('Profile saved successfully! 🚀')
+      toast.success('Profile saved successfully.')
     }
     setSaving(false)
   }
@@ -164,9 +164,9 @@ export default function StudentProfilePage() {
         <div className="flex items-center justify-between mb-2 sm:mb-3">
           <div className="flex items-center gap-1.5 sm:gap-2">
             <Star className="h-4 w-4 sm:h-5 sm:w-5 text-secondary fill-secondary" />
-            <span className="text-xs sm:text-sm font-black text-foreground">Profile XP: {completion.percent}%</span>
+            <span className="text-xs sm:text-sm font-black text-foreground">Profile Status: {completion.percent}%</span>
           </div>
-          <span className="text-[11px] sm:text-xs font-bold text-muted-foreground bg-muted px-2.5 sm:px-3 py-1 rounded-full">{completion.filled}/{completion.total} Quests</span>
+          <span className="text-[11px] sm:text-xs font-bold text-muted-foreground bg-muted px-2.5 sm:px-3 py-1 rounded-full">{completion.filled}/{completion.total} Sections</span>
         </div>
         <div className="w-full h-3.5 sm:h-4 bg-muted rounded-full overflow-hidden border-2 border-border p-0.5">
           <motion.div 
@@ -177,7 +177,7 @@ export default function StudentProfilePage() {
           />
         </div>
         {completion.percent === 100 && (
-          <p className="text-xs font-bold text-green-600 mt-2 text-center">Max Level Reached! You are awesome! 🎉</p>
+          <p className="text-xs font-bold text-green-600 mt-2 text-center">Profile is fully complete.</p>
         )}
       </AnimatedCard>
 
@@ -358,13 +358,13 @@ export default function StudentProfilePage() {
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string, className: string }> = {
-    ongoing:  { label: '✅ Ongoing',   className: 'bg-green-50 text-green-700 border-green-200' },
-    break:    { label: '🕐 On a Break', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-    stopped:  { label: '🛑 Stopped',   className: 'bg-red-50 text-red-700 border-red-200' },
+    ongoing:  { label: 'Ongoing',   className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    break:    { label: 'On a Break', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+    stopped:  { label: 'Stopped',   className: 'bg-rose-50 text-rose-700 border-rose-200' },
   }
   const s = map[status] || map.ongoing
   return (
-    <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest border-2 ${s.className}`}>
+    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border ${s.className}`}>
       {s.label}
     </span>
   )

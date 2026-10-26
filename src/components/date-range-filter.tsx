@@ -31,7 +31,7 @@ export function DateRangeFilter({
     { id: 'this_month', label: 'This Month' },
     { id: 'last_month', label: 'Last Month' },
     { id: 'all_time', label: 'All Time' },
-    { id: 'custom', label: 'Custom Range 📅' },
+    { id: 'custom', label: 'Custom Range' },
   ]
 
   const handleApplyCustom = (e: React.FormEvent) => {

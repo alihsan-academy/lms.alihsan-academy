@@ -2,7 +2,7 @@
 
 import { useState, useEffect, ChangeEvent } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Lock, Users, Star, Award, GraduationCap, MapPin, ShieldCheck, Camera, Save } from 'lucide-react'
+import { Loader2, Lock, Users, Star, Award, GraduationCap, MapPin, ShieldCheck, Camera, Save, Clock } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -130,7 +130,7 @@ export default function TeacherProfilePage() {
           body: JSON.stringify({ photoUrl: profile.profile_photo })
         })
       }
-      toast.success('Profile updates saved successfully! ✨')
+      toast.success('Profile updates saved successfully.')
     } catch (err: any) {
       toast.error('Failed to save profile updates')
     } finally {
@@ -181,7 +181,7 @@ export default function TeacherProfilePage() {
       const updatedProfile = { ...profile, profile_photo: photoUrl }
       setProfile(updatedProfile)
       setCompletion(calculateCompletion(updatedProfile))
-      toast.success('Profile photo updated successfully! 📸', { id: toastId })
+      toast.success('Profile photo updated successfully.', { id: toastId })
     } catch (err: any) {
       console.error('Photo upload error:', err)
       toast.error(err.message || 'Photo upload failed. Please try again.', { id: toastId })
@@ -220,7 +220,7 @@ export default function TeacherProfilePage() {
           />
         </div>
         {completion.percent === 100 && (
-          <p className="text-xs font-bold text-green-600 mt-2 text-center">Profile is fully complete! Excellent! 🎉</p>
+          <p className="text-xs font-bold text-green-600 mt-2 text-center">Profile is fully complete.</p>
         )}
       </AnimatedCard>
 
@@ -270,7 +270,8 @@ export default function TeacherProfilePage() {
           
           <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-3.5 sm:p-4 mb-4 sm:mb-6 shadow-sm">
             <p className="text-xs sm:text-sm font-bold text-orange-800 flex items-center gap-2">
-              ⏰ Important: Class Time Policy
+              <Clock className="h-4 w-4 shrink-0" />
+              <span>Important: Class Time Policy</span>
             </p>
             <p className="text-[11px] sm:text-xs text-orange-700 mt-1 font-semibold leading-relaxed">
               All classes at Al-Ihsan Academy are scheduled in UK time (GMT/BST). 

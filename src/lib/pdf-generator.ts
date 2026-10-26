@@ -581,7 +581,7 @@ export function generateIntelligenceFilterPDF({
 
   autoTable(doc, {
     startY: 47,
-    head: [['#', 'Reg No', 'Student Name', 'Teacher', 'Status', 'Attended ✓', 'Stu. Absent', 'Tchr. Missed', 'On Break', 'Rate %']],
+    head: [['#', 'Reg No', 'Student Name', 'Teacher', 'Status', 'Attended', 'Stu. Absent', 'Tchr. Missed', 'On Break', 'Rate %']],
     body: bodyRows,
     theme: 'grid',
     styles: {

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
 import { AcademyHeader } from '@/components/academy-header'
-import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, CheckCircle2, Search, AlertCircle, X, RefreshCw, Trash, Pencil, Save, ChevronDown, UserCheck, Clock, XCircle } from 'lucide-react'
+import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, CheckCircle2, Search, AlertCircle, X, RefreshCw, Trash, Pencil, Save, ChevronDown, UserCheck, Clock, XCircle, Lock } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -158,9 +158,9 @@ export default function SuperAdminDashboard() {
       }))
 
       if (inlineStatus === 'stopped') {
-        toast.success('Status set to STOPPED. Student portal access has been revoked. 🛑')
+        toast.success('Status set to STOPPED. Student portal access has been revoked.')
       } else {
-        toast.success(`Status updated to "${inlineStatus.toUpperCase()}"! ✨`)
+        toast.success(`Status updated to ${inlineStatus.toUpperCase()}.`)
       }
       await fetchData()
     } catch (err: any) {
@@ -239,7 +239,7 @@ export default function SuperAdminDashboard() {
       // Update local allUsers array
       setAllUsers(prev => prev.map(u => (u.id === selectedProfile.id || u.id === targetTeacherId) ? { ...u, name: editTeacherForm.name.trim() } : u))
 
-      toast.success('Teacher profile updated successfully! 🎉')
+      toast.success('Teacher profile updated successfully.')
       setIsEditingTeacher(false)
       fetchData()
     } catch (err: any) {
@@ -346,7 +346,7 @@ export default function SuperAdminDashboard() {
       
       if (!response.ok) throw new Error(result.error || "Failed to create user")
       
-      toast.success("User created successfully! 🎉")
+      toast.success("User created successfully.")
       setNewUser({ email: '', password: '', role: 'student', name: '', className: '', teacherId: '', registrationNumber: '' })
       fetchData()
     } catch (error: any) {
@@ -380,7 +380,7 @@ export default function SuperAdminDashboard() {
       setStudents(prev => prev.filter(s => s.id !== userId))
       setTeachers(prev => prev.filter(t => t.id !== userId))
       
-      toast.success('User removed successfully 🗑️')
+      toast.success('User removed successfully.')
       fetchData()
     } catch (error: any) {
       toast.error('Failed to remove: ' + error.message)
@@ -400,7 +400,7 @@ export default function SuperAdminDashboard() {
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || "Failed to reassign teacher")
       
-      toast.success("Student reassigned successfully ✨")
+      toast.success("Student reassigned successfully.")
       setEditingStudentId(null)
       setSelectedTeacherId('')
       fetchData()
@@ -1162,208 +1162,210 @@ export default function SuperAdminDashboard() {
       {/* Profile Modal */}
       <AnimatePresence>
         {isProfileModalOpen && selectedProfile && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs">
             <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
-              className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col border-2 sm:border-4 border-border"
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              transition={{ duration: 0.2 }}
+              className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col border border-border"
             >
-            <div className="p-4 sm:p-6 border-b-2 border-border flex justify-between items-center bg-muted/50">
-              <h3 className="text-xl sm:text-2xl font-black text-foreground">
+            <div className="p-4 sm:p-5 border-b border-border flex justify-between items-center bg-muted/30">
+              <h3 className="text-base sm:text-lg font-bold text-foreground">
                 {selectedProfile.role === 'student' ? 'Student Profile' : (isEditingTeacher ? 'Edit Teacher Profile' : 'Teacher Profile')}
               </h3>
               <div className="flex items-center gap-2">
                 {selectedProfile.role === 'teacher' && !isEditingTeacher && (
-                  <BouncyButton 
-                    size="sm" 
-                    variant="outline" 
+                  <button 
+                    type="button"
                     onClick={startEditTeacher}
-                    className="flex items-center gap-1.5 font-bold text-xs sm:text-sm h-9 px-3 border-2"
+                    className="flex items-center gap-1.5 font-bold text-xs h-8 px-3 rounded-lg border border-border bg-white hover:bg-muted text-foreground transition-colors cursor-pointer"
                   >
                     <Pencil className="h-3.5 w-3.5 text-primary" />
                     <span>Edit</span>
-                  </BouncyButton>
+                  </button>
                 )}
                 {selectedProfile.role === 'teacher' && isEditingTeacher && (
-                  <BouncyButton 
-                    size="sm" 
-                    variant="ghost" 
+                  <button 
+                    type="button"
                     onClick={() => setIsEditingTeacher(false)}
-                    className="font-bold text-xs sm:text-sm h-9 px-3 text-muted-foreground"
+                    className="font-bold text-xs h-8 px-3 rounded-lg text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
                   >
                     Cancel
-                  </BouncyButton>
+                  </button>
                 )}
-                <BouncyButton variant="ghost" size="icon" onClick={() => { setIsProfileModalOpen(false); setIsEditingTeacher(false); }}>
-                  <X className="h-6 w-6" />
-                </BouncyButton>
+                <button 
+                  type="button"
+                  onClick={() => { setIsProfileModalOpen(false); setIsEditingTeacher(false); }}
+                  className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
-              <div className="flex flex-col items-center mb-8 text-center">
-                <Avatar photoUrl={selectedProfile.profile_photo} name={selectedProfile.name} size="lg" className="border-4 border-primary shadow-xl mb-4" />
-                <h4 className="text-3xl font-black text-foreground">{selectedProfile.name}</h4>
-                <p className="text-muted-foreground font-bold">{selectedProfile.email}</p>
-                {selectedProfile.role === 'student' && (
-                  <div className="mt-3 inline-flex items-center px-4 py-1.5 rounded-full bg-primary/10 text-primary border-2 border-primary/20 text-sm font-black">
-                    Reg. No: {selectedProfile.registration_number}
-                  </div>
-                )}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+              {/* Header Profile Identity */}
+              <div className="flex items-center gap-3.5 p-3 bg-muted/20 rounded-xl border border-border/60">
+                <Avatar photoUrl={selectedProfile.profile_photo} name={selectedProfile.name} size="md" className="border-2 border-primary/20 shadow-xs shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-base font-bold text-foreground truncate">{selectedProfile.name}</h4>
+                  <p className="text-xs text-muted-foreground truncate">{selectedProfile.email}</p>
+                  {selectedProfile.role === 'student' && (
+                    <span className="inline-block mt-1 text-[10px] font-semibold text-primary font-mono bg-primary/10 px-2 py-0.5 rounded-md">
+                      Reg: {selectedProfile.registration_number}
+                    </span>
+                  )}
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
                 {selectedProfile.role === 'student' ? (
                   <>
-                    <ProfileItem label="Assigned Teacher" value={teachers.find(t => t.id === selectedProfile.teacher_id)?.name || 'Unassigned'} />
-                    <ProfileItem label="Class Name" value={selectedProfile.class_name} />
-                    <ProfileItem label="Date of Birth" value={selectedProfile.dob ? format(parseISO(selectedProfile.dob), 'MMM d, yyyy') : 'N/A'} />
-                    <ProfileItem label="Guardian Name" value={selectedProfile.guardian_name} />
-                    <ProfileItem label="Guardian Mobile" value={selectedProfile.guardian_mobile} />
-                    <ProfileItem label="Address" value={selectedProfile.address} />
-                    <ProfileItem label="Academy Joined Date" value={selectedProfile.academy_joined_date ? format(parseISO(selectedProfile.academy_joined_date), 'MMM d, yyyy') : (selectedProfile.created_at ? format(new Date(selectedProfile.created_at), 'MMM d, yyyy') : 'N/A')} />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-muted/15 rounded-xl border border-border/50">
+                      <ProfileItem label="Assigned Teacher" value={teachers.find(t => t.id === selectedProfile.teacher_id)?.name || 'Unassigned'} />
+                      <ProfileItem label="Class Name" value={selectedProfile.class_name} />
+                      <ProfileItem label="Date of Birth" value={selectedProfile.dob ? format(parseISO(selectedProfile.dob), 'MMM d, yyyy') : 'N/A'} />
+                      <ProfileItem label="Guardian Name" value={selectedProfile.guardian_name} />
+                      <ProfileItem label="Guardian Mobile" value={selectedProfile.guardian_mobile} />
+                      <ProfileItem label="Address" value={selectedProfile.address} />
+                      <ProfileItem label="Academy Joined Date" value={selectedProfile.academy_joined_date ? format(parseISO(selectedProfile.academy_joined_date), 'MMM d, yyyy') : (selectedProfile.created_at ? format(new Date(selectedProfile.created_at), 'MMM d, yyyy') : 'N/A')} />
+                    </div>
                     
-                    {/* Status Management - Simple & Inline directly in this window */}
-                    <div className="md:col-span-2 mt-4 pt-6 border-t-2 border-border">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                    {/* Status Management */}
+                    <div className="pt-2 border-t border-border space-y-2.5">
+                      <div className="flex items-center justify-between">
                         <div>
-                          <h5 className="font-black text-foreground text-xl">Enrolment Status</h5>
-                          <p className="text-xs text-muted-foreground font-medium">Select a status below to update immediately</p>
+                          <h5 className="font-bold text-foreground text-sm">Enrolment Status</h5>
+                          <p className="text-[11px] text-muted-foreground">Select a status below to update immediately</p>
                         </div>
                         <StatusBadge status={selectedProfile.enrolment_status || 'ongoing'} />
                       </div>
 
-                      <div className="bg-muted/40 p-4 rounded-2xl border-2 border-border/70 space-y-3.5">
-                        {/* 3 Simple Choice Buttons */}
-                        <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-muted/30 p-3 rounded-xl border border-border/70 space-y-2.5">
+                        <div className="grid grid-cols-3 gap-1.5">
                           <button
                             type="button"
                             onClick={() => setInlineStatus('ongoing')}
-                            className={`py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer border-2 min-h-[44px] ${
+                            className={`py-2 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border min-h-[38px] ${
                               inlineStatus === 'ongoing'
-                                ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm'
+                                ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
                                 : 'bg-white text-muted-foreground border-border hover:bg-muted/60'
                             }`}
                           >
-                            <CheckCircle2 className="h-4 w-4" />
+                            <CheckCircle2 className="h-3.5 w-3.5" />
                             <span>Ongoing</span>
                           </button>
 
                           <button
                             type="button"
                             onClick={() => setInlineStatus('break')}
-                            className={`py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer border-2 min-h-[44px] ${
+                            className={`py-2 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border min-h-[38px] ${
                               inlineStatus === 'break'
-                                ? 'bg-amber-600 text-white border-amber-700 shadow-sm'
+                                ? 'bg-amber-600 text-white border-amber-700 shadow-xs'
                                 : 'bg-white text-muted-foreground border-border hover:bg-muted/60'
                             }`}
                           >
-                            <Clock className="h-4 w-4" />
+                            <Clock className="h-3.5 w-3.5" />
                             <span>On Break</span>
                           </button>
 
                           <button
                             type="button"
                             onClick={() => setInlineStatus('stopped')}
-                            className={`py-2.5 px-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer border-2 min-h-[44px] ${
+                            className={`py-2 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border min-h-[38px] ${
                               inlineStatus === 'stopped'
-                                ? 'bg-rose-600 text-white border-rose-700 shadow-sm'
+                                ? 'bg-rose-600 text-white border-rose-700 shadow-xs'
                                 : 'bg-white text-muted-foreground border-border hover:bg-muted/60'
                             }`}
                           >
-                            <XCircle className="h-4 w-4" />
-                            <span>Stopped (Quit)</span>
+                            <XCircle className="h-3.5 w-3.5" />
+                            <span>Stopped</span>
                           </button>
                         </div>
 
-                        {/* Ongoing note */}
                         {inlineStatus === 'ongoing' && (
-                          <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-900 font-semibold flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-700 shrink-0" />
-                            <span>Student is active and attending regular classes. Previous break or stopped notes are cleared.</span>
+                          <div className="p-2.5 bg-emerald-50 rounded-lg border border-emerald-200 text-xs text-emerald-900 font-medium flex items-center gap-2">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-700 shrink-0" />
+                            <span>Student is active and attending regular classes.</span>
                           </div>
                         )}
 
-                        {/* Break fields */}
                         {inlineStatus === 'break' && (
-                          <div className="bg-white p-3.5 rounded-xl border-2 border-amber-200 space-y-3">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="bg-white p-3 rounded-lg border border-amber-200 space-y-2.5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                               <div className="space-y-1">
-                                <Label className="text-xs font-bold text-amber-950">Break Start Date *</Label>
+                                <Label className="text-[11px] font-bold text-amber-950">Break Start Date *</Label>
                                 <Input
                                   type="date"
                                   value={inlineBreakFrom}
                                   onChange={(e) => setInlineBreakFrom(e.target.value)}
-                                  className="h-10 text-xs font-medium bg-amber-50/30 border-amber-300"
+                                  className="h-9 text-xs bg-amber-50/20 border-amber-300"
                                 />
                               </div>
                               <div className="space-y-1">
-                                <Label className="text-xs font-bold text-amber-950">Break End Date *</Label>
+                                <Label className="text-[11px] font-bold text-amber-950">Break End Date *</Label>
                                 <Input
                                   type="date"
                                   value={inlineBreakTo}
                                   onChange={(e) => setInlineBreakTo(e.target.value)}
-                                  className="h-10 text-xs font-medium bg-amber-50/30 border-amber-300"
+                                  className="h-9 text-xs bg-amber-50/20 border-amber-300"
                                 />
                               </div>
                             </div>
                             <div className="space-y-1">
-                              <Label className="text-xs font-bold text-amber-950">Reason (Optional)</Label>
+                              <Label className="text-[11px] font-bold text-amber-950">Reason (Optional)</Label>
                               <Input
                                 placeholder="e.g. Travel, exams, medical..."
                                 value={inlineBreakReason}
                                 onChange={(e) => setInlineBreakReason(e.target.value)}
-                                className="h-10 text-xs font-medium bg-amber-50/30 border-amber-300"
+                                className="h-9 text-xs bg-amber-50/20 border-amber-300"
                               />
                             </div>
                           </div>
                         )}
 
-                        {/* Stopped fields */}
                         {inlineStatus === 'stopped' && (
-                          <div className="bg-white p-3.5 rounded-xl border-2 border-rose-200 space-y-3">
+                          <div className="bg-white p-3 rounded-lg border border-rose-200 space-y-2.5">
                             <div className="space-y-1">
-                              <Label className="text-xs font-bold text-rose-950">Last Class Date *</Label>
+                              <Label className="text-[11px] font-bold text-rose-950">Last Class Date *</Label>
                               <Input
                                 type="date"
                                 value={inlineStoppedDate}
                                 onChange={(e) => setInlineStoppedDate(e.target.value)}
-                                className="h-10 text-xs font-medium bg-rose-50/30 border-rose-300"
+                                className="h-9 text-xs bg-rose-50/20 border-rose-300"
                               />
                             </div>
                             <div className="space-y-1">
-                              <Label className="text-xs font-bold text-rose-950">Reason for Stopping / Quitting *</Label>
+                              <Label className="text-[11px] font-bold text-rose-950">Reason for Stopping / Quitting *</Label>
                               <Input
-                                placeholder="e.g. Course completed, relocated, quit classes..."
+                                placeholder="e.g. Course completed, relocated..."
                                 value={inlineStoppedReason}
                                 onChange={(e) => setInlineStoppedReason(e.target.value)}
-                                className="h-10 text-xs font-medium bg-rose-50/30 border-rose-300"
+                                className="h-9 text-xs bg-rose-50/20 border-rose-300"
                               />
                             </div>
-                            <p className="text-[11px] font-bold text-rose-700 bg-rose-50 p-2 rounded-lg border border-rose-200">
-                              🔒 Note: Marking as stopped will immediately revoke the student&apos;s login access to the student portal.
+                            <p className="text-[11px] font-medium text-rose-700 bg-rose-50 p-2 rounded-md border border-rose-200">
+                              Note: Marking as stopped immediately revokes student portal login access.
                             </p>
                           </div>
                         )}
 
-                        {/* Save Button */}
                         <div className="flex justify-end pt-1">
                           <button
                             type="button"
                             onClick={handleSaveInlineStatus}
                             disabled={isSavingStatus}
-                            className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-sm transition-all cursor-pointer min-h-[44px] disabled:opacity-60"
+                            className="h-9 px-4 rounded-lg bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-60"
                           >
                             {isSavingStatus ? (
                               <>
-                                <Loader2 className="h-4 w-4 animate-spin text-white" />
+                                <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
                                 <span>Saving...</span>
                               </>
                             ) : (
                               <>
-                                <Save className="h-4 w-4" />
+                                <Save className="h-3.5 w-3.5" />
                                 <span>Save Status</span>
                               </>
                             )}
@@ -1373,9 +1375,9 @@ export default function SuperAdminDashboard() {
                     </div>
                     
                     {/* Attendance Stats */}
-                    <div className="md:col-span-2 mt-4 pt-6 border-t-2 border-border">
-                      <h5 className="font-black text-foreground text-xl mb-4">Attendance Stats</h5>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="pt-2 border-t border-border">
+                      <h5 className="font-bold text-foreground text-sm mb-2.5">Attendance Stats</h5>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                         {(() => {
                           const studentClasses = classes.filter(c => c.student_id === selectedProfile.id);
                           const studentAttendance = attendanceRecords.filter(a => a.student_id === selectedProfile.id);
@@ -1389,7 +1391,7 @@ export default function SuperAdminDashboard() {
                               <ModalStatCard label="Classes" value={totalClasses} />
                               <ModalStatCard label="Present" value={present} color="text-primary" />
                               <ModalStatCard label="Absent" value={absent} color="text-destructive" />
-                              <ModalStatCard label="Progress" value={`${percentage}%`} color={percentage >= 75 ? 'text-primary' : 'text-secondary'} />
+                              <ModalStatCard label="Rate" value={`${percentage}%`} color={percentage >= 75 ? 'text-primary' : 'text-secondary'} />
                             </>
                           )
                         })()}
@@ -1399,16 +1401,16 @@ export default function SuperAdminDashboard() {
                 ) : (
                   <>
                     {isEditingTeacher ? (
-                      <div className="md:col-span-2 space-y-5">
-                        <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-3 sm:p-4 text-xs font-semibold text-amber-900 flex items-start gap-2.5">
-                          <span className="text-sm shrink-0 mt-0.5">🔒</span>
-                          <p>
+                      <div className="space-y-4">
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs font-medium text-amber-900 flex items-start gap-2">
+                          <Lock className="h-3.5 w-3.5 shrink-0 text-amber-800 mt-0.5" />
+                          <span>
                             <strong>Admin Note:</strong> Profile photos are personal to each educator and can only be updated by the teacher directly. All other profile details can be edited below.
-                          </p>
+                          </span>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 bg-muted/30 p-4 sm:p-6 rounded-2xl border-2 border-border/60">
-                          <div className="space-y-1.5 sm:space-y-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-muted/20 p-3.5 rounded-xl border border-border/60">
+                          <div className="space-y-1">
                             <Label className="font-bold text-foreground text-xs uppercase tracking-wider">
                               Teacher Full Name <span className="text-destructive">*</span>
                             </Label>
@@ -1416,11 +1418,11 @@ export default function SuperAdminDashboard() {
                               value={editTeacherForm.name}
                               onChange={(e) => setEditTeacherForm(prev => ({ ...prev, name: e.target.value }))}
                               placeholder="e.g. Sheikh Ahmed"
-                              className="font-medium bg-white h-11 text-base md:text-sm"
+                              className="font-medium bg-white h-9 text-xs sm:text-sm"
                             />
                           </div>
 
-                          <div className="space-y-1.5 sm:space-y-2">
+                          <div className="space-y-1">
                             <Label className="font-bold text-foreground text-xs uppercase tracking-wider">
                               Date of Joining
                             </Label>
@@ -1428,11 +1430,11 @@ export default function SuperAdminDashboard() {
                               type="date"
                               value={editTeacherForm.date_of_joining}
                               onChange={(e) => setEditTeacherForm(prev => ({ ...prev, date_of_joining: e.target.value }))}
-                              className="font-medium bg-white h-11 text-base md:text-sm"
+                              className="font-medium bg-white h-9 text-xs sm:text-sm"
                             />
                           </div>
 
-                          <div className="space-y-1.5 sm:space-y-2">
+                          <div className="space-y-1">
                             <Label className="font-bold text-foreground text-xs uppercase tracking-wider">
                               Mobile Number
                             </Label>
@@ -1440,11 +1442,11 @@ export default function SuperAdminDashboard() {
                               value={editTeacherForm.mobile_number}
                               onChange={(e) => setEditTeacherForm(prev => ({ ...prev, mobile_number: e.target.value }))}
                               placeholder="e.g. +44 7123 456789"
-                              className="font-medium bg-white h-11 text-base md:text-sm"
+                              className="font-medium bg-white h-9 text-xs sm:text-sm"
                             />
                           </div>
 
-                          <div className="space-y-1.5 sm:space-y-2">
+                          <div className="space-y-1">
                             <Label className="font-bold text-foreground text-xs uppercase tracking-wider">
                               Country
                             </Label>
@@ -1452,11 +1454,11 @@ export default function SuperAdminDashboard() {
                               value={editTeacherForm.current_country}
                               onChange={(e) => setEditTeacherForm(prev => ({ ...prev, current_country: e.target.value }))}
                               placeholder="e.g. United Kingdom"
-                              className="font-medium bg-white h-11 text-base md:text-sm"
+                              className="font-medium bg-white h-9 text-xs sm:text-sm"
                             />
                           </div>
 
-                          <div className="space-y-1.5 sm:space-y-2 md:col-span-2">
+                          <div className="space-y-1 sm:col-span-2">
                             <Label className="font-bold text-foreground text-xs uppercase tracking-wider">
                               State / Region
                             </Label>
@@ -1464,114 +1466,115 @@ export default function SuperAdminDashboard() {
                               value={editTeacherForm.current_state}
                               onChange={(e) => setEditTeacherForm(prev => ({ ...prev, current_state: e.target.value }))}
                               placeholder="e.g. London / Birmingham"
-                              className="font-medium bg-white h-11 text-base md:text-sm"
+                              className="font-medium bg-white h-9 text-xs sm:text-sm"
                             />
                           </div>
 
-                          <div className="space-y-1.5 sm:space-y-2 md:col-span-2">
+                          <div className="space-y-1 sm:col-span-2">
                             <Label className="font-bold text-foreground text-xs uppercase tracking-wider">
                               Educational Qualifications
                             </Label>
                             <Textarea
                               value={editTeacherForm.educational_qualifications}
                               onChange={(e) => setEditTeacherForm(prev => ({ ...prev, educational_qualifications: e.target.value }))}
-                              placeholder="e.g. B.A. Islamic Studies, Hafiz-ul-Quran, Certified Tajweed Instructor"
-                              rows={3}
-                              className="font-medium bg-white resize-none text-base md:text-sm"
+                              placeholder="e.g. B.A. Islamic Studies, Hafiz-ul-Quran"
+                              rows={2}
+                              className="font-medium bg-white resize-none text-xs sm:text-sm"
                             />
                           </div>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                          <BouncyButton
-                            onClick={handleSaveTeacherProfile}
-                            disabled={isSavingTeacher}
-                            className="flex-1 h-12 bg-primary hover:bg-primary/90 text-white font-black text-sm sm:text-base flex items-center justify-center gap-2 rounded-xl min-h-[44px]"
-                          >
-                            {isSavingTeacher ? (
-                              <Loader2 className="h-5 w-5 animate-spin" />
-                            ) : (
-                              <Save className="h-4 w-4" />
-                            )}
-                            {isSavingTeacher ? 'Saving Changes...' : 'Save Teacher Profile'}
-                          </BouncyButton>
-                          <BouncyButton
-                            variant="outline"
+                        <div className="flex justify-end gap-2 pt-1">
+                          <button
+                            type="button"
                             onClick={() => setIsEditingTeacher(false)}
                             disabled={isSavingTeacher}
-                            className="h-12 px-6 font-bold text-sm sm:text-base rounded-xl border-2 min-h-[44px]"
+                            className="h-9 px-4 font-semibold text-xs rounded-lg border border-border bg-white hover:bg-muted text-foreground transition-colors cursor-pointer"
                           >
                             Cancel
-                          </BouncyButton>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSaveTeacherProfile}
+                            disabled={isSavingTeacher}
+                            className="h-9 px-4 bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center gap-1.5 rounded-lg shadow-xs transition-all cursor-pointer disabled:opacity-60"
+                          >
+                            {isSavingTeacher ? (
+                              <>
+                                <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
+                                <span>Saving...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Save className="h-3.5 w-3.5" />
+                                <span>Save Changes</span>
+                              </>
+                            )}
+                          </button>
                         </div>
                       </div>
                     ) : (
                       <>
-                        <ProfileItem 
-                          label="Date of Joining" 
-                          value={selectedProfile.date_of_joining ? (
-                            selectedProfile.date_of_joining.includes('-') 
-                              ? format(parseISO(selectedProfile.date_of_joining.split('T')[0]), 'MMM d, yyyy') 
-                              : selectedProfile.date_of_joining
-                          ) : (selectedProfile.created_at ? format(new Date(selectedProfile.created_at), 'MMM d, yyyy') : 'N/A')} 
-                        />
-                        <ProfileItem label="Mobile Number" value={selectedProfile.mobile_number || 'N/A'} />
-                        <ProfileItem label="Country" value={selectedProfile.current_country || 'N/A'} />
-                        <ProfileItem label="State" value={selectedProfile.current_state || 'N/A'} />
-                        <div className="md:col-span-2">
-                          <ProfileItem label="Educational Qualifications" value={selectedProfile.educational_qualifications || 'N/A'} />
-                        </div>
-                        {selectedProfile.bank_account_number ? (
-                          <div className="md:col-span-2">
-                            <ProfileItem label="Bank Account Details" value={`${selectedProfile.bank_name || ''} - ${selectedProfile.bank_account_number}`} />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-muted/15 rounded-xl border border-border/50">
+                          <ProfileItem 
+                            label="Date of Joining" 
+                            value={selectedProfile.date_of_joining ? (
+                              selectedProfile.date_of_joining.includes('-') 
+                                ? format(parseISO(selectedProfile.date_of_joining.split('T')[0]), 'MMM d, yyyy') 
+                                : selectedProfile.date_of_joining
+                            ) : (selectedProfile.created_at ? format(new Date(selectedProfile.created_at), 'MMM d, yyyy') : 'N/A')} 
+                          />
+                          <ProfileItem label="Mobile Number" value={selectedProfile.mobile_number || 'N/A'} />
+                          <ProfileItem label="Country" value={selectedProfile.current_country || 'N/A'} />
+                          <ProfileItem label="State / Region" value={selectedProfile.current_state || 'N/A'} />
+                          <div className="sm:col-span-2">
+                            <ProfileItem label="Educational Qualifications" value={selectedProfile.educational_qualifications || 'N/A'} />
                           </div>
-                        ) : null}
+                          {selectedProfile.bank_account_number ? (
+                            <div className="sm:col-span-2">
+                              <ProfileItem label="Bank Account Details" value={`${selectedProfile.bank_name || ''} - ${selectedProfile.bank_account_number}`} />
+                            </div>
+                          ) : null}
+                        </div>
 
-                        <div className="md:col-span-2 flex justify-end pt-2">
-                          <BouncyButton
-                            size="sm"
-                            variant="outline"
-                            onClick={startEditTeacher}
-                            className="flex items-center gap-1.5 font-black text-xs sm:text-sm px-4 py-2 border-2 text-primary border-primary/30 hover:bg-primary/5 min-h-[44px]"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                            <span>Edit Teacher Profile</span>
-                          </BouncyButton>
+                        {/* Teacher Performance */}
+                        <div className="pt-2 border-t border-border">
+                          <h5 className="font-bold text-foreground text-sm mb-2.5">Teaching Performance</h5>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                            {(() => {
+                              const teacherClasses = classes.filter(c => c.teacher_id === selectedProfile.id);
+                              const assignedStudents = students.filter(s => s.teacher_id === selectedProfile.id);
+                              const completed = teacherClasses.filter(c => c.status === 'completed').length;
+                              const rate = teacherClasses.length > 0 ? Math.round((completed / teacherClasses.length) * 100) : 0;
+                              
+                              return (
+                                <>
+                                  <ModalStatCard label="Assigned" value={assignedStudents.length} />
+                                  <ModalStatCard label="Classes" value={teacherClasses.length} />
+                                  <ModalStatCard label="Completed" value={completed} color="text-primary" />
+                                  <ModalStatCard label="Rate" value={`${rate}%`} color={rate >= 75 ? 'text-primary' : 'text-secondary'} />
+                                </>
+                              )
+                            })()}
+                          </div>
+                        </div>
+
+                        {/* Assigned Students */}
+                        <div className="pt-2 border-t border-border">
+                          <Label className="font-bold text-foreground text-xs uppercase tracking-wider">Assigned Students</Label>
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {students.filter(s => s.teacher_id === selectedProfile.id).map(s => (
+                              <span key={s.id} className="bg-muted text-foreground border border-border px-2.5 py-1 rounded-lg text-xs font-semibold">
+                                {s.name}
+                              </span>
+                            ))}
+                            {students.filter(s => s.teacher_id === selectedProfile.id).length === 0 && (
+                              <span className="text-xs font-medium text-muted-foreground">No students assigned</span>
+                            )}
+                          </div>
                         </div>
                       </>
                     )}
-
-                    {/* Teacher Performance */}
-                    <div className="md:col-span-2 mt-4 pt-6 border-t-2 border-border">
-                      <h5 className="font-black text-foreground text-xl mb-4">Teaching Performance</h5>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {(() => {
-                          const teacherClasses = classes.filter(c => c.teacher_id === selectedProfile.id);
-                          const assignedStudents = students.filter(s => s.teacher_id === selectedProfile.id);
-                          const completed = teacherClasses.filter(c => c.status === 'completed').length;
-                          const rate = teacherClasses.length > 0 ? Math.round((completed / teacherClasses.length) * 100) : 0;
-                          
-                          return (
-                            <>
-                              <ModalStatCard label="Students" value={assignedStudents.length} />
-                              <ModalStatCard label="Classes" value={teacherClasses.length} />
-                              <ModalStatCard label="Completed" value={completed} color="text-primary" />
-                              <ModalStatCard label="Rate" value={`${rate}%`} color={rate >= 75 ? 'text-primary' : 'text-secondary'} />
-                            </>
-                          )
-                        })()}
-                      </div>
-                      <div className="mt-6">
-                        <Label className="text-xs font-black text-muted-foreground uppercase tracking-widest">Assigned Students</Label>
-                        <div className="flex flex-wrap gap-2 mt-3">
-                          {students.filter(s => s.teacher_id === selectedProfile.id).map(s => (
-                            <span key={s.id} className="bg-muted text-foreground border-2 border-border px-3 py-1.5 rounded-xl text-sm font-bold shadow-sm">
-                              {s.name}
-                            </span>
-                          )) || <span className="text-sm font-bold text-muted-foreground">No students assigned</span>}
-                        </div>
-                      </div>
-                    </div>
                   </>
                 )}
               </div>
@@ -1608,18 +1611,18 @@ function DashboardStatCard({ title, value, index, gradient }: { title: string, v
 
 function ProfileItem({ label, value }: { label: string, value: any }) {
   return (
-    <div className="space-y-1">
-      <Label className="text-xs font-black text-muted-foreground uppercase tracking-widest">{label}</Label>
-      <p className="font-bold text-foreground text-lg">{value || 'N/A'}</p>
+    <div className="space-y-0.5">
+      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{label}</Label>
+      <p className="font-semibold text-foreground text-xs sm:text-sm truncate">{value || 'N/A'}</p>
     </div>
   )
 }
 
 function ModalStatCard({ label, value, color = 'text-foreground' }: { label: string, value: any, color?: string }) {
   return (
-    <div className="bg-muted/30 border-2 border-border p-4 rounded-2xl shadow-sm text-center">
-      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">{label}</p>
-      <p className={`text-2xl font-black ${color}`}>{value}</p>
+    <div className="bg-muted/40 border border-border/80 p-2.5 rounded-xl shadow-xs text-center">
+      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">{label}</p>
+      <p className={`text-base sm:text-lg font-black ${color}`}>{value}</p>
     </div>
   )
 }
@@ -1656,13 +1659,13 @@ function NavBtn({ active, onClick, icon, label }: { active: boolean, onClick: ()
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string, className: string }> = {
-    ongoing:  { label: '✅ Ongoing',   className: 'bg-green-50 text-green-700 border-green-200' },
-    break:    { label: '🕐 On a Break', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-    stopped:  { label: '🛑 Stopped',   className: 'bg-red-50 text-red-700 border-red-200' },
+    ongoing:  { label: 'Ongoing',   className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    break:    { label: 'On a Break', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+    stopped:  { label: 'Stopped',   className: 'bg-rose-50 text-rose-700 border-rose-200' },
   }
   const s = map[status] || map.ongoing
   return (
-    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border-2 ${s.className}`}>
+    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${s.className}`}>
       {s.label}
     </span>
   )

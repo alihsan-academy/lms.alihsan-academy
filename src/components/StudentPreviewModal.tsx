@@ -42,7 +42,7 @@ export function StudentPreviewModal({
               <span className="font-bold text-foreground">Reg No:</span> {student.registration_number || "—"}
             </p>
             <p className="text-xs sm:text-sm font-semibold text-muted-foreground">
-              <span className="font-bold text-foreground">Year:</span> {student.year || "—"}
+              <span className="font-bold text-foreground">Year / Class:</span> {student.year || student.class_name || "—"}
             </p>
             <p className="text-xs sm:text-sm font-semibold text-muted-foreground">
               <span className="font-bold text-foreground">Term:</span> {student.term || "—"}

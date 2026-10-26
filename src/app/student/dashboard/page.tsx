@@ -397,8 +397,8 @@ function HomeTab({ studentName, todayClass, upcomingClasses, teachers, onRefresh
             <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6">
               <Star className="h-12 w-12 text-green-500 fill-green-500" />
             </div>
-            <h4 className="text-2xl font-black text-foreground mb-2">Awesome job, {studentName.split(' ')[0]}!</h4>
-            <p className="text-muted-foreground font-medium text-lg">No classes for today. Time to play! 🎉</p>
+            <h4 className="text-2xl font-black text-foreground mb-2">Well done, {studentName.split(' ')[0]}!</h4>
+            <p className="text-muted-foreground font-medium text-base">No classes scheduled for today.</p>
           </AnimatedCard>
         )}
       </section>
@@ -419,8 +419,9 @@ function HomeTab({ studentName, todayClass, upcomingClasses, teachers, onRefresh
                     <div>
                       <h4 className="font-bold text-foreground text-lg leading-tight">{c.title || 'Moral Class Alihsan Academy'}</h4>
                       <p className="text-xs font-bold text-primary mb-1">{teacher?.name || 'Teacher'}</p>
-                      <p className="font-semibold text-muted-foreground text-xs">
-                        📅 {formatUKTime(c.scheduled_at)}
+                      <p className="font-semibold text-muted-foreground text-xs flex items-center gap-1">
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span>{formatUKTime(c.scheduled_at)}</span>
                       </p>
                     </div>
                   </div>
@@ -491,7 +492,7 @@ function AttendanceTab({
         periodLabel: dateRange.label,
         summary: summary,
       })
-      toast.success('Attendance transcript downloaded! 📄')
+      toast.success('Attendance transcript downloaded.')
     } catch (e: any) {
       console.error('PDF export error:', e)
       toast.error('Failed to generate PDF: ' + e.message)
@@ -509,7 +510,7 @@ function AttendanceTab({
       {/* Header and Download Button */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h3 className="text-3xl font-black text-foreground">Attendance & Progress 📊</h3>
+          <h3 className="text-3xl font-black text-foreground">Attendance & Progress</h3>
           <p className="text-muted-foreground font-medium text-sm mt-1">
             Real-time track record of your classes, attendances, and scheduled sessions.
           </p>
@@ -614,7 +615,7 @@ function AttendanceTab({
             className={`${barColor} h-full rounded-full`}
           />
         </div>
-        <p className="text-xs font-bold text-muted-foreground mt-3 text-center">Aim for 75% or higher to unlock the next level! 🏆</p>
+        <p className="text-xs font-bold text-muted-foreground mt-3 text-center">Aim for 75% or higher attendance.</p>
       </AnimatedCard>
 
       {/* Class History for Selected Period */}

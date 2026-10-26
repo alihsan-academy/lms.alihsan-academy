@@ -29,6 +29,7 @@ export async function GET(request: Request) {
         registration_number,
         profile_photo,
         enrolment_status,
+        class_name,
         year,
         term,
         academy_joined_date,
@@ -46,12 +47,13 @@ export async function GET(request: Request) {
           registration_number,
           profile_photo,
           enrolment_status,
+          class_name,
           academy_joined_date,
           profiles!inner(email)
         `)
         .eq('teacher_id', user.id)
       if (fallbackQuery.error) throw fallbackQuery.error
-      students = (fallbackQuery.data || []).map(s => ({ ...s, year: null, term: null }))
+      students = (fallbackQuery.data || []).map(s => ({ ...s, year: s.class_name || null, term: null }))
     } else if (primaryQuery.error) {
       throw primaryQuery.error
     } else {
@@ -71,7 +73,8 @@ export async function GET(request: Request) {
       registration_number: s.registration_number,
       profile_photo: s.profile_photo,
       enrolment_status: s.enrolment_status,
-      year: s.year || null,
+      class_name: s.class_name || null,
+      year: s.year || s.class_name || null,
       term: s.term || null,
       academy_joined_date: s.academy_joined_date || null,
       email: s.profiles?.email || null,

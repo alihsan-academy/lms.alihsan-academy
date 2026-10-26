@@ -243,7 +243,7 @@ export function AdminAttendanceManager({
           percentage: item.percentage,
         })),
       })
-      toast.success(`PDF downloaded for Teacher ${currentTeacher.name}! 📄`)
+      toast.success(`PDF downloaded for Teacher ${currentTeacher.name}`)
     } catch (e: any) {
       toast.error('Failed to generate PDF: ' + e.message)
     } finally {
@@ -268,7 +268,7 @@ export function AdminAttendanceManager({
         periodLabel: dateRange.label,
         summary: summaryObj,
       })
-      toast.success(`PDF downloaded for ${studentObj.name}! 📄`)
+      toast.success(`PDF downloaded for ${studentObj.name}`)
     } catch (e: any) {
       toast.error('Failed to generate PDF: ' + e.message)
     } finally {
@@ -307,7 +307,7 @@ export function AdminAttendanceManager({
           rate: summary.attendanceRate,
         })),
       })
-      toast.success(`Smart Filter PDF downloaded (${filteredIntelligenceStudents.length} students)! 📄`)
+      toast.success(`Smart Filter PDF downloaded (${filteredIntelligenceStudents.length} students)`)
     } catch (e: any) {
       toast.error('Failed to generate PDF: ' + e.message)
     } finally {
@@ -320,7 +320,7 @@ export function AdminAttendanceManager({
       {/* Search Mode Toggle Navigation */}
       <div className="bg-white p-4 rounded-2xl border-2 border-border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h3 className="text-2xl font-black text-foreground">Attendance Reports & Intelligence 📑</h3>
+          <h3 className="text-2xl font-black text-foreground">Attendance Reports & Intelligence</h3>
           <p className="text-muted-foreground font-medium text-xs mt-0.5">
             Query individual student attendance records by Registration Number or search by Teacher Name for full batch summaries.
           </p>
@@ -921,7 +921,7 @@ export function AdminAttendanceManager({
               </div>
             </div>
 
-            {/* ✅ Attended (Class Completed) */}
+            {/* Attended (Class Completed) */}
             <div className="bg-green-50 rounded-2xl p-4 space-y-2 border border-green-200">
               <label className="text-[11px] font-black uppercase text-green-700 tracking-wide flex items-center gap-1">
                 <CheckCircle2 className="h-3.5 w-3.5" /> Attended (Class Completed)
@@ -943,7 +943,7 @@ export function AdminAttendanceManager({
               </div>
             </div>
 
-            {/* ⚠️ Student Absent */}
+            {/* Student Absent */}
             <div className="bg-orange-50 rounded-2xl p-4 space-y-2 border border-orange-200">
               <label className="text-[11px] font-black uppercase text-orange-700 tracking-wide flex items-center gap-1">
                 <AlertCircle className="h-3.5 w-3.5" /> Student Absent (Unavailable)
@@ -965,7 +965,7 @@ export function AdminAttendanceManager({
               </div>
             </div>
 
-            {/* ❌ Teacher Missed */}
+            {/* Teacher Missed */}
             <div className="bg-red-50 rounded-2xl p-4 space-y-2 border border-red-200">
               <label className="text-[11px] font-black uppercase text-red-700 tracking-wide flex items-center gap-1">
                 <XCircle className="h-3.5 w-3.5" /> Teacher Missed (Unavailable)
@@ -987,7 +987,7 @@ export function AdminAttendanceManager({
               </div>
             </div>
 
-            {/* 🕐 On Break */}
+            {/* On Break */}
             <div className="bg-yellow-50 rounded-2xl p-4 space-y-2 border border-yellow-200">
               <label className="text-[11px] font-black uppercase text-yellow-700 tracking-wide flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" /> On Break (Approved Leave)
@@ -1009,7 +1009,7 @@ export function AdminAttendanceManager({
               </div>
             </div>
 
-            {/* 📊 Attendance Rate % */}
+            {/* Attendance Rate % */}
             <div className="bg-blue-50 rounded-2xl p-4 space-y-2 border border-blue-200">
               <label className="text-[11px] font-black uppercase text-blue-700 tracking-wide flex items-center gap-1">
                 <FileText className="h-3.5 w-3.5" /> Attendance Rate (%)
@@ -1060,10 +1060,10 @@ export function AdminAttendanceManager({
                   <tr className="bg-muted/60">
                     <th className="p-3 text-left text-xs font-black text-muted-foreground uppercase">Student</th>
                     <th className="p-3 text-left text-xs font-black text-muted-foreground uppercase">Reg No</th>
-                    <th className="p-3 text-center text-xs font-black text-green-700 uppercase">Attended ✅</th>
-                    <th className="p-3 text-center text-xs font-black text-orange-700 uppercase">Stu. Absent ⚠️</th>
-                    <th className="p-3 text-center text-xs font-black text-red-700 uppercase">Tchr. Missed ❌</th>
-                    <th className="p-3 text-center text-xs font-black text-yellow-700 uppercase">On Break 🕐</th>
+                    <th className="p-3 text-center text-xs font-black text-green-700 uppercase">Attended</th>
+                    <th className="p-3 text-center text-xs font-black text-orange-700 uppercase">Stu. Absent</th>
+                    <th className="p-3 text-center text-xs font-black text-red-700 uppercase">Tchr. Missed</th>
+                    <th className="p-3 text-center text-xs font-black text-yellow-700 uppercase">On Break</th>
                     <th className="p-3 text-center text-xs font-black text-blue-700 uppercase">Rate %</th>
                     <th className="p-3 text-center text-xs font-black text-muted-foreground uppercase">Status</th>
                   </tr>
@@ -1139,7 +1139,7 @@ export function AdminAttendanceManager({
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 max-w-2xl w-full border-2 border-border shadow-2xl relative my-auto max-h-[90vh] flex flex-col"
+              className="bg-white rounded-2xl p-4 sm:p-5 max-w-xl w-full border-2 border-border shadow-2xl relative my-auto max-h-[85vh] flex flex-col"
             >
               <div className="flex items-center justify-between pb-4 border-b-2 border-border">
                 <div className="flex items-center gap-3">
