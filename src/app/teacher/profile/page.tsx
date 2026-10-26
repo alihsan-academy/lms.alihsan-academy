@@ -239,26 +239,7 @@ export default function TeacherProfilePage() {
         
         <h3 className="text-lg sm:text-xl font-bold z-10">{profile.full_name || 'Teacher Profile'}</h3>
         <p className="mt-1 text-white/70 font-medium text-xs">Islamic Online Academy Educator</p>
-        <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white/90 text-[11px] font-semibold border border-white/15">
-          <Camera className="h-3 w-3 text-secondary" />
-          <span>Tap the camera icon to update your profile photo</span>
-        </div>
       </AnimatedCard>
-
-      {/* Notice Banner */}
-      <div className="bg-amber-50/80 border-2 border-amber-200/90 rounded-xl p-3.5 sm:p-4 text-amber-900 shadow-sm flex items-start gap-3">
-        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0 mt-0.5 text-amber-800">
-          <ShieldCheck className="h-4 w-4" />
-        </div>
-        <div>
-          <p className="text-xs sm:text-sm font-black text-amber-950">
-            Official Academy Records (Read-Only)
-          </p>
-          <p className="text-[11px] sm:text-xs text-amber-800 mt-1 font-medium leading-relaxed">
-            Personal, contact, and qualification records are officially maintained by Academy Administration. To request changes to your name, contact information, or qualifications, please reach out to Administration. You can update your profile photo anytime using the camera button above.
-          </p>
-        </div>
-      </div>
 
       <AnimatedCard delay={0.3} className="p-4 sm:p-8 space-y-6 sm:space-y-8 rounded-xl sm:rounded-2xl">
         <div>
@@ -441,39 +422,23 @@ export default function TeacherProfilePage() {
           </div>
         </div>
 
-        {/* Informational Footer Card */}
-        <div className="p-4 sm:p-5 bg-muted/50 border-2 border-border/80 rounded-xl sm:rounded-2xl flex items-start gap-3">
-          <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
-            <Lock className="h-4 w-4" />
-          </div>
-          <div className="space-y-1">
-            <h5 className="font-bold text-foreground text-sm">Official Record Verification</h5>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Teacher profiles are verified and maintained directly by the Al-Ihsan Academy Administration. If your name, contact information, or qualifications need updating, please contact an Administrator.
-            </p>
-          </div>
-        </div>
-
-        {/* Redesigned Save Profile Updates Button */}
-        <div className="pt-4 sm:pt-6">
+        {/* Minimal Save Changes Button */}
+        <div className="pt-2 flex justify-end">
           <button
             type="button"
             onClick={handleSave}
             disabled={saving || uploadingPhoto}
-            className="group relative w-full h-14 min-h-[56px] bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:via-teal-500 hover:to-emerald-600 active:scale-[0.99] text-white font-black text-base sm:text-lg rounded-2xl shadow-[0_10px_30px_-5px_rgba(16,185,129,0.4)] hover:shadow-[0_14px_35px_-5px_rgba(16,185,129,0.55)] transition-all duration-200 border border-emerald-400/30 flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer overflow-hidden"
+            className="h-10 px-5 bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all flex items-center gap-2 disabled:opacity-60 cursor-pointer min-h-[40px]"
           >
-            <span className="absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
             {saving ? (
               <>
-                <Loader2 className="h-5 w-5 animate-spin text-white" />
-                <span className="tracking-wide">Saving Profile Updates...</span>
+                <Loader2 className="h-4 w-4 animate-spin text-white" />
+                <span>Saving...</span>
               </>
             ) : (
               <>
-                <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/20 text-white shadow-inner group-hover:scale-110 transition-transform">
-                  <Save className="h-4 w-4" />
-                </span>
-                <span className="tracking-wide">Save Profile Updates</span>
+                <Save className="h-4 w-4" />
+                <span>Save Changes</span>
               </>
             )}
           </button>
