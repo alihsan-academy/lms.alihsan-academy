@@ -67,6 +67,8 @@ export default function StudentProfilePage() {
         address: stud?.address || '',
         profile_photo: stud?.profile_photo || '',
         academy_joined_date: stud?.academy_joined_date ? format(parseISO(stud.academy_joined_date), 'yyyy-MM-dd') : '',
+        year: stud?.year || '',
+        term: stud?.term || '',
         enrolment_status: stud?.enrolment_status || 'ongoing',
         break_from_date: stud?.break_from_date || '',
         break_to_date: stud?.break_to_date || '',
@@ -81,7 +83,7 @@ export default function StudentProfilePage() {
     fetchProfile()
   }, [])
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     const updatedProfile = { ...profile, [name]: value }
     setProfile(updatedProfile)
@@ -116,15 +118,26 @@ export default function StudentProfilePage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const { error: studError } = await supabase.from('student_profiles').update({
+    const updatePayload: any = {
       name: profile.full_name,
       dob: profile.dob ? new Date(profile.dob).toISOString() : null,
       guardian_name: profile.guardian_name,
       guardian_mobile: profile.guardian_mobile,
       address: profile.address,
       profile_photo: profile.profile_photo,
-      academy_joined_date: profile.academy_joined_date ? new Date(profile.academy_joined_date).toISOString() : null
-    }).eq('user_id', user.id)
+      academy_joined_date: profile.academy_joined_date ? new Date(profile.academy_joined_date).toISOString() : null,
+      year: profile.year || null,
+      term: profile.term || null,
+    }
+
+    let { error: studError } = await supabase.from('student_profiles').update(updatePayload).eq('user_id', user.id)
+
+    if (studError && (studError.message?.includes('year') || studError.code === '42703')) {
+      delete updatePayload.year
+      delete updatePayload.term
+      const retry = await supabase.from('student_profiles').update(updatePayload).eq('user_id', user.id)
+      studError = retry.error
+    }
 
     if (studError) {
       toast.error('Failed to save your details.')
@@ -188,8 +201,16 @@ export default function StudentProfilePage() {
         </div>
         
         <h3 className="text-lg sm:text-xl font-bold z-10">{profile.full_name || 'Your Name'}</h3>
-        <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white font-medium text-xs gap-1.5">
-          <Award className="h-3.5 w-3.5 text-[#FCD34D]" /> Reg No: {profile.registration_number || 'N/A'}
+        <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
+          <div className="inline-flex items-center px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white font-medium text-xs gap-1.5">
+            <Award className="h-3.5 w-3.5 text-[#FCD34D]" /> Reg No: {profile.registration_number || 'N/A'}
+          </div>
+          <div className="inline-flex items-center px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white font-medium text-xs gap-1.5">
+            <Award className="h-3.5 w-3.5 text-[#FCD34D]" /> Year: {profile.year || 'N/A'}
+          </div>
+          <div className="inline-flex items-center px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white font-medium text-xs gap-1.5">
+            <Award className="h-3.5 w-3.5 text-[#FCD34D]" /> Term: {profile.term || 'N/A'}
+          </div>
         </div>
       </AnimatedCard>
 
@@ -208,6 +229,37 @@ export default function StudentProfilePage() {
             <div className="space-y-1.5 sm:space-y-2">
               <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">Registration Number <Lock className="h-3 w-3" /></Label>
               <Input value={profile.registration_number} disabled className="bg-primary/5 border-primary/20 font-black text-primary h-11 text-base md:text-sm" />
+            </div>
+
+            {/* Year */}
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label htmlFor="year" className="font-bold text-foreground">Year</Label>
+              <Input
+                id="year"
+                name="year"
+                placeholder="e.g. 2026"
+                value={profile.year || ''}
+                onChange={handleChange}
+                disabled={saving}
+                className="font-medium bg-white h-11 text-base md:text-sm"
+              />
+            </div>
+
+            {/* Term */}
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label htmlFor="term" className="font-bold text-foreground">Term</Label>
+              <select
+                id="term"
+                name="term"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 font-medium h-11 text-base md:text-sm cursor-pointer"
+                value={profile.term || ''}
+                onChange={handleChange}
+                disabled={saving}
+              >
+                <option value="">Select term</option>
+                <option value="Term-01">Term‑01</option>
+                <option value="Term-02">Term‑02</option>
+              </select>
             </div>
 
             <div className="space-y-1.5 sm:space-y-2">

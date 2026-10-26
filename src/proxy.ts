@@ -39,7 +39,9 @@ export default async function proxy(request: NextRequest) {
     const isLoginPage = request.nextUrl.pathname === '/login' || 
                         request.nextUrl.pathname === '/student/login' || 
                         request.nextUrl.pathname === '/teacher/login' || 
-                        request.nextUrl.pathname === '/admin/login'
+                        request.nextUrl.pathname === '/portal-superadmin/login' ||
+                        request.nextUrl.pathname === '/portal-superadmin' ||
+                        request.nextUrl.pathname === '/portall-superadmin'
 
     const isRecoveryMode = request.nextUrl.searchParams.get('type') === 'recovery' || 
                            request.nextUrl.searchParams.has('code')
@@ -52,7 +54,7 @@ export default async function proxy(request: NextRequest) {
 
     const isProtectedRoute = (request.nextUrl.pathname.startsWith('/student') && request.nextUrl.pathname !== '/student/login') ||
                              (request.nextUrl.pathname.startsWith('/teacher') && request.nextUrl.pathname !== '/teacher/login') ||
-                             (request.nextUrl.pathname.startsWith('/admin') && request.nextUrl.pathname !== '/admin/login') ||
+                             (request.nextUrl.pathname.startsWith('/admin')) ||
                              request.nextUrl.pathname.startsWith('/superadmin')
 
     const getUserRole = async (): Promise<string | null> => {
@@ -103,7 +105,7 @@ export default async function proxy(request: NextRequest) {
         pathname === '/login' ||
         (pathname === '/student/login' && role === 'student') ||
         (pathname === '/teacher/login' && role === 'teacher') ||
-        (pathname === '/admin/login' && (role === 'admin' || role === 'superadmin'))
+        ((pathname === '/portal-superadmin/login' || pathname === '/portal-superadmin' || pathname === '/portall-superadmin') && (role === 'admin' || role === 'superadmin'))
 
       if (role && isOwnLoginPage) {
         if (role === 'student') {
@@ -137,7 +139,7 @@ export default async function proxy(request: NextRequest) {
       if (pathname.startsWith('/teacher')) {
         redirectUrl.pathname = '/teacher/login'
       } else if (pathname.startsWith('/admin') || pathname.startsWith('/superadmin')) {
-        redirectUrl.pathname = '/admin/login'
+        redirectUrl.pathname = '/portal-superadmin/login'
       } else {
         redirectUrl.pathname = '/student/login'
       }
@@ -170,10 +172,10 @@ export default async function proxy(request: NextRequest) {
         return NextResponse.redirect(new URL('/teacher/login', request.url))
       }
       if (pathname.startsWith('/admin') && role !== 'admin' && role !== 'superadmin') {
-        return NextResponse.redirect(new URL('/admin/login', request.url))
+        return NextResponse.redirect(new URL('/portal-superadmin/login', request.url))
       }
       if (pathname.startsWith('/superadmin') && role !== 'superadmin') {
-        return NextResponse.redirect(new URL('/admin/login', request.url))
+        return NextResponse.redirect(new URL('/portal-superadmin/login', request.url))
       }
     }
 

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
 import { AcademyHeader } from '@/components/academy-header'
-import { Calendar, Plus, BarChart3, Loader2, Video, CheckCircle, Clock, User, Globe, AlertCircle, ChevronDown, Users, Copy, Sparkles, Pencil, X, Download, FileText, CheckCircle2, XCircle, Search, BookOpen } from 'lucide-react'
+import { Calendar, Plus, BarChart3, Loader2, Video, CheckCircle, Clock, User, Globe, AlertCircle, ChevronDown, Users, Copy, Sparkles, Pencil, X, Download, FileText, CheckCircle2, XCircle, Search, BookOpen, Eye } from 'lucide-react'
 import { format, parseISO, addWeeks, isAfter, startOfToday } from 'date-fns'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,6 +20,7 @@ import { DateRangeFilter } from '@/components/date-range-filter'
 import { DateFilterType, getDateRange, calculateStudentAttendanceSummary, formatUKDateTime, isDateWithinRange, parseClassMetadata } from '@/lib/attendance-utils'
 import { generateStudentAttendancePDF, generateTeacherAttendancePDF } from '@/lib/pdf-generator'
 import { ClassDatePicker, ClassTimePicker } from '@/components/class-date-time-picker'
+import { StudentPreviewModal } from '@/components/StudentPreviewModal'
 
 import TeacherProfilePage from '@/app/teacher/profile/page'
 
@@ -54,6 +55,14 @@ export default function TeacherDashboard() {
   const [allTeacherClasses, setAllTeacherClasses] = useState<any[]>([])
   const [allAttendance, setAllAttendance] = useState<any[]>([])
   const [currentTime, setCurrentTime] = useState<number>(() => Date.now())
+
+  // Student preview modal state
+  const [previewStudent, setPreviewStudent] = useState<any>(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const openPreview = (s: any) => {
+    setPreviewStudent(s)
+    setPreviewOpen(true)
+  }
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -478,6 +487,15 @@ export default function TeacherDashboard() {
                     return s ? (
                       <div className="flex items-center gap-2 justify-end mt-1">
                         <StatusBadge status={s.enrolment_status || 'ongoing'} />
+                        <button
+                          type="button"
+                          onClick={() => openPreview(s)}
+                          className="px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
+                          title="Preview Student Profile"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          <span>Preview</span>
+                        </button>
                         <button onClick={() => openStatusEdit(s)} className="p-1.5 hover:bg-muted rounded-full transition-colors" title="Edit Student Status">
                           <Pencil className="h-4 w-4 text-muted-foreground" />
                         </button>
@@ -740,6 +758,14 @@ export default function TeacherDashboard() {
                             <span className="block text-[9px] text-muted-foreground font-semibold uppercase tracking-wider">Rate</span>
                           </div>
 
+                          <button
+                            type="button"
+                            onClick={() => openPreview(item.student)}
+                            className="px-2.5 py-1.5 rounded-md text-xs font-semibold border border-primary/20 bg-primary/10 hover:bg-primary/20 text-primary transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
+                            title="Preview Student Profile"
+                          >
+                            <Eye className="h-3.5 w-3.5" /> Preview
+                          </button>
                           <button
                             onClick={() => setViewingStudentDetail(item)}
                             className="px-3 py-1.5 rounded-md text-xs font-semibold border border-border bg-white hover:bg-muted text-foreground transition-colors flex items-center gap-1.5 shadow-sm"
@@ -1129,6 +1155,13 @@ export default function TeacherDashboard() {
         <NavBtn active={activeTab === 'stats'} onClick={() => setActiveTab('stats')} icon={<BarChart3 className={activeTab === 'stats' ? 'fill-primary/20' : ''} />} label="Stats" />
         <NavBtn active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<User className={activeTab === 'profile' ? 'fill-primary/20' : ''} />} label="Profile" />
       </nav>
+
+      {/* Student Preview Modal */}
+      <StudentPreviewModal
+        student={previewStudent}
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+      />
     </div>
   )
 }
