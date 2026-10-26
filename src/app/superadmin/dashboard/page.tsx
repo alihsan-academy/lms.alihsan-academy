@@ -141,15 +141,28 @@ export default function SuperAdminDashboard() {
         stopped_reason: inlineStatus === 'stopped' ? inlineStoppedReason : null,
       }
 
+      const targetStudentId = selectedProfile.id || selectedProfile.user_id
       setSelectedProfile(updatedRecord)
-      setStudents(prev => prev.map(s => (s.id === selectedProfile.id || s.user_id === selectedProfile.user_id) ? { ...s, ...updatedRecord } : s))
+      setStudents(prev => prev.map(s => {
+        const matches = s.id === targetStudentId || (s.user_id && s.user_id === targetStudentId)
+        if (!matches) return s
+        return {
+          ...s,
+          enrolment_status: inlineStatus,
+          break_from_date: inlineStatus === 'break' ? inlineBreakFrom : null,
+          break_to_date: inlineStatus === 'break' ? inlineBreakTo : null,
+          break_reason: inlineStatus === 'break' ? inlineBreakReason : null,
+          last_class_date: inlineStatus === 'stopped' ? inlineStoppedDate : null,
+          stopped_reason: inlineStatus === 'stopped' ? inlineStoppedReason : null,
+        }
+      }))
 
       if (inlineStatus === 'stopped') {
         toast.success('Status set to STOPPED. Student portal access has been revoked. 🛑')
       } else {
         toast.success(`Status updated to "${inlineStatus.toUpperCase()}"! ✨`)
       }
-      fetchData()
+      await fetchData()
     } catch (err: any) {
       toast.error(err.message || 'Failed to update status')
     } finally {
@@ -257,6 +270,7 @@ export default function SuperAdminDashboard() {
         const sp = s.student_profiles?.[0] || {}
         return {
           ...s,
+          user_id: s.id,
           name: sp.name || s.email,
           class_name: sp.class_name || 'N/A',
           teacher_id: sp.teacher_id || null,

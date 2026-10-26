@@ -32,6 +32,7 @@ export default function AdminDashboard() {
         const sp = s.student_profiles?.[0] || {}
         return {
           ...s,
+          user_id: s.id,
           name: sp.name || s.email,
           class_name: sp.class_name || 'N/A',
           teacher_id: sp.teacher_id || null,
