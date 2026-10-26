@@ -59,9 +59,21 @@ export async function PATCH(request: Request) {
     const cleanState = state ? String(state).trim() : null
     const cleanQualifications = educationalQualifications ? String(educationalQualifications).trim() : null
 
-    // Update teacher_profiles (strictly excluding profile_photo / photo_url)
+    // 1. Resolve targetUserId whether teacherId is user_id or teacher_profiles.id
+    let targetUserId = teacherId
+    const { data: profileCheck } = await supabaseAdmin
+      .from('teacher_profiles')
+      .select('id, user_id')
+      .or(`user_id.eq.${teacherId},id.eq.${teacherId}`)
+      .limit(1)
+      .maybeSingle()
+
+    if (profileCheck?.user_id) {
+      targetUserId = profileCheck.user_id
+    }
+
     const updatePayload = {
-      user_id: teacherId,
+      user_id: targetUserId,
       name: trimmedName,
       full_name: trimmedName,
       date_of_joining: cleanDate,
@@ -77,20 +89,17 @@ export async function PATCH(request: Request) {
       qualification: cleanQualifications
     }
 
-    const { data: existingProfile } = await supabaseAdmin
+    // Update in teacher_profiles by user_id
+    const { data: updatedRows, error: updateError } = await supabaseAdmin
       .from('teacher_profiles')
-      .select('id')
-      .eq('user_id', teacherId)
-      .maybeSingle()
+      .update(updatePayload)
+      .eq('user_id', targetUserId)
+      .select()
 
-    if (existingProfile) {
-      const { error: updateError } = await supabaseAdmin
-        .from('teacher_profiles')
-        .update(updatePayload)
-        .eq('user_id', teacherId)
+    if (updateError) throw updateError
 
-      if (updateError) throw updateError
-    } else {
+    // If no row existed yet, insert one
+    if (!updatedRows || updatedRows.length === 0) {
       const { error: insertError } = await supabaseAdmin
         .from('teacher_profiles')
         .insert(updatePayload)
@@ -98,9 +107,9 @@ export async function PATCH(request: Request) {
       if (insertError) throw insertError
     }
 
-    // Keep auth user metadata in sync
+    // Keep auth user metadata in sync so the teacher side navbar/dashboard immediately shows the updated name
     try {
-      await supabaseAdmin.auth.admin.updateUserById(teacherId, {
+      await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
         user_metadata: {
           name: trimmedName,
           full_name: trimmedName
@@ -113,7 +122,8 @@ export async function PATCH(request: Request) {
     return NextResponse.json({
       success: true,
       teacher: {
-        id: teacherId,
+        id: targetUserId,
+        user_id: targetUserId,
         name: trimmedName,
         date_of_joining: cleanDate,
         mobile_number: cleanMobile,

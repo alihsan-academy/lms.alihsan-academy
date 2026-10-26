@@ -50,8 +50,10 @@ export default function AdminDashboard() {
       const mappedTeachers = data.teachers?.map((t: any) => {
         const tp = t.teacher_profiles?.[0] || {}
         return {
-          ...t,
           ...tp,
+          ...t,
+          id: t.id,
+          user_id: t.id,
           name: tp.name || tp.full_name || t.email,
           profile_photo: tp.profile_photo || tp.photo_url || null,
           mobile_number: tp.mobile_number || tp.mobile || '',

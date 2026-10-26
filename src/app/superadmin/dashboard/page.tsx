@@ -93,11 +93,12 @@ export default function SuperAdminDashboard() {
 
     setIsSavingTeacher(true)
     try {
+      const targetTeacherId = selectedProfile.user_id || selectedProfile.id
       const response = await fetch('/api/admin/teacher-profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          teacherId: selectedProfile.id,
+          teacherId: targetTeacherId,
           name: editTeacherForm.name.trim(),
           dateOfJoining: editTeacherForm.date_of_joining || null,
           mobileNumber: editTeacherForm.mobile_number || null,
@@ -124,12 +125,13 @@ export default function SuperAdminDashboard() {
       setSelectedProfile(updatedProfile)
 
       // Update local teachers array
-      setTeachers(prev => prev.map(t => t.id === selectedProfile.id ? { ...t, ...updatedProfile } : t))
+      setTeachers(prev => prev.map(t => (t.id === selectedProfile.id || t.user_id === targetTeacherId) ? { ...t, ...updatedProfile } : t))
       // Update local allUsers array
-      setAllUsers(prev => prev.map(u => u.id === selectedProfile.id ? { ...u, name: editTeacherForm.name.trim() } : u))
+      setAllUsers(prev => prev.map(u => (u.id === selectedProfile.id || u.id === targetTeacherId) ? { ...u, name: editTeacherForm.name.trim() } : u))
 
       toast.success('Teacher profile updated successfully! 🎉')
       setIsEditingTeacher(false)
+      fetchData()
     } catch (err: any) {
       console.error('Error saving teacher profile:', err)
       toast.error(err.message || 'Failed to save teacher details')
@@ -176,8 +178,11 @@ export default function SuperAdminDashboard() {
       const mappedTeachers = data.teachers?.map((t: any) => {
         const tp = t.teacher_profiles?.[0] || {}
         return {
-          ...t,
           ...tp,
+          ...t,
+          id: t.id,
+          user_id: t.id,
+          teacher_profile_id: tp.id,
           name: tp.name || tp.full_name || t.email,
           profile_photo: tp.profile_photo || tp.photo_url || null,
           mobile_number: tp.mobile_number || tp.mobile || '',

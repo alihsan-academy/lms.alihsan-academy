@@ -38,11 +38,14 @@ export default function TeacherProfilePage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       
-      const { data: teach } = await supabase
+      const { data: teacherRows } = await supabase
         .from('teacher_profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single()
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+      const teach = teacherRows?.[0] || null
 
       const { data: students } = await supabase
         .from('student_profiles')
