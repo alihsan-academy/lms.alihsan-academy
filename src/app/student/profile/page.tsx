@@ -67,7 +67,8 @@ export default function StudentProfilePage() {
         address: stud?.address || '',
         profile_photo: stud?.profile_photo || '',
         academy_joined_date: stud?.academy_joined_date ? format(parseISO(stud.academy_joined_date), 'yyyy-MM-dd') : '',
-        year: stud?.year || '',
+        class_name: stud?.class_name || '',
+        year: stud?.year || stud?.class_name || '',
         term: stud?.term || '',
         enrolment_status: stud?.enrolment_status || 'ongoing',
         break_from_date: stud?.break_from_date || '',
@@ -126,13 +127,14 @@ export default function StudentProfilePage() {
       address: profile.address,
       profile_photo: profile.profile_photo,
       academy_joined_date: profile.academy_joined_date ? new Date(profile.academy_joined_date).toISOString() : null,
+      class_name: profile.year || profile.class_name || null,
       year: profile.year || null,
       term: profile.term || null,
     }
 
     let { error: studError } = await supabase.from('student_profiles').update(updatePayload).eq('user_id', user.id)
 
-    if (studError && (studError.message?.includes('year') || studError.code === '42703')) {
+    if (studError && (studError.message?.includes('year') || studError.message?.includes('term') || studError.code === '42703')) {
       delete updatePayload.year
       delete updatePayload.term
       const retry = await supabase.from('student_profiles').update(updatePayload).eq('user_id', user.id)
@@ -206,7 +208,7 @@ export default function StudentProfilePage() {
             <Award className="h-3.5 w-3.5 text-[#FCD34D]" /> Reg No: {profile.registration_number || 'N/A'}
           </div>
           <div className="inline-flex items-center px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white font-medium text-xs gap-1.5">
-            <Award className="h-3.5 w-3.5 text-[#FCD34D]" /> Year: {profile.year || 'N/A'}
+            <Award className="h-3.5 w-3.5 text-[#FCD34D]" /> Class / Year: {profile.year || profile.class_name || 'N/A'}
           </div>
           <div className="inline-flex items-center px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white font-medium text-xs gap-1.5">
             <Award className="h-3.5 w-3.5 text-[#FCD34D]" /> Term: {profile.term || 'N/A'}
@@ -231,14 +233,14 @@ export default function StudentProfilePage() {
               <Input value={profile.registration_number} disabled className="bg-primary/5 border-primary/20 font-black text-primary h-11 text-base md:text-sm" />
             </div>
 
-            {/* Year */}
+            {/* Class / Year */}
             <div className="space-y-1.5 sm:space-y-2">
-              <Label htmlFor="year" className="font-bold text-foreground">Year</Label>
+              <Label htmlFor="year" className="font-bold text-foreground">Class / Year</Label>
               <Input
                 id="year"
                 name="year"
-                placeholder="e.g. 2026"
-                value={profile.year || ''}
+                placeholder="e.g. Year 1, Class 4, Tahfeez Grade 1"
+                value={profile.year || profile.class_name || ''}
                 onChange={handleChange}
                 disabled={saving}
                 className="font-medium bg-white h-11 text-base md:text-sm"

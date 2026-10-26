@@ -272,7 +272,9 @@ export default function SuperAdminDashboard() {
           ...s,
           user_id: s.id,
           name: sp.name || s.email,
-          class_name: sp.class_name || 'N/A',
+          class_name: sp.class_name || sp.year || 'N/A',
+          year: sp.year || sp.class_name || 'N/A',
+          term: sp.term || 'N/A',
           teacher_id: sp.teacher_id || null,
           registration_number: sp.registration_number || 'N/A',
           profile_photo: sp.profile_photo || null,
@@ -1224,7 +1226,8 @@ export default function SuperAdminDashboard() {
                   <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-muted/15 rounded-xl border border-border/50">
                       <ProfileItem label="Assigned Teacher" value={teachers.find(t => t.id === selectedProfile.teacher_id)?.name || 'Unassigned'} />
-                      <ProfileItem label="Class Name" value={selectedProfile.class_name} />
+                      <ProfileItem label="Class / Year" value={selectedProfile.class_name || selectedProfile.year} />
+                      <ProfileItem label="Term" value={selectedProfile.term} />
                       <ProfileItem label="Date of Birth" value={selectedProfile.dob ? format(parseISO(selectedProfile.dob), 'MMM d, yyyy') : 'N/A'} />
                       <ProfileItem label="Guardian Name" value={selectedProfile.guardian_name} />
                       <ProfileItem label="Guardian Mobile" value={selectedProfile.guardian_mobile} />
