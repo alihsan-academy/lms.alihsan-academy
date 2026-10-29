@@ -228,16 +228,23 @@ export default function TeacherDashboard() {
     if (!statusEditTarget) return
     setIsStatusSubmitting(true)
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
       const response = await fetch('/api/student/status', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           studentId: statusEditTarget,
           ...statusFormData
         })
       })
       const result = await response.json()
-      if (!response.ok) throw new Error(result.error)
+      if (!response.ok) throw new Error(result.error || 'Failed to update student status')
       toast.success("Student status updated successfully!")
       setStatusEditTarget(null)
       if (teacherId) {

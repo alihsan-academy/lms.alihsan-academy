@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar } from '@/components/avatar'
 import { toast } from 'sonner'
+import { createClient } from '@/lib/supabase/client'
 
 export type EnrolmentStatus = 'ongoing' | 'break' | 'stopped'
 
@@ -102,9 +103,17 @@ export function StudentStatusModal({
 
     setIsSubmitting(true)
     try {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
       const response = await fetch('/api/student/status', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           studentId: studentIdentifier,
           enrolmentStatus: selectedStatus,

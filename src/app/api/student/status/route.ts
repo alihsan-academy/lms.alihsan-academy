@@ -1,21 +1,74 @@
 import { getAdminClient } from '@/lib/supabase/admin'
 import { createClient as createServerSupabaseClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: Request) {
   try {
+    const supabaseAdmin = getAdminClient()
     const supabase = await createServerSupabaseClient()
+    const cookieStore = await cookies()
+
+    // 1. Check Authorization header for Bearer token
     const authHeader = request.headers.get('Authorization')
     const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null
-    const {
-      data: { user },
-      error: userError,
-    } = bearerToken
-      ? await supabase.auth.getUser(bearerToken)
-      : await supabase.auth.getUser()
 
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    let user: any = null
+
+    if (bearerToken) {
+      const { data, error } = await supabaseAdmin.auth.getUser(bearerToken)
+      if (!error && data?.user) {
+        user = data.user
+      }
+    }
+
+    // 2. Fallback to Supabase SSR cookie auth
+    if (!user) {
+      const { data, error } = await supabase.auth.getUser()
+      if (!error && data?.user) {
+        user = data.user
+      }
+    }
+
+    // 3. Fallback: Parse Supabase auth token directly from cookies if SSR parser missed chunked cookie
+    if (!user) {
+      const allCookies = cookieStore.getAll()
+      for (const c of allCookies) {
+        if (c.name.includes('-auth-token')) {
+          try {
+            let tokenStr = c.value
+            // Cookie value may be URL-encoded or base64 or JSON
+            if (tokenStr.startsWith('base64-')) {
+              tokenStr = Buffer.from(tokenStr.substring(7), 'base64').toString('utf8')
+            }
+            if (tokenStr.startsWith('[') || tokenStr.startsWith('{')) {
+              const parsed = JSON.parse(tokenStr)
+              const candidate = Array.isArray(parsed) ? parsed[0] : (parsed.access_token || parsed.token)
+              if (candidate && typeof candidate === 'string') {
+                const { data, error } = await supabaseAdmin.auth.getUser(candidate)
+                if (!error && data?.user) {
+                  user = data.user
+                  break
+                }
+              }
+            } else if (tokenStr.startsWith('eyJ')) {
+              const { data, error } = await supabaseAdmin.auth.getUser(tokenStr)
+              if (!error && data?.user) {
+                user = data.user
+                break
+              }
+            }
+          } catch {
+            // continue checking other cookies
+          }
+        }
+      }
+    }
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized: Session required' }, { status: 401 })
     }
 
     const body = await request.json()
@@ -34,8 +87,6 @@ export async function POST(request: Request) {
     if (!['ongoing', 'break', 'stopped'].includes(enrolmentStatus)) {
       return NextResponse.json({ error: 'Invalid enrolmentStatus: must be ongoing, break, or stopped' }, { status: 400 })
     }
-
-    const supabaseAdmin = getAdminClient()
 
     // Verify role to ensure only teacher, admin, or superadmin can update
     const { data: profile } = await supabaseAdmin
@@ -104,6 +155,7 @@ export async function POST(request: Request) {
       updatedRecord: { ...studentRecord, ...updateData }
     })
   } catch (error: any) {
+    console.error('Error updating student status:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

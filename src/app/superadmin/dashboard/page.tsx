@@ -244,9 +244,16 @@ export default function SuperAdminDashboard() {
 
     setIsSavingStatus(true)
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
       const response = await fetch('/api/student/status', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           studentId: studentIdentifier,
           enrolmentStatus: inlineStatus,
@@ -549,12 +556,20 @@ export default function SuperAdminDashboard() {
 
   async function handleUpdateStatus(studentId: string, status: string, payload?: any) {
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
       const response = await fetch('/api/student/status', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ studentId, status, payload })
       })
-      if (!response.ok) throw new Error('Failed to update status')
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(result.error || 'Failed to update status')
       toast.success('Status updated successfully')
       fetchData()
       setIsProfileModalOpen(false)
