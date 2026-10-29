@@ -19,6 +19,7 @@ import { PageTransition } from '@/components/page-transition'
 import { AdminAttendanceManager } from '@/components/admin-attendance-manager'
 import { DateRangeFilter } from '@/components/date-range-filter'
 import { MonthlyStudentTrendChart } from '@/components/monthly-student-trend-chart'
+import { AcademicDistributionCard, normalizeTerm, normalizeYear } from '@/components/academic-distribution-card'
 import { DateFilterType, getDateRange, isDateWithinRange, parseClassMetadata } from '@/lib/attendance-utils'
 
 type Tab = 'statistics' | 'students' | 'teachers' | 'attendance' | 'manage'
@@ -51,6 +52,8 @@ export default function SuperAdminDashboard() {
   // UI state
   const [searchQuery, setSearchQuery] = useState('')
   const [studentStatusFilter, setStudentStatusFilter] = useState('all')
+  const [studentYearFilter, setStudentYearFilter] = useState('all')
+  const [studentTermFilter, setStudentTermFilter] = useState('all')
   const [removeAccessSearchQuery, setRemoveAccessSearchQuery] = useState('')
   const [removeAccessRoleFilter, setRemoveAccessRoleFilter] = useState('all')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -93,6 +96,23 @@ export default function SuperAdminDashboard() {
       }
     })
     return Array.from(set).sort()
+  }, [students])
+
+  // Extract available unique years across students
+  const availableYears = useMemo(() => {
+    const set = new Set<string>()
+    students.forEach((s) => {
+      const y = normalizeYear(s.year, s.class_name)
+      if (y && y !== 'Unassigned') {
+        set.add(y)
+      }
+    })
+    return Array.from(set).sort((a, b) => {
+      const numA = parseInt(a.replace(/\D/g, ''), 10)
+      const numB = parseInt(b.replace(/\D/g, ''), 10)
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB
+      return a.localeCompare(b)
+    })
   }, [students])
 
   // Filtered classes within statsDateRange & term
@@ -694,7 +714,13 @@ export default function SuperAdminDashboard() {
       matchesStatus = s.enrolment_status === studentStatusFilter;
     }
 
-    return matchesSearch && matchesStatus;
+    const studentYear = normalizeYear(s.year, s.class_name);
+    const matchesYear = studentYearFilter === 'all' || studentYear === studentYearFilter;
+
+    const studentTerm = normalizeTerm(s.term);
+    const matchesTerm = studentTermFilter === 'all' || studentTerm === studentTermFilter;
+
+    return matchesSearch && matchesStatus && matchesYear && matchesTerm;
   })
 
   const filteredTeachers = teachers.filter(t => 
@@ -864,6 +890,21 @@ export default function SuperAdminDashboard() {
                     subtitle={`${statsSummary.attendedClasses}/${statsSummary.completedOrPast} held`}
                   />
                 </div>
+              </section>
+
+              {/* Academic Year & Term Distribution Matrix */}
+              <section>
+                <AcademicDistributionCard
+                  students={statsFilteredStudents}
+                  onSelectYear={(y) => {
+                    setStudentYearFilter(y)
+                    setActiveTab('students')
+                  }}
+                  onSelectTerm={(t) => {
+                    setStudentTermFilter(t)
+                    setActiveTab('students')
+                  }}
+                />
               </section>
 
               {/* Monthly Student Count Graphical Representation & Trend Analysis */}
@@ -1045,31 +1086,78 @@ export default function SuperAdminDashboard() {
             <PageTransition key="students" className="space-y-6">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-5 rounded-2xl shadow-sm border-2 border-border">
                 <h3 className="text-2xl font-black text-foreground">All Students <span className="text-primary">({students.length})</span></h3>
-                <div className="flex flex-col sm:flex-row w-full md:w-auto items-stretch sm:items-center gap-3">
-                  <div className="relative w-full sm:w-72">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <div className="flex flex-col sm:flex-row w-full md:w-auto items-stretch sm:items-center gap-2.5 flex-wrap">
+                  <div className="relative w-full sm:w-60">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
                       placeholder="Search students..." 
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 border-2 bg-muted/30 font-medium h-12"
+                      className="pl-9 border-2 bg-muted/30 font-medium h-11 text-xs sm:text-sm"
                     />
                   </div>
-                  <div className="relative min-w-[190px]">
+
+                  {/* Year Filter */}
+                  <div className="relative min-w-[130px]">
                     <select
-                      className="w-full p-3 pr-8 border-2 border-border rounded-xl bg-white font-bold text-foreground focus:ring-4 focus:ring-primary/20 outline-none h-12 appearance-none cursor-pointer text-xs sm:text-sm"
+                      className="w-full p-2.5 pr-7 border-2 border-border rounded-xl bg-white font-bold text-foreground focus:ring-2 focus:ring-primary/20 outline-none h-11 appearance-none cursor-pointer text-xs"
+                      value={studentYearFilter}
+                      onChange={(e) => setStudentYearFilter(e.target.value)}
+                    >
+                      <option value="all">All Years</option>
+                      {availableYears.map((yr) => (
+                        <option key={yr} value={yr}>{yr}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                  </div>
+
+                  {/* Term Filter */}
+                  <div className="relative min-w-[120px]">
+                    <select
+                      className="w-full p-2.5 pr-7 border-2 border-border rounded-xl bg-white font-bold text-foreground focus:ring-2 focus:ring-primary/20 outline-none h-11 appearance-none cursor-pointer text-xs"
+                      value={studentTermFilter}
+                      onChange={(e) => setStudentTermFilter(e.target.value)}
+                    >
+                      <option value="all">All Terms</option>
+                      <option value="Term 1">Term 1</option>
+                      <option value="Term 2">Term 2</option>
+                    </select>
+                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                  </div>
+
+                  {/* Status Filter */}
+                  <div className="relative min-w-[150px]">
+                    <select
+                      className="w-full p-2.5 pr-7 border-2 border-border rounded-xl bg-white font-bold text-foreground focus:ring-2 focus:ring-primary/20 outline-none h-11 appearance-none cursor-pointer text-xs"
                       value={studentStatusFilter}
                       onChange={(e) => setStudentStatusFilter(e.target.value)}
                     >
-                      <option value="all">All Enrolment Status</option>
+                      <option value="all">All Status</option>
                       <option value="ongoing">Ongoing</option>
                       <option value="break">On Break</option>
                       <option value="stopped">Stopped (All)</option>
-                      <option value="stopped_revoked">Stopped: Login Revoked</option>
-                      <option value="stopped_active">Stopped: Login Active (Teacher)</option>
+                      <option value="stopped_revoked">Stopped: Revoked</option>
+                      <option value="stopped_active">Stopped: Active</option>
                     </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                   </div>
+
+                  {/* Reset Filters */}
+                  {(studentStatusFilter !== 'all' || studentYearFilter !== 'all' || studentTermFilter !== 'all' || searchQuery) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStudentStatusFilter('all')
+                        setStudentYearFilter('all')
+                        setStudentTermFilter('all')
+                        setSearchQuery('')
+                      }}
+                      className="text-xs font-bold text-muted-foreground hover:text-foreground px-3 py-2 rounded-xl border border-border bg-muted/40 hover:bg-muted transition-colors cursor-pointer h-11 flex items-center"
+                    >
+                      Reset
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -1081,7 +1169,7 @@ export default function SuperAdminDashboard() {
                         <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest whitespace-nowrap min-w-[100px]">Reg No</th>
                         <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest whitespace-nowrap min-w-[200px]">Student Name</th>
                         <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest whitespace-nowrap min-w-[130px]">Status</th>
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest whitespace-nowrap min-w-[180px]">Class</th>
+                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest whitespace-nowrap min-w-[180px]">Academic Year & Term</th>
                         <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest whitespace-nowrap min-w-[320px]">Assigned Teacher</th>
                         <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest whitespace-nowrap min-w-[130px]">Joined Date</th>
                         <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest text-right whitespace-nowrap min-w-[130px]">Actions</th>
@@ -1120,10 +1208,19 @@ export default function SuperAdminDashboard() {
                               </button>
                             </div>
                           </td>
-                          <td className="p-4 whitespace-nowrap font-bold text-foreground">
-                            <span className="inline-flex items-center bg-primary/10 text-primary border-2 border-primary/20 px-3 py-1 rounded-xl text-xs uppercase font-black tracking-wide whitespace-nowrap">
-                              {s.class_name}
-                            </span>
+                          <td className="p-4 whitespace-nowrap">
+                            <div className="flex flex-col gap-1 items-start">
+                              <span className="inline-flex items-center bg-primary/10 text-primary border border-primary/20 px-2.5 py-0.5 rounded-lg text-xs font-black uppercase tracking-wide whitespace-nowrap">
+                                {normalizeYear(s.year, s.class_name)}
+                              </span>
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider whitespace-nowrap border ${
+                                normalizeTerm(s.term) === 'Term 1' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
+                                normalizeTerm(s.term) === 'Term 2' ? 'bg-amber-50 text-amber-800 border-amber-200' :
+                                'bg-slate-50 text-slate-600 border-slate-200'
+                              }`}>
+                                {normalizeTerm(s.term)}
+                              </span>
+                            </div>
                           </td>
                           <td className="p-4 text-sm font-medium text-foreground whitespace-nowrap">
                             {editingStudentId === s.id ? (
@@ -1590,8 +1687,8 @@ export default function SuperAdminDashboard() {
                   <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-muted/15 rounded-xl border border-border/50">
                       <ProfileItem label="Assigned Teacher" value={teachers.find(t => t.id === selectedProfile.teacher_id)?.name || 'Unassigned'} />
-                      <ProfileItem label="Class / Year" value={selectedProfile.class_name || selectedProfile.year} />
-                      <ProfileItem label="Term" value={selectedProfile.term} />
+                      <ProfileItem label="Class / Year" value={normalizeYear(selectedProfile.year, selectedProfile.class_name)} />
+                      <ProfileItem label="Term" value={normalizeTerm(selectedProfile.term)} />
                       <ProfileItem label="Date of Birth" value={selectedProfile.dob ? format(parseISO(selectedProfile.dob), 'MMM d, yyyy') : 'N/A'} />
                       <ProfileItem label="Guardian Name" value={selectedProfile.guardian_name} />
                       <ProfileItem label="Guardian Mobile" value={selectedProfile.guardian_mobile} />
@@ -1613,28 +1710,77 @@ export default function SuperAdminDashboard() {
                         />
                       </div>
 
-                      {/* Year & Term Editable Inputs */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-muted/20 rounded-xl border border-border/70">
-                        <div className="space-y-1">
-                          <Label className="text-[11px] font-bold text-foreground uppercase tracking-wider">Class / Year</Label>
-                          <Input
-                            placeholder="e.g. Year 1, Class 4"
-                            value={inlineYear}
-                            onChange={(e) => setInlineYear(e.target.value)}
-                            className="h-9 text-xs bg-white font-medium"
-                          />
+                      {/* Year & Term Editable Inputs with Quick Progression */}
+                      <div className="p-3 bg-muted/20 rounded-xl border border-border/70 space-y-2.5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-[11px] font-bold text-foreground uppercase tracking-wider">Class / Year</Label>
+                            <Input
+                              placeholder="e.g. Year 1, Year 2, Tahfeez Grade 1"
+                              value={inlineYear}
+                              onChange={(e) => setInlineYear(e.target.value)}
+                              className="h-9 text-xs bg-white font-medium"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[11px] font-bold text-foreground uppercase tracking-wider">Term</Label>
+                            <select
+                              value={normalizeTerm(inlineTerm) === 'Term 1' ? 'Term-01' : normalizeTerm(inlineTerm) === 'Term 2' ? 'Term-02' : inlineTerm}
+                              onChange={(e) => setInlineTerm(e.target.value)}
+                              className="w-full rounded-md border border-input bg-white px-2.5 py-1 text-xs font-semibold h-9 cursor-pointer text-foreground"
+                            >
+                              <option value="">Select term</option>
+                              <option value="Term-01">Term 1</option>
+                              <option value="Term-02">Term 2</option>
+                            </select>
+                          </div>
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-[11px] font-bold text-foreground uppercase tracking-wider">Term</Label>
-                          <select
-                            value={inlineTerm}
-                            onChange={(e) => setInlineTerm(e.target.value)}
-                            className="w-full rounded-md border border-input bg-white px-2.5 py-1 text-xs font-medium h-9 cursor-pointer text-foreground"
-                          >
-                            <option value="">Select term</option>
-                            <option value="Term-01">Term-01</option>
-                            <option value="Term-02">Term-02</option>
-                          </select>
+
+                        {/* Quick Progression Helper Actions */}
+                        <div className="pt-1.5 flex items-center gap-2 flex-wrap border-t border-border/60">
+                          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">
+                            Progression:
+                          </span>
+                          {normalizeTerm(inlineTerm) === 'Term 1' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setInlineTerm('Term-02')
+                                toast.info('Advanced to Term 2. Click "Save Status" to confirm.')
+                              }}
+                              className="px-2.5 py-1 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                            >
+                              <span>Advance to Term 2</span>
+                            </button>
+                          )}
+                          {normalizeTerm(inlineTerm) === 'Term 2' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const currentNum = parseInt(String(inlineYear).replace(/\D/g, ''), 10)
+                                if (!isNaN(currentNum)) {
+                                  setInlineYear(`Year ${currentNum + 1}`)
+                                }
+                                setInlineTerm('Term-01')
+                                toast.info(`Promoted to ${!isNaN(currentNum) ? `Year ${currentNum + 1}` : 'Next Year'}, Term 1. Click "Save Status" to confirm.`)
+                              }}
+                              className="px-2.5 py-1 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                            >
+                              <span>Promote to Next Year (Term 1)</span>
+                            </button>
+                          )}
+                          {normalizeTerm(inlineTerm) === 'Unassigned' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setInlineTerm('Term-01')
+                                toast.info('Set to Term 1. Click "Save Status" to confirm.')
+                              }}
+                              className="px-2.5 py-1 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                            >
+                              <span>Set to Term 1</span>
+                            </button>
+                          )}
                         </div>
                       </div>
 

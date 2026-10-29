@@ -32,6 +32,9 @@ export interface StudentStatusModalProps {
     name: string
     registration_number?: string
     profile_photo?: string | null
+    class_name?: string | null
+    year?: string | null
+    term?: string | null
     enrolment_status?: EnrolmentStatus | string
     break_from_date?: string | null
     break_to_date?: string | null
@@ -53,6 +56,8 @@ export function StudentStatusModal({
   isAdmin = true
 }: StudentStatusModalProps) {
   const [selectedStatus, setSelectedStatus] = useState<EnrolmentStatus>('ongoing')
+  const [year, setYear] = useState('')
+  const [term, setTerm] = useState('')
   const [breakFromDate, setBreakFromDate] = useState('')
   const [breakToDate, setBreakToDate] = useState('')
   const [breakReason, setBreakReason] = useState('')
@@ -66,6 +71,8 @@ export function StudentStatusModal({
     if (student) {
       const current = (student.enrolment_status as EnrolmentStatus) || 'ongoing'
       setSelectedStatus(['ongoing', 'break', 'stopped'].includes(current) ? current : 'ongoing')
+      setYear(student.year || student.class_name || '')
+      setTerm(student.term || '')
       setBreakFromDate(student.break_from_date || '')
       setBreakToDate(student.break_to_date || '')
       setBreakReason(student.break_reason || '')
@@ -122,6 +129,9 @@ export function StudentStatusModal({
         body: JSON.stringify({
           studentId: studentIdentifier,
           enrolmentStatus: selectedStatus,
+          year: year || null,
+          class_name: year || null,
+          term: term || null,
           breakFromDate: selectedStatus === 'break' ? breakFromDate : null,
           breakToDate: selectedStatus === 'break' ? breakToDate : null,
           breakReason: selectedStatus === 'break' ? breakReason.trim() : null,
@@ -207,6 +217,31 @@ export function StudentStatusModal({
               }`}>
                 Current: {student.enrolment_status || 'ongoing'}
               </span>
+            </div>
+
+            {/* Academic Level: Year & Term */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3 rounded-xl bg-muted/30 border border-border">
+              <div className="space-y-1">
+                <Label className="text-[11px] font-bold text-foreground uppercase tracking-wider">Class / Year</Label>
+                <Input
+                  placeholder="e.g. Year 1, Year 2"
+                  value={year}
+                  onChange={(e) => setYear(e.target.value)}
+                  className="bg-white h-9 text-xs font-semibold"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[11px] font-bold text-foreground uppercase tracking-wider">Term</Label>
+                <select
+                  value={term}
+                  onChange={(e) => setTerm(e.target.value)}
+                  className="w-full rounded-md border border-input bg-white px-2.5 py-1 text-xs font-semibold h-9 cursor-pointer text-foreground"
+                >
+                  <option value="">Select Term</option>
+                  <option value="Term-01">Term 1</option>
+                  <option value="Term-02">Term 2</option>
+                </select>
+              </div>
             </div>
 
             {/* Select Status Options */}
