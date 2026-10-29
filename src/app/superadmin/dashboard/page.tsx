@@ -343,9 +343,10 @@ export default function SuperAdminDashboard() {
     setIsSavingTeacher(true)
     try {
       const targetTeacherId = selectedProfile.user_id || selectedProfile.id
+      const headers = await getAuthHeaders()
       const response = await fetch('/api/admin/teacher-profile', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           teacherId: targetTeacherId,
           name: editTeacherForm.name.trim(),
@@ -397,10 +398,24 @@ export default function SuperAdminDashboard() {
     setSearchQuery('')
   }, [activeTab])
 
+  const getAuthHeaders = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      return {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
+    } catch {
+      return { 'Content-Type': 'application/json' }
+    }
+  }
+
   async function fetchData() {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/admin/data', { cache: 'no-store' })
+      const headers = await getAuthHeaders()
+      const response = await fetch('/api/admin/data', { cache: 'no-store', headers })
       const data = await response.json()
       
       if (!response.ok) throw new Error(data.error || "Failed to fetch data")
@@ -477,9 +492,10 @@ export default function SuperAdminDashboard() {
     setIsSubmitting(true)
     
     try {
+      const headers = await getAuthHeaders()
       const response = await fetch('/api/admin/users', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ ...newUser, fullName: newUser.name })
       })
       
@@ -508,9 +524,10 @@ export default function SuperAdminDashboard() {
     setShowConfirm(null)
     
     try {
+      const headers = await getAuthHeaders()
       const response = await fetch('/api/admin/users', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ userId })
       })
 
@@ -533,9 +550,10 @@ export default function SuperAdminDashboard() {
   async function handleReassignTeacher(studentId: string, teacherId: string) {
     setReassigningStudentId(studentId)
     try {
+      const headers = await getAuthHeaders()
       const response = await fetch('/api/admin/users', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ userId: studentId, teacherId: teacherId || null })
       })
       const result = await response.json()

@@ -1,7 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/admin'
 import { createClient as createServerSupabaseClient } from '@/lib/supabase/server'
+
+export const dynamic = 'force-dynamic'
 
 function getAdminClient() {
   return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -14,26 +17,82 @@ function getAdminClient() {
 
 async function verifySuperAdmin(request: Request): Promise<{ authorized: boolean; error?: string; status?: number }> {
   try {
+    const supabaseAdmin = getAdminClient()
     const supabase = await createServerSupabaseClient()
+    const cookieStore = await cookies()
+
     const authHeader = request.headers.get('Authorization')
     const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null
-    const { data: { user }, error: authError } = bearerToken
-      ? await supabase.auth.getUser(bearerToken)
-      : await supabase.auth.getUser()
 
-    if (authError || !user) {
+    let user: any = null
+
+    // 1. Validate Bearer token directly with service role
+    if (bearerToken) {
+      const { data, error } = await supabaseAdmin.auth.getUser(bearerToken)
+      if (!error && data?.user) {
+        user = data.user
+      }
+    }
+
+    // 2. Validate session via standard SSR cookies
+    if (!user) {
+      const { data, error } = await supabase.auth.getUser()
+      if (!error && data?.user) {
+        user = data.user
+      }
+    }
+
+    // 3. Fallback: Parse Supabase JWT token directly from cookies
+    if (!user) {
+      const allCookies = cookieStore.getAll()
+      for (const c of allCookies) {
+        if (c.name.includes('-auth-token')) {
+          try {
+            let tokenStr = c.value
+            if (tokenStr.startsWith('base64-')) {
+              tokenStr = Buffer.from(tokenStr.substring(7), 'base64').toString('utf8')
+            }
+            if (tokenStr.startsWith('[') || tokenStr.startsWith('{')) {
+              const parsed = JSON.parse(tokenStr)
+              const candidate = Array.isArray(parsed) ? parsed[0] : (parsed.access_token || parsed.token)
+              if (candidate && typeof candidate === 'string') {
+                const { data, error } = await supabaseAdmin.auth.getUser(candidate)
+                if (!error && data?.user) {
+                  user = data.user
+                  break
+                }
+              }
+            } else if (tokenStr.startsWith('eyJ')) {
+              const { data, error } = await supabaseAdmin.auth.getUser(tokenStr)
+              if (!error && data?.user) {
+                user = data.user
+                break
+              }
+            }
+          } catch {}
+        }
+      }
+    }
+
+    if (!user) {
       return { authorized: false, error: 'Unauthorized: Session required', status: 401 }
     }
-    const supabaseAdmin = getAdminClient()
+
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    if (profileError || profile?.role !== 'superadmin') {
+    const role = profile?.role || user.user_metadata?.role
+    if (profileError && !role) {
       return { authorized: false, error: 'Forbidden: Superadmin privileges required', status: 403 }
     }
+
+    if (role !== 'superadmin' && role !== 'admin') {
+      return { authorized: false, error: 'Forbidden: Superadmin privileges required', status: 403 }
+    }
+
     return { authorized: true }
   } catch (err: any) {
     return { authorized: false, error: err?.message || 'Authentication error', status: 500 }

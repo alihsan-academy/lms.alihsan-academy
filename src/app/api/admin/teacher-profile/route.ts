@@ -1,26 +1,69 @@
 import { getAdminClient } from '@/lib/supabase/admin'
 import { createClient as createServerSupabaseClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
 export async function PATCH(request: Request) {
   try {
+    const supabaseAdmin = getAdminClient()
     const supabase = await createServerSupabaseClient()
+    const cookieStore = await cookies()
+
     const authHeader = request.headers.get('Authorization')
     const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null
-    const {
-      data: { user },
-      error: userError,
-    } = bearerToken
-      ? await supabase.auth.getUser(bearerToken)
-      : await supabase.auth.getUser()
 
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized: Session required' }, { status: 401 })
+    let user: any = null
+
+    if (bearerToken) {
+      const { data, error } = await supabaseAdmin.auth.getUser(bearerToken)
+      if (!error && data?.user) {
+        user = data.user
+      }
     }
 
-    const supabaseAdmin = getAdminClient()
+    if (!user) {
+      const { data, error } = await supabase.auth.getUser()
+      if (!error && data?.user) {
+        user = data.user
+      }
+    }
+
+    if (!user) {
+      const allCookies = cookieStore.getAll()
+      for (const c of allCookies) {
+        if (c.name.includes('-auth-token')) {
+          try {
+            let tokenStr = c.value
+            if (tokenStr.startsWith('base64-')) {
+              tokenStr = Buffer.from(tokenStr.substring(7), 'base64').toString('utf8')
+            }
+            if (tokenStr.startsWith('[') || tokenStr.startsWith('{')) {
+              const parsed = JSON.parse(tokenStr)
+              const candidate = Array.isArray(parsed) ? parsed[0] : (parsed.access_token || parsed.token)
+              if (candidate && typeof candidate === 'string') {
+                const { data, error } = await supabaseAdmin.auth.getUser(candidate)
+                if (!error && data?.user) {
+                  user = data.user
+                  break
+                }
+              }
+            } else if (tokenStr.startsWith('eyJ')) {
+              const { data, error } = await supabaseAdmin.auth.getUser(tokenStr)
+              if (!error && data?.user) {
+                user = data.user
+                break
+              }
+            }
+          } catch {}
+        }
+      }
+    }
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized: Session required' }, { status: 401 })
+    }
 
     // Verify admin / superadmin authorization
     const { data: callerProfile, error: profileError } = await supabaseAdmin
