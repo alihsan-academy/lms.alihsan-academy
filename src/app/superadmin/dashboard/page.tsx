@@ -128,50 +128,119 @@ export default function SuperAdminDashboard() {
     })
   }, [classes, statsDateRange, statsSelectedTerm, students])
 
-  // Filtered students active in statsDateRange & term
-  const statsFilteredStudents = useMemo(() => {
-    return students.filter((s: any) => {
+  // Period-aware student breakdown: Active, On Break, and Stopped
+  const statsStudentBreakdown = useMemo(() => {
+    const isAllTime = !statsDateRange.start && !statsDateRange.end
+
+    const activeList: any[] = []
+    const breakList: any[] = []
+    const stoppedList: any[] = []
+
+    students.forEach((s: any) => {
       // 1. Term filter
-      if (statsSelectedTerm !== 'all' && s.term && s.term !== statsSelectedTerm) {
-        return false
+      const studentTerm = normalizeTerm(s.term)
+      if (statsSelectedTerm !== 'all' && studentTerm !== statsSelectedTerm) {
+        return
       }
 
-      // If all-time, all students matching term are included
-      if (!statsDateRange.start && !statsDateRange.end) {
-        return true
+      // 2. All-Time Mode (based directly on current database enrolment status)
+      if (isAllTime) {
+        if (s.enrolment_status === 'ongoing') activeList.push(s)
+        else if (s.enrolment_status === 'break') breakList.push(s)
+        else if (s.enrolment_status === 'stopped') stoppedList.push(s)
+        else activeList.push(s)
+        return
       }
 
-      // 2. Joining date check
-      const joinStr = s.academy_joined_date || s.created_at
-      if (joinStr && statsDateRange.end) {
+      // 3. Date Range Filter Mode
+      const rangeStart = statsDateRange.start!
+      const rangeEnd = statsDateRange.end!
+
+      const joinStr = s.academy_joined_date || s.joined_date || s.created_at
+      let joinDate: Date | null = null
+      if (joinStr) {
         try {
-          const joinTime = new Date(joinStr).getTime()
-          if (joinTime > statsDateRange.end.getTime()) {
-            return false // Joined after this period
-          }
+          joinDate = new Date(joinStr)
         } catch {}
       }
 
-      // 3. Stopped status check: if stopped before this period started
-      if (s.enrolment_status === 'stopped' && statsDateRange.start) {
-        const stopStr = s.last_class_date || s.updated_at || s.created_at
+      // If joined after period end, exclude from this period
+      if (joinDate && joinDate.getTime() > rangeEnd.getTime()) {
+        return
+      }
+
+      // Check if student stopped during or before this period
+      let stoppedInPeriod = false
+      let stoppedBeforePeriod = false
+      if (s.enrolment_status === 'stopped') {
+        const stopStr = s.last_class_date || s.updated_at
         if (stopStr) {
           try {
-            const stopTime = new Date(stopStr).getTime()
-            if (stopTime < statsDateRange.start.getTime()) {
-              // Stopped before period began. If they had a class scheduled in this period, keep them, else exclude.
-              const hasClassInPeriod = classes.some((c: any) => 
-                c.student_id === s.id && isDateWithinRange(c.scheduled_at, statsDateRange)
-              )
-              if (!hasClassInPeriod) return false
+            const stopDate = new Date(stopStr)
+            if (stopDate.getTime() < rangeStart.getTime()) {
+              stoppedBeforePeriod = true
+            } else if (stopDate.getTime() <= rangeEnd.getTime()) {
+              stoppedInPeriod = true
             }
-          } catch {}
+          } catch {
+            stoppedInPeriod = true
+          }
+        } else {
+          stoppedInPeriod = true
         }
       }
 
-      return true
+      // Check if student had a break overlapping this period
+      let breakInPeriod = false
+      let fullBreakForPeriod = false
+      if (s.break_from_date) {
+        try {
+          const bStart = new Date(s.break_from_date)
+          const bEnd = s.break_to_date ? new Date(s.break_to_date) : new Date(8640000000000000)
+          if (bStart.getTime() <= rangeEnd.getTime() && bEnd.getTime() >= rangeStart.getTime()) {
+            breakInPeriod = true
+            if (bStart.getTime() <= rangeStart.getTime() && bEnd.getTime() >= rangeEnd.getTime()) {
+              fullBreakForPeriod = true
+            }
+          }
+        } catch {}
+      } else if (s.enrolment_status === 'break') {
+        breakInPeriod = true
+      }
+
+      // Check if student had classes during this period
+      const hasClassesInPeriod = statsFilteredClasses.some((c: any) => c.student_id === s.id)
+
+      if (stoppedInPeriod) {
+        stoppedList.push(s)
+      } else if (stoppedBeforePeriod && !hasClassesInPeriod) {
+        // Stopped before period and had no classes in this period, exclude
+        return
+      } else if (breakInPeriod && fullBreakForPeriod) {
+        breakList.push(s)
+      } else if (breakInPeriod && !hasClassesInPeriod) {
+        breakList.push(s)
+      } else {
+        activeList.push(s)
+      }
     })
-  }, [students, statsDateRange, statsSelectedTerm, classes])
+
+    return {
+      activeList,
+      breakList,
+      stoppedList,
+      allRelevantStudents: [...activeList, ...breakList, ...stoppedList],
+      totalCount: activeList.length + breakList.length + stoppedList.length,
+      activeCount: activeList.length,
+      breakCount: breakList.length,
+      stoppedCount: stoppedList.length
+    }
+  }, [students, statsDateRange, statsSelectedTerm, statsFilteredClasses])
+
+  // Filtered students active / relevant in statsDateRange & term
+  const statsFilteredStudents = useMemo(() => {
+    return statsStudentBreakdown.allRelevantStudents
+  }, [statsStudentBreakdown])
 
   // Filtered teachers active in statsDateRange
   const statsFilteredTeachers = useMemo(() => {
@@ -214,14 +283,17 @@ export default function SuperAdminDashboard() {
           : 0)
 
     return {
-      totalStudents: statsFilteredStudents.length,
+      totalStudents: statsStudentBreakdown.totalCount,
+      activeStudents: statsStudentBreakdown.activeCount,
+      breakStudents: statsStudentBreakdown.breakCount,
+      stoppedStudents: statsStudentBreakdown.stoppedCount,
       totalTeachers: statsFilteredTeachers.length,
       totalClasses: statsFilteredClasses.length,
       attendedClasses: attended,
       completedOrPast,
       attendanceRate: rate
     }
-  }, [statsFilteredClasses, statsFilteredStudents, statsFilteredTeachers, attendanceRecords])
+  }, [statsFilteredClasses, statsStudentBreakdown, statsFilteredTeachers, attendanceRecords])
 
   // Sync status and academic fields whenever selectedProfile changes
   useEffect(() => {
@@ -524,6 +596,7 @@ export default function SuperAdminDashboard() {
           teacher_id: sp.teacher_id || null,
           registration_number: sp.registration_number || 'N/A',
           profile_photo: sp.profile_photo || null,
+          academy_joined_date: sp.joined_date || s.created_at,
           created_at: sp.joined_date || s.created_at,
           enrolment_status: sp.enrolment_status || 'ongoing',
           break_from_date: sp.break_from_date || '',
@@ -853,42 +926,122 @@ export default function SuperAdminDashboard() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 sm:gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3.5">
                   <DashboardStatCard 
-                    title="Total Students" 
-                    value={statsLoading ? null : statsSummary.totalStudents} 
+                    title="Active Students" 
+                    value={statsLoading ? null : statsSummary.activeStudents} 
                     index={0} 
-                    gradient="from-blue-400 to-blue-600" 
-                    subtitle={statsFilterType !== 'all_time' ? 'Active in period' : 'Enrolled'}
+                    gradient="from-[#1A6B4A] to-emerald-600" 
+                    subtitle={statsFilterType !== 'all_time' ? 'Active in period' : 'Currently ongoing'}
+                    onClick={() => {
+                      setStudentStatusFilter('ongoing')
+                      setActiveTab('students')
+                    }}
                   />
                   <DashboardStatCard 
-                    title="Total Teachers" 
-                    value={statsLoading ? null : statsSummary.totalTeachers} 
+                    title="On Break" 
+                    value={statsLoading ? null : statsSummary.breakStudents} 
                     index={1} 
-                    gradient="from-primary to-emerald-600" 
-                    subtitle={statsFilterType !== 'all_time' ? 'Active in period' : 'Faculty'}
+                    gradient="from-amber-500 to-amber-600" 
+                    subtitle={statsFilterType !== 'all_time' ? 'On break in period' : 'Temporary leave'}
+                    onClick={() => {
+                      setStudentStatusFilter('break')
+                      setActiveTab('students')
+                    }}
                   />
                   <DashboardStatCard 
-                    title="Total Classes" 
-                    value={statsLoading ? null : statsSummary.totalClasses} 
+                    title="Class Stopped" 
+                    value={statsLoading ? null : statsSummary.stoppedStudents} 
                     index={2} 
-                    gradient="from-purple-400 to-indigo-600" 
-                    subtitle="Scheduled"
+                    gradient="from-rose-500 to-red-600" 
+                    subtitle={statsFilterType !== 'all_time' ? 'Stopped in period' : 'Discontinued / Quit'}
+                    onClick={() => {
+                      setStudentStatusFilter('stopped')
+                      setActiveTab('students')
+                    }}
                   />
                   <DashboardStatCard 
-                    title="Completed" 
-                    value={statsLoading ? null : statsSummary.attendedClasses} 
+                    title="Total Faculty" 
+                    value={statsLoading ? null : statsSummary.totalTeachers} 
                     index={3} 
-                    gradient="from-secondary to-orange-500" 
-                    subtitle="Attended"
+                    gradient="from-blue-500 to-indigo-600" 
+                    subtitle={statsFilterType !== 'all_time' ? 'Active in period' : 'Teachers'}
+                    onClick={() => setActiveTab('teachers')}
+                  />
+                  <DashboardStatCard 
+                    title="Scheduled" 
+                    value={statsLoading ? null : statsSummary.totalClasses} 
+                    index={4} 
+                    gradient="from-purple-500 to-indigo-600" 
+                    subtitle="Class sessions"
+                    onClick={() => setActiveTab('attendance')}
                   />
                   <DashboardStatCard 
                     title="Attendance" 
                     value={statsLoading ? null : `${statsSummary.attendanceRate}%`} 
-                    index={4} 
-                    gradient="from-pink-400 to-rose-600" 
-                    subtitle={`${statsSummary.attendedClasses}/${statsSummary.completedOrPast} held`}
+                    index={5} 
+                    gradient="from-pink-500 to-rose-600" 
+                    subtitle={`${statsSummary.attendedClasses}/${statsSummary.completedOrPast} attended`}
+                    onClick={() => setActiveTab('attendance')}
                   />
+                </div>
+
+                {/* Period Status Summary Strip */}
+                <div className="mt-3 p-3 bg-muted/30 rounded-xl border border-border/70 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 font-semibold text-muted-foreground">
+                    <span className="text-foreground font-black">
+                      Period Summary:
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-600" />
+                      Active: <strong className="text-foreground">{statsSummary.activeStudents}</strong>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-500" />
+                      On Break: <strong className="text-foreground">{statsSummary.breakStudents}</strong>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-rose-600" />
+                      Stopped: <strong className="text-foreground">{statsSummary.stoppedStudents}</strong>
+                    </span>
+                    <span className="text-muted-foreground/80">
+                      (Total Enrolled: <strong className="text-foreground">{statsSummary.totalStudents}</strong>)
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] text-muted-foreground font-medium hidden sm:inline">Quick Filter:</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStudentStatusFilter('ongoing')
+                        setActiveTab('students')
+                      }}
+                      className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
+                    >
+                      View Active ({statsSummary.activeStudents})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStudentStatusFilter('break')
+                        setActiveTab('students')
+                      }}
+                      className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition-colors cursor-pointer"
+                    >
+                      View Break ({statsSummary.breakStudents})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStudentStatusFilter('stopped')
+                        setActiveTab('students')
+                      }}
+                      className="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100 transition-colors cursor-pointer"
+                    >
+                      View Stopped ({statsSummary.stoppedStudents})
+                    </button>
+                  </div>
                 </div>
               </section>
 
@@ -2210,16 +2363,24 @@ function DashboardStatCard({
   value, 
   index, 
   gradient,
-  subtitle 
+  subtitle,
+  onClick
 }: { 
   title: string, 
   value: any, 
   index: number, 
   gradient: string,
-  subtitle?: string 
+  subtitle?: string,
+  onClick?: () => void
 }) {
   return (
-    <AnimatedCard delay={index * 0.1} className={`border-none text-white p-3.5 sm:p-5 relative overflow-hidden bg-gradient-to-br ${gradient}`}>
+    <AnimatedCard 
+      delay={index * 0.08} 
+      className={`border-none text-white p-3.5 sm:p-5 relative overflow-hidden bg-gradient-to-br ${gradient} ${
+        onClick ? 'cursor-pointer hover:scale-[1.02] active:scale-[0.99] transition-all shadow-sm hover:shadow-md' : ''
+      }`}
+      onClick={onClick}
+    >
       <p className="text-white/80 text-[10px] font-black tracking-widest uppercase mb-1 truncate">{title}</p>
       {value === null ? (
         <div className="animate-pulse bg-white/30 h-7 sm:h-8 w-12 rounded mt-1" />

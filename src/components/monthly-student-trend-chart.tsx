@@ -10,7 +10,10 @@ import {
   Sparkles,
   BarChart3,
   Award,
-  ChevronRight
+  ChevronRight,
+  PauseCircle,
+  UserX,
+  BookOpen
 } from 'lucide-react'
 import {
   format,
@@ -28,8 +31,8 @@ interface MonthlyStudentTrendChartProps {
   className?: string
 }
 
-type ViewMetric = 'active' | 'enrolments' | 'classes'
-type TimeRange = '6m' | '12m' | 'all'
+type ViewMetric = 'active' | 'break' | 'stopped' | 'enrolments' | 'classes'
+type TimeRange = '6m' | '12m' | '18m'
 
 interface MonthStat {
   monthKey: string
@@ -39,10 +42,26 @@ interface MonthStat {
   startDate: Date
   endDate: Date
   activeCount: number
+  breakCount: number
+  stoppedCount: number
   newEnrolments: number
   classesCount: number
   growthDelta: number
   growthPercent: number
+}
+
+function safeParseDate(val: unknown): Date | null {
+  if (!val) return null
+  try {
+    if (typeof val === 'string') {
+      if (val.length === 10) return new Date(`${val}T00:00:00`)
+      return parseISO(val)
+    }
+    if (val instanceof Date) return val
+    return new Date(val as any)
+  } catch {
+    return null
+  }
 }
 
 export function MonthlyStudentTrendChart({
@@ -73,57 +92,78 @@ export function MonthlyStudentTrendChart({
 
       // 1. New enrolments in this month
       const newEnrolments = students.filter((s: any) => {
-        const joinStr = s.academy_joined_date || s.created_at
-        if (!joinStr) return false
-        try {
-          const joinDate = typeof joinStr === 'string' ? parseISO(joinStr) : new Date(joinStr)
-          return isWithinInterval(joinDate, { start, end })
-        } catch {
-          return false
-        }
+        const joinDate = safeParseDate(s.academy_joined_date || s.joined_date || s.created_at)
+        if (!joinDate) return false
+        return isWithinInterval(joinDate, { start, end })
       }).length
 
-      // 2. Total active students by end of this month
-      const activeCount = students.filter((s: any) => {
-        const joinStr = s.academy_joined_date || s.created_at
-        if (!joinStr) return false
-        try {
-          const joinDate = typeof joinStr === 'string' ? parseISO(joinStr) : new Date(joinStr)
-          // Must have joined on or before this month's end
-          if (joinDate > end) return false
+      // 2. Stopped classes during this month
+      const stoppedCount = students.filter((s: any) => {
+        if (s.enrolment_status !== 'stopped' && !s.last_class_date) return false
+        const stopDate = safeParseDate(s.last_class_date || s.updated_at)
+        if (!stopDate) return false
+        return isWithinInterval(stopDate, { start, end })
+      }).length
 
-          // If stopped, must not have stopped before this month's start
-          if (s.enrolment_status === 'stopped') {
-            const stopStr = s.last_class_date || s.updated_at || s.created_at
-            if (stopStr) {
-              const stopDate = typeof stopStr === 'string' ? parseISO(stopStr) : new Date(stopStr)
-              if (stopDate < start) {
-                // If they stopped before this month began, check if they had classes in this month
-                const hadClasses = classes.some((c: any) => {
-                  if (c.student_id !== s.id || !c.scheduled_at) return false
-                  const cDate = new Date(c.scheduled_at)
-                  return cDate >= start && cDate <= end
-                })
-                if (!hadClasses) return false
-              }
-            }
+      // 3. Students on break during this month
+      const breakCount = students.filter((s: any) => {
+        const joinDate = safeParseDate(s.academy_joined_date || s.joined_date || s.created_at)
+        if (joinDate && joinDate > end) return false
+
+        // Check if stopped before this month began
+        if (s.enrolment_status === 'stopped') {
+          const stopDate = safeParseDate(s.last_class_date || s.updated_at)
+          if (stopDate && stopDate < start) return false
+        }
+
+        if (s.break_from_date) {
+          const bStart = safeParseDate(s.break_from_date)
+          const bEnd = s.break_to_date ? safeParseDate(s.break_to_date) : new Date(8640000000000000)
+          if (bStart && bEnd) {
+            return bStart <= end && bEnd >= start
           }
-
-          return true
-        } catch {
-          return false
         }
+
+        return s.enrolment_status === 'break'
       }).length
 
-      // 3. Classes conducted in this month
+      // 4. Active students in this month
+      const activeCount = students.filter((s: any) => {
+        const joinDate = safeParseDate(s.academy_joined_date || s.joined_date || s.created_at)
+        if (!joinDate) return false
+        if (joinDate > end) return false // Joined after this month
+
+        // If stopped, was it before this month started?
+        if (s.enrolment_status === 'stopped') {
+          const stopDate = safeParseDate(s.last_class_date || s.updated_at)
+          if (stopDate && stopDate < start) {
+            // Check if had classes in this month
+            const hadClasses = classes.some((c: any) => {
+              if (c.student_id !== s.id || !c.scheduled_at) return false
+              const cDate = safeParseDate(c.scheduled_at)
+              return cDate && cDate >= start && cDate <= end
+            })
+            if (!hadClasses) return false
+          }
+        }
+
+        // If on complete break for whole month
+        if (s.break_from_date && s.break_to_date) {
+          const bStart = safeParseDate(s.break_from_date)
+          const bEnd = safeParseDate(s.break_to_date)
+          if (bStart && bEnd && bStart <= start && bEnd >= end) {
+            return false // Full break for entire month
+          }
+        }
+
+        return true
+      }).length
+
+      // 5. Classes conducted/scheduled in this month
       const classesCount = classes.filter((c: any) => {
         if (!c.scheduled_at) return false
-        try {
-          const cDate = new Date(c.scheduled_at)
-          return cDate >= start && cDate <= end
-        } catch {
-          return false
-        }
+        const cDate = safeParseDate(c.scheduled_at)
+        return cDate && cDate >= start && cDate <= end
       }).length
 
       months.push({
@@ -134,6 +174,8 @@ export function MonthlyStudentTrendChart({
         startDate: start,
         endDate: end,
         activeCount,
+        breakCount,
+        stoppedCount,
         newEnrolments,
         classesCount,
         growthDelta: 0,
@@ -141,7 +183,7 @@ export function MonthlyStudentTrendChart({
       })
     }
 
-    // Compute month-over-month growth
+    // Compute month-over-month growth for active count
     for (let i = 0; i < months.length; i++) {
       if (i > 0) {
         const prev = months[i - 1].activeCount
@@ -177,6 +219,8 @@ export function MonthlyStudentTrendChart({
   // Value getter for chart rendering based on selected metric
   const getValue = (m: MonthStat) => {
     if (selectedMetric === 'active') return m.activeCount
+    if (selectedMetric === 'break') return m.breakCount
+    if (selectedMetric === 'stopped') return m.stoppedCount
     if (selectedMetric === 'enrolments') return m.newEnrolments
     return m.classesCount
   }
@@ -184,7 +228,6 @@ export function MonthlyStudentTrendChart({
   const maxValue = useMemo(() => {
     const vals = monthlyData.map(getValue)
     const max = Math.max(...vals, 1)
-    // Add small headroom
     return Math.max(max + 1, 5)
   }, [monthlyData, selectedMetric])
 
@@ -192,6 +235,62 @@ export function MonthlyStudentTrendChart({
   const activeStat = activeHoverIndex !== null
     ? monthlyData[activeHoverIndex]
     : currentMonthStat
+
+  // Configuration for each view metric
+  const metricConfigs = {
+    active: {
+      label: 'Active Students',
+      shortLabel: 'Active',
+      gradient: 'from-[#1A6B4A] via-emerald-600 to-teal-500',
+      hoverGradient: 'from-emerald-700 via-emerald-600 to-teal-500',
+      pillBg: 'bg-emerald-700 text-white',
+      badgeBg: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+      accentColor: 'text-emerald-700',
+      icon: Users
+    },
+    break: {
+      label: 'Students On Break',
+      shortLabel: 'On Break',
+      gradient: 'from-amber-500 via-amber-500 to-yellow-400',
+      hoverGradient: 'from-amber-600 via-amber-500 to-yellow-500',
+      pillBg: 'bg-amber-600 text-white',
+      badgeBg: 'bg-amber-50 text-amber-800 border-amber-200',
+      accentColor: 'text-amber-700',
+      icon: PauseCircle
+    },
+    stopped: {
+      label: 'Class Stopped',
+      shortLabel: 'Stopped',
+      gradient: 'from-rose-600 via-rose-500 to-red-400',
+      hoverGradient: 'from-rose-700 via-rose-600 to-red-500',
+      pillBg: 'bg-rose-600 text-white',
+      badgeBg: 'bg-rose-50 text-rose-800 border-rose-200',
+      accentColor: 'text-rose-700',
+      icon: UserX
+    },
+    enrolments: {
+      label: 'New Admissions',
+      shortLabel: 'Admissions',
+      gradient: 'from-blue-600 via-blue-500 to-cyan-400',
+      hoverGradient: 'from-blue-700 via-blue-600 to-cyan-500',
+      pillBg: 'bg-blue-600 text-white',
+      badgeBg: 'bg-blue-50 text-blue-800 border-blue-200',
+      accentColor: 'text-blue-700',
+      icon: UserPlus
+    },
+    classes: {
+      label: 'Classes Held',
+      shortLabel: 'Classes',
+      gradient: 'from-purple-600 via-purple-500 to-indigo-400',
+      hoverGradient: 'from-purple-700 via-purple-600 to-indigo-500',
+      pillBg: 'bg-purple-600 text-white',
+      badgeBg: 'bg-purple-50 text-purple-800 border-purple-200',
+      accentColor: 'text-purple-700',
+      icon: BookOpen
+    }
+  }
+
+  const currentCfg = metricConfigs[selectedMetric]
 
   return (
     <div className={`bg-white rounded-2xl border-2 border-border shadow-sm p-4 sm:p-6 space-y-5 ${className}`}>
@@ -204,10 +303,10 @@ export function MonthlyStudentTrendChart({
             </div>
             <div>
               <h3 className="text-lg sm:text-xl font-black text-foreground">
-                Student Enrolment & Monthly Trend
+                Monthly Student Trend & Analysis
               </h3>
               <p className="text-xs text-muted-foreground font-medium">
-                Visualise monthly active students, admission trends, and academy momentum.
+                Track active counts, students on break, discontinued classes, and admissions month-over-month.
               </p>
             </div>
           </div>
@@ -216,35 +315,57 @@ export function MonthlyStudentTrendChart({
         {/* View Switchers */}
         <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
           {/* Metric Selector */}
-          <div className="bg-muted/80 p-1 rounded-xl flex items-center border border-border">
+          <div className="bg-muted/80 p-1 rounded-xl flex items-center border border-border flex-wrap gap-1">
             <button
               type="button"
               onClick={() => setSelectedMetric('active')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 selectedMetric === 'active'
                   ? 'bg-white text-emerald-800 shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Active Students
+              Active
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedMetric('break')}
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                selectedMetric === 'break'
+                  ? 'bg-white text-amber-800 shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              On Break
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedMetric('stopped')}
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                selectedMetric === 'stopped'
+                  ? 'bg-white text-rose-800 shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Stopped
             </button>
             <button
               type="button"
               onClick={() => setSelectedMetric('enrolments')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 selectedMetric === 'enrolments'
-                  ? 'bg-white text-emerald-800 shadow-xs'
+                  ? 'bg-white text-blue-800 shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              New Enrolments
+              Admissions
             </button>
             <button
               type="button"
               onClick={() => setSelectedMetric('classes')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 selectedMetric === 'classes'
-                  ? 'bg-white text-emerald-800 shadow-xs'
+                  ? 'bg-white text-purple-800 shadow-xs'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -254,7 +375,7 @@ export function MonthlyStudentTrendChart({
 
           {/* Time range selector */}
           <div className="bg-muted/80 p-1 rounded-xl flex items-center border border-border">
-            {(['6m', '12m'] as TimeRange[]).map((r) => (
+            {(['6m', '12m', '18m'] as TimeRange[]).map((r) => (
               <button
                 key={r}
                 type="button"
@@ -273,13 +394,13 @@ export function MonthlyStudentTrendChart({
       </div>
 
       {/* KPI Highlight Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
         <div className="bg-muted/30 p-3 rounded-xl border border-border">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block truncate">
             Current Active
           </span>
           <div className="flex items-baseline gap-1.5 mt-0.5">
-            <span className="text-xl sm:text-2xl font-black text-foreground">
+            <span className="text-xl sm:text-2xl font-black text-emerald-800">
               {currentMonthStat?.activeCount ?? 0}
             </span>
             <span className="text-xs font-bold text-muted-foreground">students</span>
@@ -287,40 +408,64 @@ export function MonthlyStudentTrendChart({
         </div>
 
         <div className="bg-muted/30 p-3 rounded-xl border border-border">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block truncate">
+            Current On Break
+          </span>
+          <div className="flex items-baseline gap-1.5 mt-0.5">
+            <span className="text-xl sm:text-2xl font-black text-amber-700">
+              {currentMonthStat?.breakCount ?? 0}
+            </span>
+            <span className="text-xs font-bold text-muted-foreground">students</span>
+          </div>
+        </div>
+
+        <div className="bg-muted/30 p-3 rounded-xl border border-border">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block truncate">
+            Stopped This Month
+          </span>
+          <div className="flex items-baseline gap-1.5 mt-0.5">
+            <span className="text-xl sm:text-2xl font-black text-rose-700">
+              {currentMonthStat?.stoppedCount ?? 0}
+            </span>
+            <span className="text-xs font-bold text-muted-foreground">students</span>
+          </div>
+        </div>
+
+        <div className="bg-muted/30 p-3 rounded-xl border border-border">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block truncate">
             Period Growth
           </span>
           <div className="flex items-baseline gap-1.5 mt-0.5">
             <span className={`text-xl sm:text-2xl font-black ${netGrowth >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
               {netGrowth > 0 ? `+${netGrowth}` : netGrowth}
             </span>
-            <span className="text-xs font-bold text-muted-foreground">net change</span>
+            <span className="text-xs font-bold text-muted-foreground">net active</span>
           </div>
         </div>
 
         <div className="bg-muted/30 p-3 rounded-xl border border-border">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-            Peak Month
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block truncate">
+            Peak Active Month
           </span>
           <div className="flex items-baseline gap-1.5 mt-0.5">
             <span className="text-base sm:text-lg font-black text-foreground truncate">
               {peakStat ? peakStat.shortLabel : '—'}
             </span>
-            <span className="text-xs font-bold text-emerald-700">
-              ({peakStat?.activeCount ?? 0} students)
+            <span className="text-xs font-bold text-emerald-700 truncate">
+              ({peakStat?.activeCount ?? 0})
             </span>
           </div>
         </div>
 
         <div className="bg-muted/30 p-3 rounded-xl border border-border">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block truncate">
             Monthly Average
           </span>
           <div className="flex items-baseline gap-1.5 mt-0.5">
             <span className="text-xl sm:text-2xl font-black text-foreground">
               {avgActive}
             </span>
-            <span className="text-xs font-bold text-muted-foreground">avg / mo</span>
+            <span className="text-xs font-bold text-muted-foreground">active/mo</span>
           </div>
         </div>
       </div>
@@ -329,23 +474,41 @@ export function MonthlyStudentTrendChart({
       <div className="bg-slate-50/70 rounded-2xl p-4 sm:p-5 border border-slate-200/80">
         {/* Interactive Highlight Banner */}
         {activeStat && (
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2 p-3 bg-white rounded-xl border border-border shadow-2xs">
-            <div className="flex items-center gap-2.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse" />
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 p-3.5 bg-white rounded-xl border border-border shadow-2xs">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-xl border ${currentCfg.badgeBg}`}>
+                <currentCfg.icon className="h-5 w-5" />
+              </div>
               <div>
-                <span className="text-xs font-black text-foreground block">
-                  {activeStat.fullLabel}
-                </span>
-                <span className="text-[11px] text-muted-foreground font-medium">
-                  {selectedMetric === 'active' && `${activeStat.activeCount} active students`}
-                  {selectedMetric === 'enrolments' && `${activeStat.newEnrolments} new students joined`}
-                  {selectedMetric === 'classes' && `${activeStat.classesCount} class sessions scheduled`}
-                  {activeStat.growthDelta !== 0 && selectedMetric === 'active' && (
-                    <span className={`ml-2 font-bold ${activeStat.growthDelta > 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
-                      ({activeStat.growthDelta > 0 ? `+${activeStat.growthDelta}` : activeStat.growthDelta} vs prev month)
-                    </span>
-                  )}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-black text-foreground block">
+                    {activeStat.fullLabel}
+                  </span>
+                  <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${currentCfg.badgeBg}`}>
+                    {currentCfg.label}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 mt-1 text-xs font-semibold text-muted-foreground">
+                  <span className="text-emerald-700 font-bold">
+                    Active: <strong className="text-foreground">{activeStat.activeCount}</strong>
+                  </span>
+                  <span>·</span>
+                  <span className="text-amber-700 font-bold">
+                    On Break: <strong className="text-foreground">{activeStat.breakCount}</strong>
+                  </span>
+                  <span>·</span>
+                  <span className="text-rose-700 font-bold">
+                    Stopped: <strong className="text-foreground">{activeStat.stoppedCount}</strong>
+                  </span>
+                  <span>·</span>
+                  <span className="text-blue-700 font-bold">
+                    New Joined: <strong className="text-foreground">{activeStat.newEnrolments}</strong>
+                  </span>
+                  <span>·</span>
+                  <span className="text-purple-700 font-bold">
+                    Classes: <strong className="text-foreground">{activeStat.classesCount}</strong>
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -356,10 +519,10 @@ export function MonthlyStudentTrendChart({
                   format(activeStat.startDate, 'yyyy-MM-dd'),
                   format(activeStat.endDate, 'yyyy-MM-dd')
                 )}
-                className="text-xs font-bold text-emerald-800 hover:text-emerald-950 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors cursor-pointer"
+                className="text-xs font-bold text-emerald-800 hover:text-emerald-950 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors cursor-pointer"
               >
-                <span>Filter Dashboard to this Month</span>
-                <ChevronRight className="h-3 w-3" />
+                <span>Filter Dashboard to {activeStat.shortLabel}</span>
+                <ChevronRight className="h-3.5 w-3.5" />
               </button>
             )}
           </div>
@@ -376,12 +539,13 @@ export function MonthlyStudentTrendChart({
           </div>
 
           {/* Bars Column Container */}
-          <div className="relative z-10 grid gap-2 sm:gap-4 h-56 items-end"
+          <div
+            className="relative z-10 grid gap-2 sm:gap-4 h-60 items-end"
             style={{ gridTemplateColumns: `repeat(${monthlyData.length}, minmax(0, 1fr))` }}
           >
             {monthlyData.map((stat, idx) => {
               const val = getValue(stat)
-              const heightPct = Math.max((val / maxValue) * 100, val > 0 ? 10 : 3)
+              const heightPct = Math.max((val / maxValue) * 100, val > 0 ? 10 : 4)
               const isHovered = activeHoverIndex === idx
               const isCurrent = idx === monthlyData.length - 1
 
@@ -409,7 +573,7 @@ export function MonthlyStudentTrendChart({
                       isHovered
                         ? 'bg-slate-900 text-white scale-110 shadow-md'
                         : isCurrent
-                        ? 'bg-emerald-700 text-white'
+                        ? currentCfg.pillBg
                         : 'bg-white text-foreground border border-border shadow-2xs'
                     }`}
                   >
@@ -421,21 +585,23 @@ export function MonthlyStudentTrendChart({
                     <motion.div
                       initial={{ height: 0 }}
                       animate={{ height: `${heightPct}%` }}
-                      transition={{ duration: 0.5, delay: idx * 0.05 }}
+                      transition={{ duration: 0.5, delay: idx * 0.04 }}
                       className={`w-full rounded-t-xl transition-all relative overflow-hidden ${
                         isHovered
-                          ? 'bg-gradient-to-t from-emerald-700 via-emerald-600 to-teal-500 shadow-md ring-2 ring-emerald-400'
+                          ? `bg-gradient-to-t ${currentCfg.hoverGradient} shadow-md ring-2 ring-emerald-400`
                           : isCurrent
-                          ? 'bg-gradient-to-t from-[#1A6B4A] to-emerald-500 shadow-xs'
+                          ? `bg-gradient-to-t ${currentCfg.gradient} shadow-xs`
                           : 'bg-gradient-to-t from-slate-300 to-slate-400 group-hover:from-emerald-300 group-hover:to-emerald-500'
                       }`}
                     >
-                      {/* Sub-bar overlay to indicate new enrolments */}
+                      {/* Sub-bar overlay to indicate new enrolments when viewing active */}
                       {selectedMetric === 'active' && stat.newEnrolments > 0 && (
                         <div
-                          style={{ height: `${Math.min((stat.newEnrolments / Math.max(stat.activeCount, 1)) * 100, 100)}%` }}
-                          className="absolute bottom-0 inset-x-0 bg-white/20 border-t border-white/40"
-                          title={`${stat.newEnrolments} new students joined in ${stat.label}`}
+                          style={{
+                            height: `${Math.min((stat.newEnrolments / Math.max(stat.activeCount, 1)) * 100, 100)}%`
+                          }}
+                          className="absolute bottom-0 inset-x-0 bg-white/25 border-t border-white/40"
+                          title={`${stat.newEnrolments} admissions in ${stat.label}`}
                         />
                       )}
                     </motion.div>
@@ -443,9 +609,11 @@ export function MonthlyStudentTrendChart({
 
                   {/* X-Axis Month Label */}
                   <div className="mt-3 text-center">
-                    <span className={`block text-xs font-bold transition-colors ${
-                      isHovered || isCurrent ? 'text-foreground font-black' : 'text-muted-foreground'
-                    }`}>
+                    <span
+                      className={`block text-xs font-bold transition-colors ${
+                        isHovered || isCurrent ? 'text-foreground font-black' : 'text-muted-foreground'
+                      }`}
+                    >
                       {stat.shortLabel}
                     </span>
                     <span className="block text-[10px] text-muted-foreground/80 font-medium">
@@ -460,7 +628,7 @@ export function MonthlyStudentTrendChart({
 
         {/* Legend / Info footer */}
         <div className="mt-4 pt-3 border-t border-slate-200/80 flex flex-wrap items-center justify-between text-xs text-muted-foreground gap-2">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-md bg-[#1A6B4A]" />
               <span className="font-semibold text-foreground">Current Month</span>
@@ -472,12 +640,12 @@ export function MonthlyStudentTrendChart({
             {selectedMetric === 'active' && (
               <div className="hidden sm:flex items-center gap-1.5">
                 <span className="w-3 h-3 rounded-md bg-white/40 border border-slate-400" />
-                <span className="font-medium text-muted-foreground">New Admissions Portion</span>
+                <span className="font-medium text-muted-foreground">Admissions Portion</span>
               </div>
             )}
           </div>
           <span className="text-[11px] font-medium text-muted-foreground italic">
-            Tip: Click any month bar to filter the entire dashboard
+            Tip: Click any month bar to set the dashboard period filter
           </span>
         </div>
       </div>
