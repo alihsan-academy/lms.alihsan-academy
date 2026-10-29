@@ -11,7 +11,9 @@ interface DateRangeFilterProps {
   customEnd: string
   onFilterChange: (filter: DateFilterType, customStart?: string, customEnd?: string) => void
   resolvedRange: DateRange
+  title?: string
   className?: string
+  extraControls?: React.ReactNode
 }
 
 export function DateRangeFilter({
@@ -20,7 +22,9 @@ export function DateRangeFilter({
   customEnd,
   onFilterChange,
   resolvedRange,
+  title = 'Filter Attendance Period',
   className = '',
+  extraControls,
 }: DateRangeFilterProps) {
   const [localStart, setLocalStart] = useState(customStart || '')
   const [localEnd, setLocalEnd] = useState(customEnd || '')
@@ -49,15 +53,17 @@ export function DateRangeFilter({
             <Filter className="h-4 w-4" />
           </div>
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Filter Attendance Period</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{title}</span>
             <p className="text-sm font-extrabold text-foreground flex items-center gap-1.5">
               <span>{resolvedRange.label}</span>
             </p>
           </div>
         </div>
 
-        {/* Quick buttons */}
-        <div className="flex flex-wrap items-center gap-1.5">
+        {/* Quick buttons & extra controls */}
+        <div className="flex flex-wrap items-center gap-2">
+          {extraControls}
+          <div className="flex flex-wrap items-center gap-1.5">
           {filterOptions.map((opt) => {
             const isActive = currentFilter === opt.id
             return (
@@ -82,6 +88,7 @@ export function DateRangeFilter({
           })}
         </div>
       </div>
+    </div>
 
       {/* Custom date range picker drawer */}
       {currentFilter === 'custom' && (

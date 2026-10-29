@@ -23,23 +23,67 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     // Listen for the password recovery auth event or active session
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
-        setHasValidSession(true)
-      } else {
-        // In hash-based recovery, Supabase client parses hash params asynchronously
-        const hash = window.location.hash
+      try {
+        if (typeof window !== 'undefined') {
+          const params = new URLSearchParams(window.location.search)
+          const code = params.get('code')
+          const errParam = params.get('error_description') || params.get('error')
+
+          if (errParam) {
+            setStatusMessage({
+              type: 'error',
+              text: decodeURIComponent(errParam).replace(/\+/g, ' ')
+            })
+            setHasValidSession(false)
+            setIsReady(true)
+            return
+          }
+
+          if (code) {
+            const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+            if (!error && data?.session) {
+              setHasValidSession(true)
+              setIsReady(true)
+              return
+            } else if (error) {
+              setStatusMessage({
+                type: 'error',
+                text: 'This password reset link has expired or is invalid. Please request a new one.'
+              })
+              setHasValidSession(false)
+              setIsReady(true)
+              return
+            }
+          }
+        }
+
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          setHasValidSession(true)
+          setIsReady(true)
+          return
+        }
+
+        const hash = typeof window !== 'undefined' ? window.location.hash : ''
         if (hash && (hash.includes('access_token') || hash.includes('type=recovery'))) {
           setHasValidSession(true)
-        } else {
-          // Give Supabase a brief moment to process recovery token
-          setTimeout(async () => {
-            const { data: { session: retrySession } } = await supabase.auth.getSession()
-            setHasValidSession(!!retrySession)
-          }, 1000)
+          setIsReady(true)
+          return
         }
+
+        setTimeout(async () => {
+          const { data: { session: retrySession } } = await supabase.auth.getSession()
+          setHasValidSession(!!retrySession)
+          setIsReady(true)
+        }, 1000)
+      } catch (err: any) {
+        setStatusMessage({
+          type: 'error',
+          text: err?.message || 'Failed to authenticate reset session.'
+        })
+        setHasValidSession(false)
+        setIsReady(true)
       }
-      setIsReady(true)
     }
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event) => {
@@ -159,7 +203,30 @@ export default function ResetPasswordPage() {
             </div>
           </div>
 
-          {statusMessage.type === 'success' ? (
+          {!isReady ? (
+            <div className="py-12 flex flex-col items-center justify-center space-y-3">
+              <Loader2 className="w-8 h-8 text-[#1A6B4A] animate-spin" />
+              <p className="text-sm font-semibold text-[#5C7066]">Verifying secure reset link...</p>
+            </div>
+          ) : !hasValidSession && statusMessage.type !== 'success' ? (
+            <div className="space-y-4">
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-sm flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold">Reset Link Invalid or Expired</p>
+                  <p className="text-xs text-amber-800 mt-1">
+                    {statusMessage.text || 'This password reset link is invalid, has expired, or has already been used. Please request a new reset link.'}
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/login"
+                className="w-full h-11 min-h-[44px] rounded-lg bg-[#1A6B4A] hover:bg-[#15583D] active:scale-[0.98] text-white text-sm font-semibold flex items-center justify-center transition-all shadow-xs"
+              >
+                Request a New Reset Link
+              </Link>
+            </div>
+          ) : statusMessage.type === 'success' ? (
             <div className="space-y-4">
               <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-sm flex items-start gap-3">
                 <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />

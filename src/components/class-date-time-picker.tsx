@@ -102,40 +102,40 @@ export function ClassDatePicker({
     : 'Select class date'
 
   return (
-    <div className="relative space-y-2" ref={containerRef}>
-      <label className="text-foreground font-bold text-sm block">{label}</label>
+    <div className="relative space-y-1.5" ref={containerRef}>
+      <label className="text-foreground font-bold text-xs uppercase tracking-wider block">{label}</label>
 
       {/* Trigger Button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full h-14 px-4 rounded-xl border-2 transition-all flex items-center justify-between text-left ${
+        className={`w-full min-h-[40px] h-11 px-3 py-2 bg-white hover:bg-slate-50/70 border rounded-xl flex items-center justify-between gap-2.5 transition-all text-left shadow-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 ${
           isOpen 
-            ? 'border-primary ring-4 ring-primary/10 bg-white' 
-            : 'border-border bg-muted/20 hover:bg-muted/40 hover:border-primary/40'
+            ? 'border-primary ring-2 ring-primary/10' 
+            : 'border-border/80 hover:border-slate-300'
         }`}
       >
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-            <CalendarIcon className="h-5 w-5" />
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          <div className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <CalendarIcon className="h-4 w-4" />
           </div>
           <div className="truncate">
-            <span className={`block font-bold text-sm sm:text-base leading-tight ${selectedDate ? 'text-foreground' : 'text-muted-foreground'}`}>
+            <span className={`block font-semibold text-xs sm:text-sm leading-tight ${selectedDate ? 'text-foreground' : 'text-muted-foreground'}`}>
               {formattedDisplay}
             </span>
             {selectedDate && (
-              <span className="text-[11px] font-semibold text-muted-foreground block">
+              <span className="text-[10px] font-medium text-muted-foreground block">
                 {isSameDay(selectedDate, today) ? 'Scheduled for today' : format(selectedDate, 'EEEE')}
               </span>
             )}
           </div>
         </div>
-        <ChevronDown className={`h-5 w-5 text-muted-foreground shrink-0 transition-transform ${isOpen ? 'rotate-180 text-primary' : ''}`} />
+        <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${isOpen ? 'rotate-180 text-primary' : ''}`} />
       </button>
 
       {/* Popover Dropdown */}
       {isOpen && (
-        <div className="absolute z-50 left-0 right-0 sm:right-auto sm:w-[350px] mt-2 bg-white border-2 border-border/80 rounded-2xl shadow-2xl p-4 animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute z-50 left-0 right-0 sm:right-auto sm:w-[320px] mt-1.5 bg-white border border-border/80 rounded-xl shadow-lg shadow-black/[0.08] p-3 animate-in fade-in zoom-in-95 duration-150">
           {/* Quick Preset Buttons */}
           <div className="mb-3.5">
             <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-1.5 flex items-center gap-1">
@@ -335,42 +335,42 @@ export function ClassTimePicker({
     : 'Select class time'
 
   return (
-    <div className="relative space-y-2" ref={containerRef}>
-      <label className="text-foreground font-bold text-sm block">{label}</label>
+    <div className="relative space-y-1.5" ref={containerRef}>
+      <label className="text-foreground font-bold text-xs uppercase tracking-wider block">{label}</label>
 
       {/* Trigger Button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full h-14 px-4 rounded-xl border-2 transition-all flex items-center justify-between text-left ${
+        className={`w-full min-h-[40px] h-11 px-3 py-2 bg-white hover:bg-slate-50/70 border rounded-xl flex items-center justify-between gap-2.5 transition-all text-left shadow-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20 ${
           isOpen 
-            ? 'border-primary ring-4 ring-primary/10 bg-white' 
-            : 'border-border bg-muted/20 hover:bg-muted/40 hover:border-primary/40'
+            ? 'border-primary ring-2 ring-primary/10' 
+            : 'border-border/80 hover:border-slate-300'
         }`}
       >
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-            <Clock className="h-5 w-5" />
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          <div className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <Clock className="h-4 w-4" />
           </div>
           <div className="truncate">
-            <span className={`block font-bold text-sm sm:text-base leading-tight ${value ? 'text-foreground' : 'text-muted-foreground'}`}>
+            <span className={`block font-semibold text-xs sm:text-sm leading-tight ${value ? 'text-foreground' : 'text-muted-foreground'}`}>
               {displayTime}
             </span>
             {value && (
-              <span className="text-[11px] font-semibold text-emerald-700 block">
+              <span className="text-[10px] font-medium text-emerald-700 block">
                 Scheduled in UK Time
               </span>
             )}
           </div>
         </div>
-        <ChevronDown className={`h-5 w-5 text-muted-foreground shrink-0 transition-transform ${isOpen ? 'rotate-180 text-primary' : ''}`} />
+        <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${isOpen ? 'rotate-180 text-primary' : ''}`} />
       </button>
 
       {/* Popover Dropdown */}
       {isOpen && (
-        <div className="absolute z-50 left-0 right-0 sm:right-auto sm:w-[360px] mt-2 bg-white border-2 border-border/80 rounded-2xl shadow-2xl p-4 animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute z-50 left-0 right-0 sm:left-auto sm:right-0 sm:w-[320px] mt-1.5 bg-white border border-border/80 rounded-xl shadow-lg shadow-black/[0.08] p-3 animate-in fade-in zoom-in-95 duration-150">
           {/* Quick Preset Slots */}
-          <div className="mb-3.5">
+          <div className="mb-3">
             <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-1.5 flex items-center gap-1">
               <Sparkles className="h-3 w-3 text-secondary" /> Common Class Slots
             </span>
@@ -388,9 +388,9 @@ export function ClassTimePicker({
                     onClick={() => {
                       applyTime(slot.h, slot.m, slot.p)
                     }}
-                    className={`px-2 py-1.5 text-xs font-bold rounded-lg border transition-all ${
+                    className={`px-2 py-1 text-xs font-semibold rounded-lg border transition-all ${
                       isSelected
-                        ? 'bg-primary text-white border-primary shadow-sm'
+                        ? 'bg-primary text-white border-primary shadow-xs'
                         : 'bg-muted/40 hover:bg-muted text-foreground border-border/60 hover:border-primary/40'
                     }`}
                   >
@@ -402,19 +402,19 @@ export function ClassTimePicker({
           </div>
 
           {/* Custom Time Selector */}
-          <div className="border-t border-border/60 pt-3 space-y-3">
+          <div className="border-t border-border/60 pt-2.5 space-y-2.5">
             <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground block">
               Custom Time (UK)
             </span>
 
-            <div className="flex items-center justify-between gap-2 bg-muted/30 p-2.5 rounded-xl border border-border/60">
+            <div className="flex items-center justify-between gap-2 bg-muted/20 p-2 rounded-xl border border-border/60">
               {/* Hour Select */}
-              <div className="flex-1 space-y-1">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase text-center block">Hour</span>
+              <div className="flex-1 space-y-0.5">
+                <span className="text-[9px] font-bold text-muted-foreground uppercase text-center block">Hour</span>
                 <select
                   value={selectedHour}
                   onChange={(e) => applyTime(e.target.value, selectedMinute, selectedPeriod)}
-                  className="w-full h-11 px-2 text-center font-black text-base bg-white border-2 border-border rounded-lg focus:border-primary focus:outline-none"
+                  className="w-full h-9 px-1.5 text-center font-bold text-sm bg-white border border-border/80 rounded-lg focus:border-primary focus:outline-none"
                 >
                   {hoursList.map((h) => (
                     <option key={h} value={h}>{h}</option>
@@ -422,15 +422,15 @@ export function ClassTimePicker({
                 </select>
               </div>
 
-              <span className="font-black text-lg text-muted-foreground mt-4">:</span>
+              <span className="font-bold text-base text-muted-foreground mt-3">:</span>
 
               {/* Minute Select */}
-              <div className="flex-1 space-y-1">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase text-center block">Minute</span>
+              <div className="flex-1 space-y-0.5">
+                <span className="text-[9px] font-bold text-muted-foreground uppercase text-center block">Minute</span>
                 <select
                   value={selectedMinute}
                   onChange={(e) => applyTime(selectedHour, e.target.value, selectedPeriod)}
-                  className="w-full h-11 px-2 text-center font-black text-base bg-white border-2 border-border rounded-lg focus:border-primary focus:outline-none"
+                  className="w-full h-9 px-1.5 text-center font-bold text-sm bg-white border border-border/80 rounded-lg focus:border-primary focus:outline-none"
                 >
                   {minutesList.map((m) => (
                     <option key={m} value={m}>{m}</option>
@@ -439,15 +439,15 @@ export function ClassTimePicker({
               </div>
 
               {/* AM / PM Toggle */}
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase text-center block">Period</span>
-                <div className="flex h-11 bg-muted rounded-lg p-0.5 border border-border">
+              <div className="space-y-0.5">
+                <span className="text-[9px] font-bold text-muted-foreground uppercase text-center block">Period</span>
+                <div className="flex h-9 bg-muted rounded-lg p-0.5 border border-border/80">
                   <button
                     type="button"
                     onClick={() => applyTime(selectedHour, selectedMinute, 'AM')}
-                    className={`px-2.5 rounded-md font-bold text-xs transition-colors ${
+                    className={`px-2 rounded-md font-bold text-xs transition-colors ${
                       selectedPeriod === 'AM'
-                        ? 'bg-primary text-white shadow-sm'
+                        ? 'bg-primary text-white shadow-xs'
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
@@ -456,9 +456,9 @@ export function ClassTimePicker({
                   <button
                     type="button"
                     onClick={() => applyTime(selectedHour, selectedMinute, 'PM')}
-                    className={`px-2.5 rounded-md font-bold text-xs transition-colors ${
+                    className={`px-2 rounded-md font-bold text-xs transition-colors ${
                       selectedPeriod === 'PM'
-                        ? 'bg-primary text-white shadow-sm'
+                        ? 'bg-primary text-white shadow-xs'
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >

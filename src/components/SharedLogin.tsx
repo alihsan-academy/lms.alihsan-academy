@@ -199,8 +199,14 @@ export default function SharedLogin({
   const handleResetPassword = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     setResetMessage({ type: '', text: '' })
-    if (!resetEmail) {
+    const trimmedEmail = resetEmail.trim().toLowerCase()
+    if (!trimmedEmail) {
       setResetMessage({ type: 'error', text: 'Please enter your email address' })
+      return
+    }
+
+    if (!trimmedEmail.includes('@') || !trimmedEmail.includes('.')) {
+      setResetMessage({ type: 'error', text: 'Please enter a valid email address' })
       return
     }
 
@@ -208,12 +214,18 @@ export default function SharedLogin({
     try {
       const supabase = createClient()
       const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
         redirectTo: redirectUrl,
       })
 
       if (error) {
-        setResetMessage({ type: 'error', text: error.message })
+        if (error.message.toLowerCase().includes('rate limit')) {
+          setResetMessage({ type: 'error', text: 'Email rate limit reached. Please wait a couple of minutes before requesting again, or check your spam/junk folder.' })
+        } else if (error.message.toLowerCase().includes('invalid')) {
+          setResetMessage({ type: 'error', text: 'Please ensure this email is correctly spelled and registered.' })
+        } else {
+          setResetMessage({ type: 'error', text: error.message })
+        }
       } else {
         setResetMessage({ type: 'success', text: 'Password reset link sent to your email! Please check your inbox and spam folder.' })
         setResetEmail('')

@@ -82,7 +82,7 @@ export function DialogContent({
         role="dialog"
         aria-modal="true"
         className={cn(
-          "relative z-50 w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border-2 border-border animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto",
+          "relative z-50 w-full max-w-md rounded-2xl bg-white p-5 sm:p-6 shadow-xl border border-border animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto",
           className
         )}
         onClick={(e) => e.stopPropagation()}

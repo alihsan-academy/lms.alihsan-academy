@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
 import { AcademyHeader } from '@/components/academy-header'
-import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, CheckCircle2, Search, AlertCircle, X, RefreshCw, Trash, Pencil, Save, ChevronDown, UserCheck, Clock, XCircle, Lock } from 'lucide-react'
+import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, CheckCircle2, Search, AlertCircle, X, RefreshCw, Trash, Pencil, Save, ChevronDown, UserCheck, Clock, XCircle, Lock, Calendar, Filter } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -17,6 +17,9 @@ import { AnimatedCard } from '@/components/animated-card'
 import { BouncyButton } from '@/components/bouncy-button'
 import { PageTransition } from '@/components/page-transition'
 import { AdminAttendanceManager } from '@/components/admin-attendance-manager'
+import { DateRangeFilter } from '@/components/date-range-filter'
+import { MonthlyStudentTrendChart } from '@/components/monthly-student-trend-chart'
+import { DateFilterType, getDateRange, isDateWithinRange, parseClassMetadata } from '@/lib/attendance-utils'
 
 type Tab = 'statistics' | 'students' | 'teachers' | 'attendance' | 'manage'
 
@@ -68,6 +71,135 @@ export default function SuperAdminDashboard() {
   const [inlineStoppedDate, setInlineStoppedDate] = useState('')
   const [inlineStoppedReason, setInlineStoppedReason] = useState('')
   const [isSavingStatus, setIsSavingStatus] = useState(false)
+
+  // Statistics tab Date & Period Filter state
+  const [statsFilterType, setStatsFilterType] = useState<DateFilterType>('all_time')
+  const [statsCustomStart, setStatsCustomStart] = useState('')
+  const [statsCustomEnd, setStatsCustomEnd] = useState('')
+  const [statsSelectedTerm, setStatsSelectedTerm] = useState<string>('all')
+
+  const statsDateRange = useMemo(() => {
+    return getDateRange(statsFilterType, statsCustomStart, statsCustomEnd)
+  }, [statsFilterType, statsCustomStart, statsCustomEnd])
+
+  // Extract available unique terms across students
+  const availableTerms = useMemo(() => {
+    const set = new Set<string>()
+    students.forEach((s) => {
+      if (s.term && typeof s.term === 'string' && s.term !== 'N/A' && s.term.trim()) {
+        set.add(s.term.trim())
+      }
+    })
+    return Array.from(set).sort()
+  }, [students])
+
+  // Filtered classes within statsDateRange & term
+  const statsFilteredClasses = useMemo(() => {
+    return classes.filter((c: any) => {
+      const inDate = isDateWithinRange(c.scheduled_at, statsDateRange)
+      if (!inDate) return false
+      if (statsSelectedTerm !== 'all') {
+        const student = students.find((s) => s.id === c.student_id)
+        if (student && student.term && student.term !== statsSelectedTerm) return false
+      }
+      return true
+    })
+  }, [classes, statsDateRange, statsSelectedTerm, students])
+
+  // Filtered students active in statsDateRange & term
+  const statsFilteredStudents = useMemo(() => {
+    return students.filter((s: any) => {
+      // 1. Term filter
+      if (statsSelectedTerm !== 'all' && s.term && s.term !== statsSelectedTerm) {
+        return false
+      }
+
+      // If all-time, all students matching term are included
+      if (!statsDateRange.start && !statsDateRange.end) {
+        return true
+      }
+
+      // 2. Joining date check
+      const joinStr = s.academy_joined_date || s.created_at
+      if (joinStr && statsDateRange.end) {
+        try {
+          const joinTime = new Date(joinStr).getTime()
+          if (joinTime > statsDateRange.end.getTime()) {
+            return false // Joined after this period
+          }
+        } catch {}
+      }
+
+      // 3. Stopped status check: if stopped before this period started
+      if (s.enrolment_status === 'stopped' && statsDateRange.start) {
+        const stopStr = s.last_class_date || s.updated_at || s.created_at
+        if (stopStr) {
+          try {
+            const stopTime = new Date(stopStr).getTime()
+            if (stopTime < statsDateRange.start.getTime()) {
+              // Stopped before period began. If they had a class scheduled in this period, keep them, else exclude.
+              const hasClassInPeriod = classes.some((c: any) => 
+                c.student_id === s.id && isDateWithinRange(c.scheduled_at, statsDateRange)
+              )
+              if (!hasClassInPeriod) return false
+            }
+          } catch {}
+        }
+      }
+
+      return true
+    })
+  }, [students, statsDateRange, statsSelectedTerm, classes])
+
+  // Filtered teachers active in statsDateRange
+  const statsFilteredTeachers = useMemo(() => {
+    if (!statsDateRange.start && !statsDateRange.end && statsSelectedTerm === 'all') {
+      return teachers
+    }
+    return teachers.filter((t: any) => {
+      const hasClasses = statsFilteredClasses.some((c: any) => c.teacher_id === t.id)
+      const hasStudents = statsFilteredStudents.some((s: any) => s.teacher_id === t.id)
+      return hasClasses || hasStudents
+    })
+  }, [teachers, statsFilteredClasses, statsFilteredStudents, statsDateRange, statsSelectedTerm])
+
+  // Metrics for Academy Overview
+  const statsSummary = useMemo(() => {
+    let attended = 0
+    let completedOrPast = 0
+
+    statsFilteredClasses.forEach((c: any) => {
+      const att = attendanceRecords.find((a: any) => a.class_id === c.id)
+      const meta = parseClassMetadata(c, att)
+      if (meta.status === 'present') {
+        attended++
+      }
+      if (
+        meta.status === 'present' ||
+        meta.status === 'absent' ||
+        meta.status === 'teacher_unavailable' ||
+        meta.status === 'student_unavailable' ||
+        c.status === 'completed'
+      ) {
+        completedOrPast++
+      }
+    })
+
+    const rate = completedOrPast > 0
+      ? Math.round((attended / completedOrPast) * 100)
+      : (statsFilteredClasses.length > 0 && attended > 0
+          ? Math.round((attended / statsFilteredClasses.length) * 100)
+          : 0)
+
+    return {
+      totalStudents: statsFilteredStudents.length,
+      totalTeachers: statsFilteredTeachers.length,
+      totalClasses: statsFilteredClasses.length,
+      attendedClasses: attended,
+      completedOrPast,
+      attendanceRate: rate
+    }
+  }, [statsFilteredClasses, statsFilteredStudents, statsFilteredTeachers, attendanceRecords])
 
   // Sync status form fields whenever selectedProfile changes
   useEffect(() => {
@@ -514,15 +646,113 @@ export default function SuperAdminDashboard() {
         <AnimatePresence mode="wait">
           {activeTab === 'statistics' && (
             <PageTransition key="statistics" className="space-y-8">
+              {/* Academy Period & Date Filter */}
+              <section className="space-y-3">
+                <DateRangeFilter
+                  title="Filter Academy Period"
+                  currentFilter={statsFilterType}
+                  customStart={statsCustomStart}
+                  customEnd={statsCustomEnd}
+                  onFilterChange={(filter, start, end) => {
+                    setStatsFilterType(filter)
+                    if (start) setStatsCustomStart(start)
+                    if (end) setStatsCustomEnd(end)
+                  }}
+                  resolvedRange={statsDateRange}
+                  extraControls={
+                    availableTerms.length > 0 ? (
+                      <div className="flex items-center gap-1.5 bg-muted/70 px-3 py-1.5 rounded-lg border border-border">
+                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">Term:</span>
+                        <select
+                          value={statsSelectedTerm}
+                          onChange={(e) => setStatsSelectedTerm(e.target.value)}
+                          className="bg-transparent text-xs font-bold text-foreground outline-none cursor-pointer"
+                        >
+                          <option value="all">All Terms</option>
+                          {availableTerms.map((tm) => (
+                            <option key={tm} value={tm}>{tm}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : undefined
+                  }
+                />
+              </section>
+
+              {/* Academy Overview Cards */}
               <section>
-                <h3 className="text-2xl font-black text-foreground mb-4">Academy Overview</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 sm:gap-4">
-                  <DashboardStatCard title="Total Students" value={statsLoading ? null : students.length} index={0} gradient="from-blue-400 to-blue-600" />
-                  <DashboardStatCard title="Total Teachers" value={statsLoading ? null : teachers.length} index={1} gradient="from-primary to-emerald-600" />
-                  <DashboardStatCard title="Total Classes" value={statsLoading ? null : classes.length} index={2} gradient="from-purple-400 to-indigo-600" />
-                  <DashboardStatCard title="Completed" value={statsLoading ? null : classes.filter(c => c.status === 'completed').length} index={3} gradient="from-secondary to-orange-500" />
-                  <DashboardStatCard title="Attendance" value={statsLoading ? null : attendanceRecords.length} index={4} gradient="from-pink-400 to-rose-600" />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                  <div>
+                    <h3 className="text-2xl font-black text-foreground">Academy Overview</h3>
+                    <p className="text-xs text-muted-foreground font-medium">
+                      Performance & attendance metrics for {statsDateRange.label}
+                      {statsSelectedTerm !== 'all' ? ` · Term: ${statsSelectedTerm}` : ''}
+                    </p>
+                  </div>
+                  {(statsFilterType !== 'all_time' || statsSelectedTerm !== 'all') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStatsFilterType('all_time')
+                        setStatsSelectedTerm('all')
+                      }}
+                      className="self-start sm:self-auto text-xs font-bold text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg bg-muted/60 hover:bg-muted border border-border transition-colors cursor-pointer"
+                    >
+                      Reset to All Time
+                    </button>
+                  )}
                 </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 sm:gap-4">
+                  <DashboardStatCard 
+                    title="Total Students" 
+                    value={statsLoading ? null : statsSummary.totalStudents} 
+                    index={0} 
+                    gradient="from-blue-400 to-blue-600" 
+                    subtitle={statsFilterType !== 'all_time' ? 'Active in period' : 'Enrolled'}
+                  />
+                  <DashboardStatCard 
+                    title="Total Teachers" 
+                    value={statsLoading ? null : statsSummary.totalTeachers} 
+                    index={1} 
+                    gradient="from-primary to-emerald-600" 
+                    subtitle={statsFilterType !== 'all_time' ? 'Active in period' : 'Faculty'}
+                  />
+                  <DashboardStatCard 
+                    title="Total Classes" 
+                    value={statsLoading ? null : statsSummary.totalClasses} 
+                    index={2} 
+                    gradient="from-purple-400 to-indigo-600" 
+                    subtitle="Scheduled"
+                  />
+                  <DashboardStatCard 
+                    title="Completed" 
+                    value={statsLoading ? null : statsSummary.attendedClasses} 
+                    index={3} 
+                    gradient="from-secondary to-orange-500" 
+                    subtitle="Attended"
+                  />
+                  <DashboardStatCard 
+                    title="Attendance" 
+                    value={statsLoading ? null : `${statsSummary.attendanceRate}%`} 
+                    index={4} 
+                    gradient="from-pink-400 to-rose-600" 
+                    subtitle={`${statsSummary.attendedClasses}/${statsSummary.completedOrPast} held`}
+                  />
+                </div>
+              </section>
+
+              {/* Monthly Student Count Graphical Representation & Trend Analysis */}
+              <section>
+                <MonthlyStudentTrendChart
+                  students={students}
+                  classes={classes}
+                  onSelectMonth={(start, end) => {
+                    setStatsFilterType('custom')
+                    setStatsCustomStart(start)
+                    setStatsCustomEnd(end)
+                  }}
+                />
               </section>
 
               <section>
@@ -540,10 +770,12 @@ export default function SuperAdminDashboard() {
                       </thead>
                       <tbody className="divide-y-2 divide-border">
                         {teachers.map((t, index) => {
-                          const assignedStudentsList = students.filter(s => s.teacher_id === t.id);
+                          const assignedStudentsList = statsFilteredStudents.filter(s => s.teacher_id === t.id);
                           const assignedStudentsNames = assignedStudentsList.map(s => s.name);
-                          const teacherClasses = classes.filter(c => c.teacher_id === t.id);
-                          const completedClasses = teacherClasses.filter(c => c.status === 'completed').length;
+                          const teacherClasses = statsFilteredClasses.filter(c => c.teacher_id === t.id);
+                          const completedClasses = teacherClasses.filter(c => 
+                            c.status === 'completed' || attendanceRecords.some(a => a.class_id === c.id && a.status === 'present')
+                          ).length;
                           return (
                             <motion.tr 
                               key={t.id} 
@@ -590,9 +822,11 @@ export default function SuperAdminDashboard() {
                         </tr>
                       </thead>
                       <tbody className="divide-y-2 divide-border">
-                        {students.map(s => {
-                          const studentClasses = classes.filter(c => c.student_id === s.id);
-                          const studentAttendance = attendanceRecords.filter(a => a.student_id === s.id);
+                        {statsFilteredStudents.map(s => {
+                          const studentClasses = statsFilteredClasses.filter(c => c.student_id === s.id);
+                          const studentAttendance = attendanceRecords.filter(a => 
+                            studentClasses.some(c => c.id === a.class_id) && a.status === 'present'
+                          );
                           const totalScheduled = studentClasses.length;
                           const totalAttended = studentAttendance.length;
                           const percentage = totalScheduled > 0 ? Math.round((totalAttended / totalScheduled) * 100) : 0;
@@ -621,8 +855,8 @@ export default function SuperAdminDashboard() {
                             </tr>
                           )
                         })}
-                        {students.length === 0 && (
-                          <tr><td colSpan={5} className="p-8 text-center text-muted-foreground font-bold">No data available yet</td></tr>
+                        {statsFilteredStudents.length === 0 && (
+                          <tr><td colSpan={5} className="p-8 text-center text-muted-foreground font-bold">No students found matching current period/term filter</td></tr>
                         )}
                       </tbody>
                     </table>
@@ -645,7 +879,7 @@ export default function SuperAdminDashboard() {
                       </thead>
                       <tbody className="divide-y-2 divide-border">
                         {teachers.map(t => {
-                          const teacherClasses = classes.filter(c => c.teacher_id === t.id);
+                          const teacherClasses = statsFilteredClasses.filter(c => c.teacher_id === t.id);
                           const completedClasses = teacherClasses.filter(c => c.status === 'completed').length;
                           const completionRate = teacherClasses.length > 0 ? Math.round((completedClasses / teacherClasses.length) * 100) : 0;
                           
@@ -1599,7 +1833,19 @@ export default function SuperAdminDashboard() {
   )
 }
 
-function DashboardStatCard({ title, value, index, gradient }: { title: string, value: any, index: number, gradient: string }) {
+function DashboardStatCard({ 
+  title, 
+  value, 
+  index, 
+  gradient,
+  subtitle 
+}: { 
+  title: string, 
+  value: any, 
+  index: number, 
+  gradient: string,
+  subtitle?: string 
+}) {
   return (
     <AnimatedCard delay={index * 0.1} className={`border-none text-white p-3.5 sm:p-5 relative overflow-hidden bg-gradient-to-br ${gradient}`}>
       <p className="text-white/80 text-[10px] font-black tracking-widest uppercase mb-1 truncate">{title}</p>
@@ -1607,6 +1853,9 @@ function DashboardStatCard({ title, value, index, gradient }: { title: string, v
         <div className="animate-pulse bg-white/30 h-7 sm:h-8 w-12 rounded mt-1" />
       ) : (
         <p className="text-2xl sm:text-3xl md:text-4xl font-black">{value}</p>
+      )}
+      {subtitle && (
+        <p className="text-white/75 text-[10px] font-bold mt-1 truncate">{subtitle}</p>
       )}
     </AnimatedCard>
   )

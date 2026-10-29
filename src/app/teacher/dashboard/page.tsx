@@ -819,7 +819,7 @@ export default function TeacherDashboard() {
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-white rounded-2xl p-4 sm:p-5 max-w-md w-full border border-border shadow-xl relative my-auto max-h-[85vh] overflow-y-auto"
+                className="bg-white rounded-2xl p-5 sm:p-6 max-w-md w-full border border-border shadow-xl relative my-auto max-h-[85vh] overflow-y-auto"
               >
                 <button 
                   onClick={() => setPendingCompleteClass(null)} 
@@ -1063,7 +1063,7 @@ export default function TeacherDashboard() {
                 initial={{ scale: 0.96, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.96, opacity: 0 }}
-                className="bg-white rounded-2xl p-4 sm:p-5 max-w-md w-full border border-border shadow-xl relative my-auto max-h-[85vh] overflow-y-auto"
+                className="bg-white rounded-2xl p-5 sm:p-6 max-w-md w-full border border-border shadow-xl relative my-auto max-h-[85vh] overflow-y-auto"
               >
                 <button onClick={() => setStatusEditTarget(null)} className="absolute right-3.5 top-3.5 p-1.5 hover:bg-muted rounded-lg text-muted-foreground transition-colors cursor-pointer">
                   <X className="h-4 w-4" />
