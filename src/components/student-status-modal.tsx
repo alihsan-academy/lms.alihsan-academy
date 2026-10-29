@@ -38,15 +38,19 @@ export interface StudentStatusModalProps {
     break_reason?: string | null
     last_class_date?: string | null
     stopped_reason?: string | null
+    login_revoked?: boolean
+    stopped_by?: string | null
   } | null
   onSuccess?: (updatedData?: any) => void
+  isAdmin?: boolean
 }
 
 export function StudentStatusModal({
   isOpen,
   onClose,
   student,
-  onSuccess
+  onSuccess,
+  isAdmin = true
 }: StudentStatusModalProps) {
   const [selectedStatus, setSelectedStatus] = useState<EnrolmentStatus>('ongoing')
   const [breakFromDate, setBreakFromDate] = useState('')
@@ -54,6 +58,7 @@ export function StudentStatusModal({
   const [breakReason, setBreakReason] = useState('')
   const [lastClassDate, setLastClassDate] = useState('')
   const [stoppedReason, setStoppedReason] = useState('')
+  const [revokePortalAccess, setRevokePortalAccess] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Initialize form state when student changes
@@ -122,6 +127,7 @@ export function StudentStatusModal({
           breakReason: selectedStatus === 'break' ? breakReason.trim() : null,
           lastClassDate: selectedStatus === 'stopped' ? lastClassDate : null,
           stoppedReason: selectedStatus === 'stopped' ? stoppedReason.trim() : null,
+          loginRevoked: selectedStatus === 'stopped' ? (isAdmin ? revokePortalAccess : false) : false,
         })
       })
 
@@ -373,6 +379,24 @@ export function StudentStatusModal({
                     required
                   />
                 </div>
+
+                {isAdmin ? (
+                  <label className="flex items-center gap-2.5 cursor-pointer pt-1 bg-white p-2.5 rounded-lg border border-rose-200">
+                    <input
+                      type="checkbox"
+                      checked={revokePortalAccess}
+                      onChange={(e) => setRevokePortalAccess(e.target.checked)}
+                      className="rounded border-rose-300 text-rose-600 focus:ring-rose-500 h-4 w-4"
+                    />
+                    <span className="text-xs font-bold text-rose-950">
+                      Revoke student portal login access (Super Admin)
+                    </span>
+                  </label>
+                ) : (
+                  <div className="bg-amber-100/70 border border-amber-200 rounded-lg p-2.5 text-[11px] text-amber-900 leading-snug">
+                    <strong>Notice:</strong> Marking a student as stopped does not revoke their portal login access. Portal login revocation is managed exclusively by Academy Administration.
+                  </div>
+                )}
               </motion.div>
             )}
 

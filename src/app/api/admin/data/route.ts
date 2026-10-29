@@ -70,6 +70,46 @@ export async function GET(request: Request) {
       .select('id, email, role, created_at, student_profiles(*)')
       .eq('role', 'student')
 
+    // Fetch auth metadata to know login_revoked and stopped_by
+    let authMetaMap = new Map<string, any>()
+    try {
+      const { data: authUsersData } = await supabase.auth.admin.listUsers({ perPage: 1000 })
+      if (authUsersData?.users) {
+        authMetaMap = new Map(authUsersData.users.map((u: any) => [u.id, u.user_metadata || {}]))
+      }
+    } catch (e) {
+      console.warn('Could not list auth users metadata:', e)
+    }
+
+    const enrichedStudents = (students || []).map((s: any) => {
+      const meta = authMetaMap.get(s.id) || {}
+      const spList = s.student_profiles || []
+      const sp = spList[0] || {}
+      const isStopped = sp.enrolment_status === 'stopped'
+      const stoppedBy = meta.stopped_by || (isStopped ? (meta.login_revoked === false ? 'teacher' : 'superadmin') : null)
+      const loginRevoked = meta.login_revoked ?? (isStopped && stoppedBy !== 'teacher')
+      const resolvedYear = sp.year || sp.class_name || meta.year || meta.class_name || null
+      const resolvedTerm = sp.term || meta.term || null
+      const resolvedClass = sp.class_name || meta.class_name || resolvedYear || null
+
+      return {
+        ...s,
+        year: resolvedYear,
+        term: resolvedTerm,
+        class_name: resolvedClass,
+        login_revoked: loginRevoked,
+        stopped_by: stoppedBy,
+        student_profiles: spList.map((p: any) => ({
+          ...p,
+          year: p.year || p.class_name || resolvedYear,
+          term: p.term || resolvedTerm,
+          class_name: p.class_name || resolvedClass,
+          login_revoked: loginRevoked,
+          stopped_by: stoppedBy
+        }))
+      }
+    })
+
     // Fetch joined profiles for teachers
     const { data: teachers, error: tError } = await supabase
       .from('profiles')
@@ -103,7 +143,7 @@ export async function GET(request: Request) {
     if (aError || cError) console.error("Error fetching attendance or classes", aError, cError)
 
     return NextResponse.json({ 
-      students: students || [], 
+      students: enrichedStudents || [], 
       teachers: teachers || [],
       allUsers: allUsers || [],
       attendance: attendance || [],

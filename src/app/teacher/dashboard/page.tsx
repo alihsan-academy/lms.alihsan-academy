@@ -79,10 +79,12 @@ export default function TeacherDashboard() {
   const [classRemarks, setClassRemarks] = useState('')
   const [isCompleting, setIsCompleting] = useState(false)
   
-  // Modal for editing student enrolment status
+  // Modal for editing student details & enrolment status
   const [statusEditTarget, setStatusEditTarget] = useState<string | null>(null)
   const [statusFormData, setStatusFormData] = useState({
     enrolmentStatus: 'ongoing',
+    year: '',
+    term: '',
     breakFromDate: '',
     breakToDate: '',
     breakReason: '',
@@ -244,9 +246,33 @@ export default function TeacherDashboard() {
         })
       })
       const result = await response.json()
-      if (!response.ok) throw new Error(result.error || 'Failed to update student status')
-      toast.success("Student status updated successfully!")
+      if (!response.ok) throw new Error(result.error || 'Failed to update student details')
+      toast.success("Student details & status updated successfully!")
+      const targetId = statusEditTarget
       setStatusEditTarget(null)
+
+      setStudents(prev => prev.map(s => (s.id === targetId || s.user_id === targetId) ? {
+        ...s,
+        ...statusFormData,
+        class_name: statusFormData.year,
+        year: statusFormData.year,
+        term: statusFormData.term,
+      } : s))
+
+      setPreviewStudent((prev: any) => {
+        if (!prev) return null
+        if (prev.id === targetId || prev.user_id === targetId) {
+          return {
+            ...prev,
+            ...statusFormData,
+            class_name: statusFormData.year,
+            year: statusFormData.year,
+            term: statusFormData.term,
+          }
+        }
+        return prev
+      })
+
       if (teacherId) {
         await fetchStudentsList(teacherId)
       }
@@ -258,9 +284,11 @@ export default function TeacherDashboard() {
   }
 
   const openStatusEdit = (student: any) => {
-    setStatusEditTarget(student.id)
+    setStatusEditTarget(student.id || student.user_id)
     setStatusFormData({
       enrolmentStatus: student.enrolment_status || 'ongoing',
+      year: student.year || student.class_name || '',
+      term: student.term || '',
       breakFromDate: student.break_from_date || '',
       breakToDate: student.break_to_date || '',
       breakReason: student.break_reason || '',
@@ -1136,6 +1164,9 @@ export default function TeacherDashboard() {
                   
                   {statusFormData.enrolmentStatus === 'stopped' && (
                     <>
+                      <div className="bg-amber-50/90 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 leading-relaxed font-medium">
+                        <strong className="font-bold">Academy Record:</strong> Marking this student as stopped updates their class enrolment on academy records. Portal login access is preserved and can only be revoked by Academy Administration.
+                      </div>
                       <div className="space-y-2">
                         <Label className="text-foreground font-bold text-xs">Last Class Date</Label>
                         <Input type="date" required value={statusFormData.lastClassDate} onChange={e => setStatusFormData(prev => ({...prev, lastClassDate: e.target.value}))} />

@@ -2,15 +2,18 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Pencil } from "lucide-react";
 
 export function StudentPreviewModal({
   student,
   open,
   onClose,
+  onEdit,
 }: {
   student: any;
   open: boolean;
   onClose: () => void;
+  onEdit?: (student: any) => void;
 }) {
   if (!student) return null;
 
@@ -70,11 +73,26 @@ export function StudentPreviewModal({
           </div>
         </div>
 
-        <DialogClose asChild>
-          <button className="w-full mt-4 h-11 bg-primary hover:bg-primary/90 text-white font-extrabold rounded-xl transition-all active:scale-[0.99] shadow-sm cursor-pointer">
-            Close
-          </button>
-        </DialogClose>
+        <div className="flex flex-col sm:flex-row gap-2 w-full mt-4">
+          {onEdit && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onEdit(student);
+              }}
+              className="flex-1 h-11 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 font-bold rounded-xl transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer text-xs sm:text-sm"
+            >
+              <Pencil className="h-4 w-4" />
+              <span>Edit Details & Status</span>
+            </button>
+          )}
+          <DialogClose asChild>
+            <button className="flex-1 h-11 bg-muted hover:bg-muted/80 text-foreground font-bold rounded-xl transition-all active:scale-[0.99] cursor-pointer text-xs sm:text-sm">
+              Close
+            </button>
+          </DialogClose>
+        </div>
       </DialogContent>
     </Dialog>
   );

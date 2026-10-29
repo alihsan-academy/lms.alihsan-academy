@@ -67,10 +67,10 @@ export default function StudentProfilePage() {
         address: stud?.address || '',
         profile_photo: stud?.profile_photo || '',
         academy_joined_date: stud?.academy_joined_date ? format(parseISO(stud.academy_joined_date), 'yyyy-MM-dd') : '',
-        class_name: stud?.class_name || '',
-        year: stud?.year || stud?.class_name || '',
-        term: stud?.term || '',
-        enrolment_status: stud?.enrolment_status || 'ongoing',
+        class_name: stud?.class_name || user.user_metadata?.class_name || user.user_metadata?.year || '',
+        year: stud?.year || stud?.class_name || user.user_metadata?.year || user.user_metadata?.class_name || '',
+        term: stud?.term || user.user_metadata?.term || '',
+        enrolment_status: stud?.enrolment_status || user.user_metadata?.enrolment_status || 'ongoing',
         break_from_date: stud?.break_from_date || '',
         break_to_date: stud?.break_to_date || '',
         break_reason: stud?.break_reason || '',
@@ -119,6 +119,7 @@ export default function StudentProfilePage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
+    // Note: Class / Year and Term are managed strictly by Teachers and Admins to prevent unauthorised alterations
     const updatePayload: any = {
       name: profile.full_name,
       dob: profile.dob ? new Date(profile.dob).toISOString() : null,
@@ -127,19 +128,9 @@ export default function StudentProfilePage() {
       address: profile.address,
       profile_photo: profile.profile_photo,
       academy_joined_date: profile.academy_joined_date ? new Date(profile.academy_joined_date).toISOString() : null,
-      class_name: profile.year || profile.class_name || null,
-      year: profile.year || null,
-      term: profile.term || null,
     }
 
-    let { error: studError } = await supabase.from('student_profiles').update(updatePayload).eq('user_id', user.id)
-
-    if (studError && (studError.message?.includes('year') || studError.message?.includes('term') || studError.code === '42703')) {
-      delete updatePayload.year
-      delete updatePayload.term
-      const retry = await supabase.from('student_profiles').update(updatePayload).eq('user_id', user.id)
-      studError = retry.error
-    }
+    const { error: studError } = await supabase.from('student_profiles').update(updatePayload).eq('user_id', user.id)
 
     if (studError) {
       toast.error('Failed to save your details.')
@@ -233,35 +224,28 @@ export default function StudentProfilePage() {
               <Input value={profile.registration_number} disabled className="bg-primary/5 border-primary/20 font-black text-primary h-11 text-base md:text-sm" />
             </div>
 
-            {/* Class / Year */}
+            {/* Class / Year (Locked for Student) */}
             <div className="space-y-1.5 sm:space-y-2">
-              <Label htmlFor="year" className="font-bold text-foreground">Class / Year</Label>
+              <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">
+                Class / Year <Lock className="h-3 w-3" />
+              </Label>
               <Input
-                id="year"
-                name="year"
-                placeholder="e.g. Year 1, Class 4, Tahfeez Grade 1"
-                value={profile.year || profile.class_name || ''}
-                onChange={handleChange}
-                disabled={saving}
-                className="font-medium bg-white h-11 text-base md:text-sm"
+                value={profile.year || profile.class_name || 'Not Assigned'}
+                disabled
+                className="bg-muted border-none opacity-80 font-bold h-11 text-base md:text-sm cursor-not-allowed"
               />
             </div>
 
-            {/* Term */}
+            {/* Term (Locked for Student) */}
             <div className="space-y-1.5 sm:space-y-2">
-              <Label htmlFor="term" className="font-bold text-foreground">Term</Label>
-              <select
-                id="term"
-                name="term"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 font-medium h-11 text-base md:text-sm cursor-pointer"
-                value={profile.term || ''}
-                onChange={handleChange}
-                disabled={saving}
-              >
-                <option value="">Select term</option>
-                <option value="Term-01">Term‑01</option>
-                <option value="Term-02">Term‑02</option>
-              </select>
+              <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">
+                Term <Lock className="h-3 w-3" />
+              </Label>
+              <Input
+                value={profile.term || 'Not Assigned'}
+                disabled
+                className="bg-muted border-none opacity-80 font-bold h-11 text-base md:text-sm cursor-not-allowed"
+              />
             </div>
 
             <div className="space-y-1.5 sm:space-y-2">

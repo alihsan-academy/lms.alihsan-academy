@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
 import { AcademyHeader } from '@/components/academy-header'
-import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, CheckCircle2, Search, AlertCircle, X, RefreshCw, Trash, Pencil, Save, ChevronDown, UserCheck, Clock, XCircle, Lock, Calendar, Filter } from 'lucide-react'
+import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, CheckCircle2, Search, AlertCircle, X, RefreshCw, Trash, Pencil, Save, ChevronDown, UserCheck, Clock, XCircle, Lock, Key, Calendar, Filter } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -278,6 +278,8 @@ export default function SuperAdminDashboard() {
         break_reason: inlineStatus === 'break' ? inlineBreakReason : null,
         last_class_date: inlineStatus === 'stopped' ? inlineStoppedDate : null,
         stopped_reason: inlineStatus === 'stopped' ? inlineStoppedReason : null,
+        login_revoked: data.loginRevoked ?? (inlineStatus === 'stopped'),
+        stopped_by: data.stoppedBy ?? (inlineStatus === 'stopped' ? 'superadmin' : null),
       }
 
       const targetStudentId = selectedProfile.id || selectedProfile.user_id
@@ -293,6 +295,8 @@ export default function SuperAdminDashboard() {
           break_reason: inlineStatus === 'break' ? inlineBreakReason : null,
           last_class_date: inlineStatus === 'stopped' ? inlineStoppedDate : null,
           stopped_reason: inlineStatus === 'stopped' ? inlineStoppedReason : null,
+          login_revoked: data.loginRevoked ?? (inlineStatus === 'stopped'),
+          stopped_by: data.stoppedBy ?? (inlineStatus === 'stopped' ? 'superadmin' : null),
         }
       }))
 
@@ -306,6 +310,61 @@ export default function SuperAdminDashboard() {
       toast.error(err.message || 'Failed to update status')
     } finally {
       setIsSavingStatus(false)
+    }
+  }
+
+  const [isTogglingAccess, setIsTogglingAccess] = useState(false)
+
+  async function handleToggleLoginRevocation(studentIdentifier: string, revoke: boolean) {
+    setIsTogglingAccess(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
+      const response = await fetch('/api/student/status', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          studentId: studentIdentifier,
+          toggleRevocationOnly: true,
+          loginRevoked: revoke
+        })
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update student portal access')
+      }
+
+      toast.success(revoke ? 'Student portal login access has been REVOKED.' : 'Student portal login access has been RESTORED.')
+
+      if (selectedProfile) {
+        setSelectedProfile((prev: any) => ({
+          ...prev,
+          login_revoked: revoke,
+          stopped_by: data.stoppedBy || (revoke ? 'superadmin' : prev.stopped_by)
+        }))
+      }
+
+      setStudents((prev) => prev.map((s) => {
+        const matches = s.id === studentIdentifier || s.user_id === studentIdentifier
+        if (!matches) return s
+        return {
+          ...s,
+          login_revoked: revoke,
+          stopped_by: data.stoppedBy || (revoke ? 'superadmin' : s.stopped_by)
+        }
+      }))
+
+      await fetchData()
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to toggle portal access')
+    } finally {
+      setIsTogglingAccess(false)
     }
   }
   const [editTeacherForm, setEditTeacherForm] = useState({
@@ -438,7 +497,9 @@ export default function SuperAdminDashboard() {
           break_to_date: sp.break_to_date || '',
           break_reason: sp.break_reason || '',
           last_class_date: sp.last_class_date || '',
-          stopped_reason: sp.stopped_reason || ''
+          stopped_reason: sp.stopped_reason || '',
+          login_revoked: s.login_revoked ?? sp.login_revoked ?? false,
+          stopped_by: s.stopped_by || sp.stopped_by || null,
         }
       }) || []
 
@@ -602,7 +663,24 @@ export default function SuperAdminDashboard() {
     const matchesSearch = safeLower(s.name).includes(safeLower(searchQuery)) || 
       safeLower(s.email).includes(safeLower(searchQuery)) ||
       safeLower(s.registration_number).includes(safeLower(searchQuery));
-    const matchesStatus = studentStatusFilter === 'all' || s.enrolment_status === studentStatusFilter;
+    
+    let matchesStatus = true;
+    if (studentStatusFilter === 'all') {
+      matchesStatus = true;
+    } else if (studentStatusFilter === 'ongoing') {
+      matchesStatus = s.enrolment_status === 'ongoing';
+    } else if (studentStatusFilter === 'break') {
+      matchesStatus = s.enrolment_status === 'break';
+    } else if (studentStatusFilter === 'stopped') {
+      matchesStatus = s.enrolment_status === 'stopped';
+    } else if (studentStatusFilter === 'stopped_revoked') {
+      matchesStatus = s.enrolment_status === 'stopped' && s.login_revoked === true;
+    } else if (studentStatusFilter === 'stopped_active') {
+      matchesStatus = s.enrolment_status === 'stopped' && s.login_revoked !== true;
+    } else {
+      matchesStatus = s.enrolment_status === studentStatusFilter;
+    }
+
     return matchesSearch && matchesStatus;
   })
 
@@ -964,16 +1042,18 @@ export default function SuperAdminDashboard() {
                       className="pl-10 border-2 bg-muted/30 font-medium h-12"
                     />
                   </div>
-                  <div className="relative min-w-[140px]">
+                  <div className="relative min-w-[190px]">
                     <select
-                      className="w-full p-3 pr-8 border-2 border-border rounded-xl bg-white font-bold text-foreground focus:ring-4 focus:ring-primary/20 outline-none h-12 appearance-none cursor-pointer text-sm"
+                      className="w-full p-3 pr-8 border-2 border-border rounded-xl bg-white font-bold text-foreground focus:ring-4 focus:ring-primary/20 outline-none h-12 appearance-none cursor-pointer text-xs sm:text-sm"
                       value={studentStatusFilter}
                       onChange={(e) => setStudentStatusFilter(e.target.value)}
                     >
-                      <option value="all">All Status</option>
+                      <option value="all">All Enrolment Status</option>
                       <option value="ongoing">Ongoing</option>
-                      <option value="break">Break</option>
-                      <option value="stopped">Stopped</option>
+                      <option value="break">On Break</option>
+                      <option value="stopped">Stopped (All)</option>
+                      <option value="stopped_revoked">Stopped: Login Revoked</option>
+                      <option value="stopped_active">Stopped: Login Active (Teacher)</option>
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                   </div>
@@ -1008,7 +1088,11 @@ export default function SuperAdminDashboard() {
                           </td>
                           <td className="p-4 whitespace-nowrap">
                             <div className="flex items-center gap-2">
-                              <StatusBadge status={s.enrolment_status} />
+                              <StatusBadge 
+                                status={s.enrolment_status} 
+                                loginRevoked={s.login_revoked}
+                                stoppedBy={s.stopped_by}
+                              />
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -1509,8 +1593,79 @@ export default function SuperAdminDashboard() {
                           <h5 className="font-bold text-foreground text-sm">Enrolment Status</h5>
                           <p className="text-[11px] text-muted-foreground">Select a status below to update immediately</p>
                         </div>
-                        <StatusBadge status={selectedProfile.enrolment_status || 'ongoing'} />
+                        <StatusBadge 
+                          status={selectedProfile.enrolment_status || 'ongoing'} 
+                          loginRevoked={selectedProfile.login_revoked}
+                          stoppedBy={selectedProfile.stopped_by}
+                        />
                       </div>
+
+                      {/* If student is stopped, show Superadmin Portal Access management card */}
+                      {selectedProfile.enrolment_status === 'stopped' && (
+                        <div className={`p-3 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                          selectedProfile.login_revoked
+                            ? 'bg-rose-50/70 border-rose-200'
+                            : 'bg-amber-50/70 border-amber-200'
+                        }`}>
+                          <div className="flex items-start gap-2.5">
+                            {selectedProfile.login_revoked ? (
+                              <div className="p-1.5 rounded-lg bg-rose-100 text-rose-700 shrink-0 mt-0.5">
+                                <Lock className="h-4 w-4" />
+                              </div>
+                            ) : (
+                              <div className="p-1.5 rounded-lg bg-amber-100 text-amber-800 shrink-0 mt-0.5">
+                                <Key className="h-4 w-4" />
+                              </div>
+                            )}
+                            <div>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className={`text-xs font-black uppercase tracking-wider ${
+                                  selectedProfile.login_revoked ? 'text-rose-900' : 'text-amber-900'
+                                }`}>
+                                  Portal Access: {selectedProfile.login_revoked ? 'Revoked' : 'Active'}
+                                </span>
+                                {selectedProfile.stopped_by && (
+                                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white border border-border text-muted-foreground">
+                                    Stopped by: {selectedProfile.stopped_by === 'teacher' ? 'Teacher' : 'Super Admin'}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-muted-foreground mt-0.5">
+                                {selectedProfile.login_revoked
+                                  ? 'This student cannot log in to the student portal.'
+                                  : 'This student can still log in to the student portal unless revoked.'}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleLoginRevocation(
+                              selectedProfile.user_id || selectedProfile.id,
+                              !selectedProfile.login_revoked
+                            )}
+                            disabled={isTogglingAccess}
+                            className={`px-3 py-2 rounded-xl font-black text-xs shrink-0 flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs border ${
+                              selectedProfile.login_revoked
+                                ? 'bg-white hover:bg-emerald-50 text-emerald-800 border-emerald-300 hover:border-emerald-400'
+                                : 'bg-rose-600 hover:bg-rose-700 text-white border-rose-700 shadow-rose-200'
+                            }`}
+                          >
+                            {isTogglingAccess ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : selectedProfile.login_revoked ? (
+                              <>
+                                <Key className="h-3.5 w-3.5" />
+                                <span>Restore Portal Login</span>
+                              </>
+                            ) : (
+                              <>
+                                <Lock className="h-3.5 w-3.5" />
+                                <span>Revoke Portal Login</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
 
                       <div className="bg-muted/30 p-3 rounded-xl border border-border/70 space-y-2.5">
                         <div className="grid grid-cols-3 gap-1.5">
@@ -1942,15 +2097,39 @@ function NavBtn({ active, onClick, icon, label }: { active: boolean, onClick: ()
   )
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ 
+  status, 
+  loginRevoked, 
+  stoppedBy 
+}: { 
+  status: string
+  loginRevoked?: boolean
+  stoppedBy?: string | null 
+}) {
+  if (status === 'stopped') {
+    if (loginRevoked) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border bg-rose-50 text-rose-700 border-rose-300">
+          <Lock className="h-2.5 w-2.5" />
+          Stopped · Revoked
+        </span>
+      )
+    }
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border bg-amber-50 text-amber-800 border-amber-300">
+        <Key className="h-2.5 w-2.5" />
+        Stopped · Active {stoppedBy === 'teacher' ? '(Teacher)' : ''}
+      </span>
+    )
+  }
+
   const map: Record<string, { label: string, className: string }> = {
     ongoing:  { label: 'Ongoing',   className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
     break:    { label: 'On a Break', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-    stopped:  { label: 'Stopped',   className: 'bg-rose-50 text-rose-700 border-rose-200' },
   }
   const s = map[status] || map.ongoing
   return (
-    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${s.className}`}>
+    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${s.className}`}>
       {s.label}
     </span>
   )

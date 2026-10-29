@@ -110,12 +110,8 @@ export default async function proxy(request: NextRequest) {
       if (role && isOwnLoginPage) {
         if (role === 'student') {
           try {
-            const { data: studProfile } = await supabase
-              .from('student_profiles')
-              .select('enrolment_status')
-              .eq('user_id', user.id)
-              .maybeSingle()
-            if (studProfile?.enrolment_status === 'stopped') {
+            const isLoginRevoked = user.user_metadata?.login_revoked === true
+            if (isLoginRevoked) {
               // Revoke student dashboard access and show notice
               return NextResponse.redirect(new URL('/student/login?error=account_stopped', request.url))
             }
@@ -158,12 +154,8 @@ export default async function proxy(request: NextRequest) {
         }
 
         try {
-          const { data: studProfile } = await supabase
-            .from('student_profiles')
-            .select('enrolment_status')
-            .eq('user_id', user.id)
-            .maybeSingle()
-          if (studProfile?.enrolment_status === 'stopped') {
+          const isLoginRevoked = user.user_metadata?.login_revoked === true
+          if (isLoginRevoked) {
             return NextResponse.redirect(new URL('/student/login?error=account_stopped', request.url))
           }
         } catch {}

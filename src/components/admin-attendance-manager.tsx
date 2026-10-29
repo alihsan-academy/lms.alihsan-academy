@@ -16,7 +16,9 @@ import {
   FileText, 
   Users, 
   Sparkles,
-  X
+  X,
+  Lock,
+  Key
 } from 'lucide-react'
 import { Avatar } from '@/components/avatar'
 import { AnimatedCard } from '@/components/animated-card'
@@ -78,7 +80,7 @@ export function AdminAttendanceManager({
   const [isExportingPDF, setIsExportingPDF] = useState(false)
 
   // Intelligence Filter state
-  const [enrolmentFilter, setEnrolmentFilter] = useState<'all' | 'ongoing' | 'break' | 'stopped'>('all')
+  const [enrolmentFilter, setEnrolmentFilter] = useState<'all' | 'ongoing' | 'break' | 'stopped' | 'stopped_revoked' | 'stopped_active'>('all')
   const [attendedMin, setAttendedMin] = useState('')
   const [attendedMax, setAttendedMax] = useState('')
   const [studentAbsentMin, setStudentAbsentMin] = useState('')
@@ -194,7 +196,18 @@ export function AdminAttendanceManager({
     })
     .filter(({ student: s, summary }) => {
       // Enrolment status filter
-      if (enrolmentFilter !== 'all' && (s.enrolment_status || 'ongoing') !== enrolmentFilter) return false
+      if (enrolmentFilter !== 'all') {
+        const st = s.enrolment_status || 'ongoing'
+        if (enrolmentFilter === 'stopped') {
+          if (st !== 'stopped') return false
+        } else if (enrolmentFilter === 'stopped_revoked') {
+          if (st !== 'stopped' || s.login_revoked !== true) return false
+        } else if (enrolmentFilter === 'stopped_active') {
+          if (st !== 'stopped' || s.login_revoked === true) return false
+        } else if (st !== enrolmentFilter) {
+          return false
+        }
+      }
 
       const inRange = (val: number, min: string, max: string) => {
         if (min !== '' && val < Number(min)) return false
@@ -535,11 +548,23 @@ export function AdminAttendanceManager({
                               </div>
                             </td>
                             <td className="p-4">
-                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
-                                item.enrolment_status === 'ongoing' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
-                              }`}>
-                                {item.enrolment_status}
-                              </span>
+                              {item.enrolment_status === 'stopped' ? (
+                                item.student?.login_revoked ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-rose-100 text-rose-800 border border-rose-200">
+                                    <Lock className="h-2.5 w-2.5" /> Stopped · Revoked
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 border border-amber-200">
+                                    <Key className="h-2.5 w-2.5" /> Stopped · Active
+                                  </span>
+                                )
+                              ) : (
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
+                                  item.enrolment_status === 'ongoing' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
+                                }`}>
+                                  {item.enrolment_status}
+                                </span>
+                              )}
                             </td>
                             <td className="p-4 text-center font-bold text-foreground text-sm">{item.scheduled}</td>
                             <td className="p-4 text-center font-black text-green-700 text-sm">{item.attended}</td>
@@ -905,17 +930,24 @@ export function AdminAttendanceManager({
             <div className="bg-muted/40 rounded-2xl p-4 space-y-2 border border-border">
               <label className="text-[11px] font-black uppercase text-muted-foreground tracking-wide">Enrolment Status</label>
               <div className="flex flex-wrap gap-1.5">
-                {(['all', 'ongoing', 'break', 'stopped'] as const).map((s) => (
+                {[
+                  { id: 'all', label: 'All' },
+                  { id: 'ongoing', label: 'Ongoing' },
+                  { id: 'break', label: 'On Break' },
+                  { id: 'stopped', label: 'Stopped (All)' },
+                  { id: 'stopped_revoked', label: 'Stopped · Revoked' },
+                  { id: 'stopped_active', label: 'Stopped · Active' },
+                ].map((item) => (
                   <button
-                    key={s}
-                    onClick={() => setEnrolmentFilter(s)}
-                    className={`px-3 py-1 rounded-full text-[11px] font-black capitalize transition-all ${
-                      enrolmentFilter === s
+                    key={item.id}
+                    onClick={() => setEnrolmentFilter(item.id as any)}
+                    className={`px-3 py-1 rounded-full text-[11px] font-black transition-all ${
+                      enrolmentFilter === item.id
                         ? 'bg-amber-500 text-white'
                         : 'bg-white border border-border text-muted-foreground hover:text-foreground'
                     }`}
                   >
-                    {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+                    {item.label}
                   </button>
                 ))}
               </div>
@@ -1103,13 +1135,24 @@ export function AdminAttendanceManager({
                         </span>
                       </td>
                       <td className="p-3 text-center">
-                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full capitalize ${
-                          (s.enrolment_status || 'ongoing') === 'ongoing' ? 'bg-emerald-100 text-emerald-800'
-                          : (s.enrolment_status || 'ongoing') === 'break' ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
-                        }`}>
-                          {s.enrolment_status || 'ongoing'}
-                        </span>
+                        {(s.enrolment_status || 'ongoing') === 'stopped' ? (
+                          s.login_revoked ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200">
+                              <Lock className="h-2.5 w-2.5" /> Stopped · Revoked
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                              <Key className="h-2.5 w-2.5" /> Stopped · Active
+                            </span>
+                          )
+                        ) : (
+                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-full capitalize ${
+                            (s.enrolment_status || 'ongoing') === 'ongoing' ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {s.enrolment_status || 'ongoing'}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}
