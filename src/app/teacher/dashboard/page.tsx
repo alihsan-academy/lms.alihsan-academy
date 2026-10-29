@@ -526,14 +526,20 @@ export default function TeacherDashboard() {
                         <button
                           type="button"
                           onClick={() => openPreview(s)}
-                          className="px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
+                          className="px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
                           title="Preview Student Profile"
                         >
                           <Eye className="h-3.5 w-3.5" />
                           <span>Preview</span>
                         </button>
-                        <button onClick={() => openStatusEdit(s)} className="p-1.5 hover:bg-muted rounded-full transition-colors" title="Edit Student Status">
-                          <Pencil className="h-4 w-4 text-muted-foreground" />
+                        <button
+                          type="button"
+                          onClick={() => openStatusEdit(s)}
+                          className="px-2.5 py-1 bg-muted hover:bg-muted/80 text-foreground rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer border border-border"
+                          title="Edit Student Details & Status"
+                        >
+                          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>Edit</span>
                         </button>
                       </div>
                     ) : null
@@ -802,6 +808,14 @@ export default function TeacherDashboard() {
                             title="Preview Student Profile"
                           >
                             <Eye className="h-3.5 w-3.5" /> Preview
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openStatusEdit(item.student)}
+                            className="px-2.5 py-1.5 rounded-md text-xs font-semibold border border-border bg-white hover:bg-muted text-foreground transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
+                            title="Edit Student Details & Status"
+                          >
+                            <Pencil className="h-3.5 w-3.5 text-muted-foreground" /> Edit
                           </button>
                           <button
                             onClick={() => setViewingStudentDetail(item)}
@@ -1100,12 +1114,44 @@ export default function TeacherDashboard() {
                 exit={{ scale: 0.96, opacity: 0 }}
                 className="bg-white rounded-2xl p-5 sm:p-6 max-w-md w-full border border-border shadow-xl relative my-auto max-h-[85vh] overflow-y-auto"
               >
-                <button onClick={() => setStatusEditTarget(null)} className="absolute right-3.5 top-3.5 p-1.5 hover:bg-muted rounded-lg text-muted-foreground transition-colors cursor-pointer">
-                  <X className="h-4 w-4" />
-                </button>
-                <h3 className="text-base sm:text-lg font-bold mb-3">Edit Student Status</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="text-base sm:text-lg font-bold">Edit Student Details & Status</h3>
+                    <p className="text-xs text-muted-foreground">Manage academic year, term, and enrolment status</p>
+                  </div>
+                  <button onClick={() => setStatusEditTarget(null)} className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground transition-colors cursor-pointer">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
                 
                 <form onSubmit={handleUpdateStatus} className="space-y-4 mb-4">
+                  {/* Academic Year & Term */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-muted/20 rounded-xl border border-border/70">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="teacher-student-year" className="text-foreground font-bold text-xs uppercase tracking-wider">Class / Year</Label>
+                      <Input
+                        id="teacher-student-year"
+                        placeholder="e.g. Year 1, Class 4"
+                        value={statusFormData.year}
+                        onChange={e => setStatusFormData(prev => ({ ...prev, year: e.target.value }))}
+                        className="h-10 text-sm font-medium bg-white"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="teacher-student-term" className="text-foreground font-bold text-xs uppercase tracking-wider">Term</Label>
+                      <select
+                        id="teacher-student-term"
+                        value={statusFormData.term}
+                        onChange={e => setStatusFormData(prev => ({ ...prev, term: e.target.value }))}
+                        className="w-full rounded-md border border-input bg-white px-3 py-2 text-sm font-medium h-10 cursor-pointer text-foreground"
+                      >
+                        <option value="">Select term</option>
+                        <option value="Term-01">Term-01</option>
+                        <option value="Term-02">Term-02</option>
+                      </select>
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
                     <Label className="text-foreground font-bold text-xs uppercase tracking-wider">Enrolment Status</Label>
                     <div className="grid grid-cols-1 gap-2 pt-0.5">
@@ -1180,7 +1226,7 @@ export default function TeacherDashboard() {
                   
                   <BouncyButton type="submit" disabled={isStatusSubmitting} variant="default" className="w-full mt-4 h-12">
                     {isStatusSubmitting ? <Loader2 className="animate-spin h-5 w-5 mr-2" /> : null}
-                    Save Status
+                    Save Details & Status
                   </BouncyButton>
                 </form>
               </motion.div>
@@ -1202,6 +1248,7 @@ export default function TeacherDashboard() {
         student={previewStudent}
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
+        onEdit={(s) => openStatusEdit(s)}
       />
     </div>
   )

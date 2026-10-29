@@ -63,8 +63,10 @@ export default function SuperAdminDashboard() {
   const [isEditingTeacher, setIsEditingTeacher] = useState(false)
   const [isSavingTeacher, setIsSavingTeacher] = useState(false)
 
-  // Simple inline status management state for Student Profile
+  // Simple inline status & academic details management state for Student Profile
   const [inlineStatus, setInlineStatus] = useState<'ongoing' | 'break' | 'stopped'>('ongoing')
+  const [inlineYear, setInlineYear] = useState('')
+  const [inlineTerm, setInlineTerm] = useState('')
   const [inlineBreakFrom, setInlineBreakFrom] = useState('')
   const [inlineBreakTo, setInlineBreakTo] = useState('')
   const [inlineBreakReason, setInlineBreakReason] = useState('')
@@ -201,11 +203,13 @@ export default function SuperAdminDashboard() {
     }
   }, [statsFilteredClasses, statsFilteredStudents, statsFilteredTeachers, attendanceRecords])
 
-  // Sync status form fields whenever selectedProfile changes
+  // Sync status and academic fields whenever selectedProfile changes
   useEffect(() => {
     if (selectedProfile && selectedProfile.role === 'student') {
       const current = (selectedProfile.enrolment_status as any) || 'ongoing'
       setInlineStatus(['ongoing', 'break', 'stopped'].includes(current) ? current : 'ongoing')
+      setInlineYear(selectedProfile.year || selectedProfile.class_name || '')
+      setInlineTerm(selectedProfile.term || '')
       setInlineBreakFrom(selectedProfile.break_from_date || '')
       setInlineBreakTo(selectedProfile.break_to_date || '')
       setInlineBreakReason(selectedProfile.break_reason || '')
@@ -257,6 +261,9 @@ export default function SuperAdminDashboard() {
         body: JSON.stringify({
           studentId: studentIdentifier,
           enrolmentStatus: inlineStatus,
+          year: inlineYear,
+          class_name: inlineYear,
+          term: inlineTerm,
           breakFromDate: inlineStatus === 'break' ? inlineBreakFrom : null,
           breakToDate: inlineStatus === 'break' ? inlineBreakTo : null,
           breakReason: inlineStatus === 'break' ? inlineBreakReason.trim() : null,
@@ -272,6 +279,9 @@ export default function SuperAdminDashboard() {
 
       const updatedRecord = {
         ...selectedProfile,
+        year: inlineYear,
+        class_name: inlineYear,
+        term: inlineTerm,
         enrolment_status: inlineStatus,
         break_from_date: inlineStatus === 'break' ? inlineBreakFrom : null,
         break_to_date: inlineStatus === 'break' ? inlineBreakTo : null,
@@ -289,6 +299,9 @@ export default function SuperAdminDashboard() {
         if (!matches) return s
         return {
           ...s,
+          year: inlineYear,
+          class_name: inlineYear,
+          term: inlineTerm,
           enrolment_status: inlineStatus,
           break_from_date: inlineStatus === 'break' ? inlineBreakFrom : null,
           break_to_date: inlineStatus === 'break' ? inlineBreakTo : null,
@@ -301,9 +314,9 @@ export default function SuperAdminDashboard() {
       }))
 
       if (inlineStatus === 'stopped') {
-        toast.success('Status set to STOPPED. Student portal access has been revoked.')
+        toast.success('Details updated. Student portal access has been revoked.')
       } else {
-        toast.success(`Status updated to ${inlineStatus.toUpperCase()}.`)
+        toast.success('Student details and status updated successfully.')
       }
       await fetchData()
     } catch (err: any) {
@@ -485,9 +498,9 @@ export default function SuperAdminDashboard() {
           ...s,
           user_id: s.id,
           name: sp.name || s.email,
-          class_name: sp.class_name || sp.year || 'N/A',
-          year: sp.year || sp.class_name || 'N/A',
-          term: sp.term || 'N/A',
+          class_name: sp.class_name || s.class_name || sp.year || s.year || 'N/A',
+          year: sp.year || s.year || sp.class_name || s.class_name || 'N/A',
+          term: sp.term || s.term || 'N/A',
           teacher_id: sp.teacher_id || null,
           registration_number: sp.registration_number || 'N/A',
           profile_photo: sp.profile_photo || null,
@@ -1586,18 +1599,43 @@ export default function SuperAdminDashboard() {
                       <ProfileItem label="Academy Joined Date" value={selectedProfile.academy_joined_date ? format(parseISO(selectedProfile.academy_joined_date), 'MMM d, yyyy') : (selectedProfile.created_at ? format(new Date(selectedProfile.created_at), 'MMM d, yyyy') : 'N/A')} />
                     </div>
                     
-                    {/* Status Management */}
-                    <div className="pt-2 border-t border-border space-y-2.5">
+                    {/* Academic Level & Status Management */}
+                    <div className="pt-2 border-t border-border space-y-3">
                       <div className="flex items-center justify-between">
                         <div>
-                          <h5 className="font-bold text-foreground text-sm">Enrolment Status</h5>
-                          <p className="text-[11px] text-muted-foreground">Select a status below to update immediately</p>
+                          <h5 className="font-bold text-foreground text-sm">Academic Details & Status</h5>
+                          <p className="text-[11px] text-muted-foreground">Manage student class/year, term, and enrolment status</p>
                         </div>
                         <StatusBadge 
                           status={selectedProfile.enrolment_status || 'ongoing'} 
                           loginRevoked={selectedProfile.login_revoked}
                           stoppedBy={selectedProfile.stopped_by}
                         />
+                      </div>
+
+                      {/* Year & Term Editable Inputs */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-muted/20 rounded-xl border border-border/70">
+                        <div className="space-y-1">
+                          <Label className="text-[11px] font-bold text-foreground uppercase tracking-wider">Class / Year</Label>
+                          <Input
+                            placeholder="e.g. Year 1, Class 4"
+                            value={inlineYear}
+                            onChange={(e) => setInlineYear(e.target.value)}
+                            className="h-9 text-xs bg-white font-medium"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[11px] font-bold text-foreground uppercase tracking-wider">Term</Label>
+                          <select
+                            value={inlineTerm}
+                            onChange={(e) => setInlineTerm(e.target.value)}
+                            className="w-full rounded-md border border-input bg-white px-2.5 py-1 text-xs font-medium h-9 cursor-pointer text-foreground"
+                          >
+                            <option value="">Select term</option>
+                            <option value="Term-01">Term-01</option>
+                            <option value="Term-02">Term-02</option>
+                          </select>
+                        </div>
                       </div>
 
                       {/* If student is stopped, show Superadmin Portal Access management card */}
@@ -1791,7 +1829,7 @@ export default function SuperAdminDashboard() {
                             ) : (
                               <>
                                 <Save className="h-3.5 w-3.5" />
-                                <span>Save Status</span>
+                                <span>Save Details & Status</span>
                               </>
                             )}
                           </button>

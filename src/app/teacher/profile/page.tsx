@@ -201,17 +201,17 @@ export default function TeacherProfilePage() {
   const barColor = completion.percent >= 100 ? 'bg-green-500' : completion.percent >= 50 ? 'bg-secondary' : 'bg-destructive'
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 sm:space-y-8 px-3.5 sm:px-6 pb-24 md:pb-8 pt-4">
+    <div className="max-w-2xl mx-auto space-y-4 sm:space-y-5 px-3.5 sm:px-6 pb-20 md:pb-8 pt-3">
       {/* Profile Completion Bar */}
-      <AnimatedCard delay={0.1} className="sticky top-20 z-20 bg-background/90 backdrop-blur-md p-4 sm:p-5 rounded-xl sm:rounded-2xl border-2 border-primary/20 shadow-[0_8px_30px_rgba(0,0,0,0.05)]">
-        <div className="flex items-center justify-between mb-2 sm:mb-3">
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <Star className="h-4 w-4 sm:h-5 sm:w-5 text-secondary fill-secondary" />
-            <span className="text-xs sm:text-sm font-black text-foreground">Profile Status: {completion.percent}%</span>
+      <AnimatedCard delay={0.1} className="sticky top-20 z-20 bg-background/90 backdrop-blur-md p-3 sm:p-4 rounded-xl border border-primary/20 shadow-xs">
+        <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+          <div className="flex items-center gap-1.5">
+            <Star className="h-3.5 w-3.5 text-secondary fill-secondary" />
+            <span className="text-xs sm:text-sm font-bold text-foreground">Profile Status: {completion.percent}%</span>
           </div>
-          <span className="text-[11px] sm:text-xs font-bold text-muted-foreground bg-muted px-2.5 sm:px-3 py-1 rounded-full">{completion.filled}/{completion.total} Sections</span>
+          <span className="text-[11px] font-semibold text-muted-foreground bg-muted px-2.5 py-0.5 rounded-full">{completion.filled}/{completion.total} Sections</span>
         </div>
-        <div className="w-full h-3.5 sm:h-4 bg-muted rounded-full overflow-hidden border-2 border-border p-0.5">
+        <div className="w-full h-2.5 sm:h-3 bg-muted rounded-full overflow-hidden border border-border p-0.5">
           <motion.div 
             initial={{ width: 0 }}
             animate={{ width: `${completion.percent}%` }}
@@ -220,33 +220,33 @@ export default function TeacherProfilePage() {
           />
         </div>
         {completion.percent === 100 && (
-          <p className="text-xs font-bold text-green-600 mt-2 text-center">Profile is fully complete.</p>
+          <p className="text-[11px] font-semibold text-green-600 mt-1.5 text-center">Profile is fully complete.</p>
         )}
       </AnimatedCard>
 
       {/* Profile Card Section */}
-      <AnimatedCard delay={0.2} className="bg-[#1E293B] p-5 sm:p-6 flex flex-col items-center text-center relative overflow-hidden border border-[#334155] text-white rounded-xl sm:rounded-2xl shadow-sm">
-        <div className="absolute top-0 right-0 p-4 opacity-10">
-          <GraduationCap className="h-24 w-24" />
+      <AnimatedCard delay={0.2} className="bg-[#1E293B] p-4 sm:p-5 flex flex-col items-center text-center relative overflow-hidden border border-[#334155] text-white rounded-xl shadow-xs">
+        <div className="absolute top-0 right-0 p-3 opacity-10">
+          <GraduationCap className="h-20 w-20" />
         </div>
-        <div className="relative mb-4 z-10">
-          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white flex items-center justify-center overflow-hidden border-4 border-white/20 shadow-md relative">
+        <div className="relative mb-3 z-10">
+          <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-white flex items-center justify-center overflow-hidden border-3 border-white/20 shadow-sm relative">
             {profile.profile_photo ? (
               <img src={profile.profile_photo} alt="Profile" className="w-full h-full object-cover" />
             ) : (
-              <span className="text-2xl sm:text-3xl font-bold text-[#1E293B]">{profile.full_name?.charAt(0) || 'U'}</span>
+              <span className="text-xl sm:text-2xl font-bold text-[#1E293B]">{profile.full_name?.charAt(0) || 'U'}</span>
             )}
             {uploadingPhoto && (
               <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                <Loader2 className="h-6 w-6 animate-spin text-white" />
+                <Loader2 className="h-5 w-5 animate-spin text-white" />
               </div>
             )}
           </div>
           <label 
             title="Change Profile Picture"
-            className="absolute bottom-0 right-0 p-2 bg-[#E8A020] rounded-full text-white cursor-pointer hover:bg-[#D97706] active:scale-95 transition-all shadow-md border-2 border-white w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center"
+            className="absolute bottom-0 right-0 p-1.5 bg-[#E8A020] rounded-full text-white cursor-pointer hover:bg-[#D97706] active:scale-95 transition-all shadow-sm border-2 border-white w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center"
           >
-            <Camera className="h-4 w-4" />
+            <Camera className="h-3.5 w-3.5" />
             <input 
               type="file" 
               accept="image/*" 
@@ -257,208 +257,208 @@ export default function TeacherProfilePage() {
           </label>
         </div>
         
-        <h3 className="text-lg sm:text-xl font-bold z-10">{profile.full_name || 'Teacher Profile'}</h3>
-        <p className="mt-1 text-white/70 font-medium text-xs">Islamic Online Academy Educator</p>
+        <h3 className="text-base sm:text-lg font-bold z-10">{profile.full_name || 'Teacher Profile'}</h3>
+        <p className="mt-0.5 text-white/70 font-medium text-xs">Islamic Online Academy Educator</p>
       </AnimatedCard>
 
-      <AnimatedCard delay={0.3} className="p-4 sm:p-8 space-y-6 sm:space-y-8 rounded-xl sm:rounded-2xl">
+      <AnimatedCard delay={0.3} className="p-4 sm:p-6 space-y-5 rounded-xl border border-border/70 shadow-xs">
+        {/* Professional Information */}
         <div>
-          <h4 className="font-black text-foreground text-lg sm:text-xl mb-4 flex items-center gap-2">
-            <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs sm:text-sm"><Award className="h-4 w-4" /></span>
+          <h4 className="font-bold text-foreground text-sm sm:text-base mb-3 flex items-center gap-2">
+            <span className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-xs"><Award className="h-3.5 w-3.5" /></span>
             Professional Information
           </h4>
           
-          <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-3.5 sm:p-4 mb-4 sm:mb-6 shadow-sm">
-            <p className="text-xs sm:text-sm font-bold text-orange-800 flex items-center gap-2">
-              <Clock className="h-4 w-4 shrink-0" />
+          <div className="bg-amber-50/80 border border-amber-200 rounded-lg p-2.5 mb-3 text-xs">
+            <p className="font-bold text-amber-900 flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5 shrink-0 text-amber-700" />
               <span>Important: Class Time Policy</span>
             </p>
-            <p className="text-[11px] sm:text-xs text-orange-700 mt-1 font-semibold leading-relaxed">
-              All classes at Al-Ihsan Academy are scheduled in UK time (GMT/BST). 
-              Please always enter class times in UK timezone when creating sessions.
+            <p className="text-[11px] text-amber-800 mt-0.5 font-medium leading-relaxed">
+              All classes at Al-Ihsan Academy are scheduled in UK time (GMT/BST). Please always enter class times in UK timezone when creating sessions.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 bg-muted/30 p-3.5 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-border/50">
-            <div className="space-y-1.5 sm:space-y-2">
-              <Label className="flex items-center gap-1.5 text-muted-foreground font-bold text-xs uppercase tracking-wider">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 bg-muted/20 p-3 sm:p-4 rounded-xl border border-border/60">
+            <div className="space-y-1">
+              <Label className="flex items-center gap-1 text-muted-foreground font-semibold text-[11px] uppercase tracking-wider">
                 <span>Registered Email</span>
-                <Lock className="h-3 w-3 text-muted-foreground/70" />
+                <Lock className="h-2.5 w-2.5 text-muted-foreground/60" />
               </Label>
               <Input 
                 value={profile.registered_email || ''} 
                 disabled 
                 readOnly
-                className="bg-muted/70 border-border/60 text-muted-foreground font-medium h-11 text-base md:text-sm cursor-not-allowed" 
+                className="bg-muted/50 border-border/60 text-muted-foreground font-medium h-9 text-base md:text-xs cursor-not-allowed" 
               />
             </div>
 
-            <div className="space-y-1.5 sm:space-y-2">
-              <Label className="flex items-center gap-1.5 text-muted-foreground font-bold text-xs uppercase tracking-wider">
+            <div className="space-y-1">
+              <Label className="flex items-center gap-1 text-muted-foreground font-semibold text-[11px] uppercase tracking-wider">
                 <span>Full Name</span>
-                <Lock className="h-3 w-3 text-muted-foreground/70" />
+                <Lock className="h-2.5 w-2.5 text-muted-foreground/60" />
               </Label>
               <Input 
                 value={profile.full_name || 'Not specified'} 
                 disabled 
                 readOnly
-                className="bg-muted/70 border-border/60 text-foreground font-medium h-11 text-base md:text-sm cursor-not-allowed" 
+                className="bg-muted/50 border-border/60 text-foreground font-medium h-9 text-base md:text-xs cursor-not-allowed" 
               />
             </div>
 
-            <div className="space-y-1.5 sm:space-y-2">
-              <Label className="flex items-center gap-1.5 text-muted-foreground font-bold text-xs uppercase tracking-wider">
+            <div className="space-y-1">
+              <Label className="flex items-center gap-1 text-muted-foreground font-semibold text-[11px] uppercase tracking-wider">
                 <span>Date of Joining Academy</span>
-                <Lock className="h-3 w-3 text-muted-foreground/70" />
+                <Lock className="h-2.5 w-2.5 text-muted-foreground/60" />
               </Label>
               <Input 
                 value={profile.date_of_joining ? (profile.date_of_joining.includes('-') ? format(parseISO(profile.date_of_joining), 'MMM d, yyyy') : profile.date_of_joining) : 'Not specified'} 
                 disabled 
                 readOnly
-                className="bg-muted/70 border-border/60 text-foreground font-medium h-11 text-base md:text-sm cursor-not-allowed" 
+                className="bg-muted/50 border-border/60 text-foreground font-medium h-9 text-base md:text-xs cursor-not-allowed" 
               />
             </div>
 
-            <div className="space-y-1.5 sm:space-y-2">
-              <Label className="flex items-center gap-1.5 text-muted-foreground font-bold text-xs uppercase tracking-wider">
+            <div className="space-y-1">
+              <Label className="flex items-center gap-1 text-muted-foreground font-semibold text-[11px] uppercase tracking-wider">
                 <span>Mobile Number</span>
-                <Lock className="h-3 w-3 text-muted-foreground/70" />
+                <Lock className="h-2.5 w-2.5 text-muted-foreground/60" />
               </Label>
               <Input 
                 value={profile.mobile_number || 'Not specified'} 
                 disabled 
                 readOnly
-                className="bg-muted/70 border-border/60 text-foreground font-medium h-11 text-base md:text-sm cursor-not-allowed" 
+                className="bg-muted/50 border-border/60 text-foreground font-medium h-9 text-base md:text-xs cursor-not-allowed" 
               />
             </div>
 
-            <div className="space-y-1.5 sm:space-y-2 md:col-span-2">
-              <Label className="flex items-center gap-1.5 text-muted-foreground font-bold text-xs uppercase tracking-wider">
+            <div className="space-y-1 md:col-span-2">
+              <Label className="flex items-center gap-1 text-muted-foreground font-semibold text-[11px] uppercase tracking-wider">
                 <span>Educational Qualifications</span>
-                <Lock className="h-3 w-3 text-muted-foreground/70" />
+                <Lock className="h-2.5 w-2.5 text-muted-foreground/60" />
               </Label>
               <Textarea 
                 value={profile.educational_qualifications || 'Not specified'} 
                 disabled 
                 readOnly
-                rows={3} 
-                className="bg-muted/70 border-border/60 text-foreground font-medium resize-none text-base md:text-sm cursor-not-allowed" 
+                rows={2} 
+                className="bg-muted/50 border-border/60 text-foreground font-medium resize-none text-base md:text-xs cursor-not-allowed" 
               />
             </div>
           </div>
         </div>
 
+        {/* Location Details */}
         <div>
-          <h4 className="font-black text-foreground text-lg sm:text-xl mb-4 flex items-center gap-2">
-             <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-secondary/20 text-secondary flex items-center justify-center text-xs sm:text-sm"><MapPin className="h-4 w-4" /></span>
+          <h4 className="font-bold text-foreground text-sm sm:text-base mb-3 flex items-center gap-2">
+            <span className="w-6 h-6 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center text-xs"><MapPin className="h-3.5 w-3.5" /></span>
             Location Details
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 bg-muted/30 p-3.5 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-border/50">
-            <div className="space-y-1.5 sm:space-y-2">
-              <Label className="flex items-center gap-1.5 text-muted-foreground font-bold text-xs uppercase tracking-wider">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 bg-muted/20 p-3 sm:p-4 rounded-xl border border-border/60">
+            <div className="space-y-1">
+              <Label className="flex items-center gap-1 text-muted-foreground font-semibold text-[11px] uppercase tracking-wider">
                 <span>Current Country</span>
-                <Lock className="h-3 w-3 text-muted-foreground/70" />
+                <Lock className="h-2.5 w-2.5 text-muted-foreground/60" />
               </Label>
               <Input 
                 value={profile.current_country || 'Not specified'} 
                 disabled 
                 readOnly
-                className="bg-muted/70 border-border/60 text-foreground font-medium h-11 text-base md:text-sm cursor-not-allowed" 
+                className="bg-muted/50 border-border/60 text-foreground font-medium h-9 text-base md:text-xs cursor-not-allowed" 
               />
             </div>
 
-            <div className="space-y-1.5 sm:space-y-2">
-              <Label className="flex items-center gap-1.5 text-muted-foreground font-bold text-xs uppercase tracking-wider">
+            <div className="space-y-1">
+              <Label className="flex items-center gap-1 text-muted-foreground font-semibold text-[11px] uppercase tracking-wider">
                 <span>Current State/Region</span>
-                <Lock className="h-3 w-3 text-muted-foreground/70" />
+                <Lock className="h-2.5 w-2.5 text-muted-foreground/60" />
               </Label>
               <Input 
                 value={profile.current_state || 'Not specified'} 
                 disabled 
                 readOnly
-                className="bg-muted/70 border-border/60 text-foreground font-medium h-11 text-base md:text-sm cursor-not-allowed" 
+                className="bg-muted/50 border-border/60 text-foreground font-medium h-9 text-base md:text-xs cursor-not-allowed" 
               />
             </div>
           </div>
         </div>
 
+        {/* Student Roster */}
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="font-black text-foreground text-lg sm:text-xl flex items-center gap-2">
-               <span className="w-8 h-8 rounded-xl bg-primary/15 text-primary flex items-center justify-center text-sm shadow-sm"><Users className="h-4 w-4" /></span>
-               Student Roster
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-bold text-foreground text-sm sm:text-base flex items-center gap-2">
+              <span className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-xs"><Users className="h-3.5 w-3.5" /></span>
+              Student Roster
             </h4>
-            <span className="text-xs font-black text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-3 py-1 rounded-full shadow-xs">
+            <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
               {profile.total_students} {profile.total_students === 1 ? 'Student' : 'Students'} Assigned
             </span>
           </div>
 
-          <div className="bg-muted/30 p-3.5 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-border/50 space-y-4">
-            <div className="bg-white border-2 border-border rounded-xl overflow-hidden shadow-sm">
-              {profile.assigned_students && profile.assigned_students.length > 0 ? (
-                <div className="overflow-x-auto w-full -mx-1 px-1 sm:mx-0 sm:px-0">
-                  <table className="w-full text-left border-collapse min-w-[340px]">
-                    <thead>
-                      <tr className="bg-muted/70 border-b-2 border-border text-xs font-black text-foreground uppercase tracking-wider">
-                        <th className="py-3.5 px-4 text-center w-20 whitespace-nowrap font-black">Sl no</th>
-                        <th className="py-3.5 px-4 w-36 whitespace-nowrap font-black">Reg no</th>
-                        <th className="py-3.5 px-4 whitespace-nowrap font-black">Name of the student</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border/60">
-                      {profile.assigned_students.map((student: any, i: number) => (
-                        <tr key={i} className="hover:bg-muted/20 transition-colors">
-                          <td className="py-3.5 px-4 text-center">
-                            <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-muted font-black text-xs text-foreground/80 border border-border/60">
-                              {student.sl_no || (i + 1)}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-4 whitespace-nowrap">
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 font-mono font-black text-xs border border-emerald-200/90 tracking-wide">
-                              {student.reg_no || 'N/A'}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-blue-100 text-blue-700 font-black rounded-full flex items-center justify-center text-xs shrink-0 shadow-xs border border-blue-200">
-                                {(student.name || 'S').charAt(0).toUpperCase()}
-                              </div>
-                              <span className="font-extrabold text-foreground text-sm sm:text-base">
-                                {student.name}
-                              </span>
+          <div className="border border-border/70 rounded-xl overflow-hidden bg-white shadow-xs">
+            {profile.assigned_students && profile.assigned_students.length > 0 ? (
+              <div className="overflow-x-auto w-full">
+                <table className="w-full text-left border-collapse min-w-[320px]">
+                  <thead>
+                    <tr className="bg-muted/40 border-b border-border/60 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                      <th className="py-2.5 px-3 text-center w-16 whitespace-nowrap">Sl no</th>
+                      <th className="py-2.5 px-3 w-32 whitespace-nowrap">Reg no</th>
+                      <th className="py-2.5 px-3 whitespace-nowrap">Name of the student</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/50">
+                    {profile.assigned_students.map((student: any, i: number) => (
+                      <tr key={i} className="hover:bg-muted/15 transition-colors">
+                        <td className="py-2 px-3 text-center">
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-muted/60 font-bold text-[11px] text-muted-foreground">
+                            {student.sl_no || (i + 1)}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 whitespace-nowrap">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-mono font-bold text-[11px] border border-emerald-200/80">
+                            {student.reg_no || 'N/A'}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-6 h-6 bg-primary/10 text-primary font-bold rounded-full flex items-center justify-center text-[10px] shrink-0 border border-primary/20">
+                              {(student.name || 'S').charAt(0).toUpperCase()}
                             </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-center py-10 px-4 text-muted-foreground font-bold text-xs sm:text-sm">
-                  <Users className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-                  No students assigned to your profile yet.
-                </div>
-              )}
-            </div>
+                            <span className="font-semibold text-foreground text-xs sm:text-sm">
+                              {student.name}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-8 px-4 text-muted-foreground font-medium text-xs">
+                <Users className="h-6 w-6 text-muted-foreground/30 mx-auto mb-1.5" />
+                No students assigned to your profile yet.
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Minimal Save Changes Button */}
-        <div className="pt-2 flex justify-end">
+        {/* Minimal, Small Save Changes Button */}
+        <div className="pt-1 flex justify-end">
           <button
             type="button"
             onClick={handleSave}
             disabled={saving || uploadingPhoto}
-            className="h-10 px-5 bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all flex items-center gap-2 disabled:opacity-60 cursor-pointer min-h-[40px]"
+            className="h-8.5 px-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-semibold text-xs rounded-lg shadow-xs transition-all flex items-center gap-1.5 disabled:opacity-60 cursor-pointer"
           >
             {saving ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin text-white" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
                 <span>Saving...</span>
               </>
             ) : (
               <>
-                <Save className="h-4 w-4" />
+                <Save className="h-3.5 w-3.5" />
                 <span>Save Changes</span>
               </>
             )}
