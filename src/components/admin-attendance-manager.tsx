@@ -456,29 +456,29 @@ export function AdminAttendanceManager({
 
       {/* MODE 1: SEARCH BY TEACHER NAME */}
       {searchMode === 'teacher' && (
-        <div className="space-y-6">
-          {/* Teacher search & selection bar */}
-          <div className="bg-white p-4 sm:p-5 rounded-2xl border-2 border-border shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
-              <div className="relative w-full sm:w-72">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="space-y-3 sm:space-y-3.5">
+          {/* Teacher search & selection bar - Compact */}
+          <div className="bg-white p-2.5 sm:p-3 rounded-xl border-2 border-border shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full lg:w-auto">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <input
                   type="text"
                   placeholder="Filter teachers by name or email..."
                   value={teacherSearchQuery}
                   onChange={(e) => setTeacherSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border-2 border-border font-bold text-xs bg-muted/30 focus:border-primary outline-none"
+                  className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-border font-medium text-xs bg-muted/20 focus:border-primary outline-none"
                 />
               </div>
 
               {/* Comprehensive Dropdown to pick from all teachers */}
-              <div className="relative min-w-[240px]">
+              <div className="relative min-w-[220px]">
                 <select
                   value={currentTeacher?.id || ''}
                   onChange={(e) => {
                     setSelectedTeacherId(e.target.value)
                   }}
-                  className="w-full px-3 py-2.5 rounded-xl border-2 border-border font-bold text-xs bg-white text-foreground outline-none focus:border-primary cursor-pointer appearance-none pr-8"
+                  className="w-full px-3 py-1.5 rounded-lg border border-border font-semibold text-xs bg-white text-foreground outline-none focus:border-primary cursor-pointer appearance-none pr-8"
                 >
                   {teachers.map((t) => {
                     const studentCount = students.filter(
@@ -491,26 +491,26 @@ export function AdminAttendanceManager({
                     )
                   })}
                 </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
               </div>
             </div>
 
             {/* Teacher selector pills */}
-            <div className="flex flex-wrap items-center gap-2 max-w-xl overflow-x-auto scrollbar-none py-1">
+            <div className="flex flex-wrap items-center gap-1.5 max-w-xl overflow-x-auto scrollbar-none py-0.5">
               {filteredTeachers.slice(0, 5).map((t) => {
                 const isSelected = (currentTeacher?.id === t.id)
                 return (
                   <button
                     key={t.id}
                     onClick={() => setSelectedTeacherId(t.id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-2 border cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 border cursor-pointer ${
                       isSelected
                         ? 'border-primary bg-primary/10 text-primary font-bold shadow-xs'
                         : 'border-border bg-white text-muted-foreground hover:border-primary/40'
                     }`}
                   >
-                    <Avatar photoUrl={t.profile_photo} name={t.name} size="sm" />
-                    <span className="truncate max-w-[130px]">{t.name}</span>
+                    <Avatar photoUrl={t.profile_photo} name={t.name} size="sm" className="w-5 h-5 text-[9px]" />
+                    <span className="truncate max-w-[120px]">{t.name}</span>
                   </button>
                 )
               })}
@@ -518,18 +518,20 @@ export function AdminAttendanceManager({
           </div>
 
           {currentTeacher ? (
-            <div className="space-y-6">
-              {/* Teacher Summary Header Card */}
-              <div className="bg-white p-6 rounded-2xl border-2 border-border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="flex items-center gap-4">
-                  <Avatar photoUrl={currentTeacher.profile_photo} name={currentTeacher.name} size="lg" />
+            <div className="space-y-3 sm:space-y-3.5">
+              {/* Teacher Summary Header Card - Compact & Modern */}
+              <div className="bg-white px-4 py-3 rounded-xl border-2 border-border shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <Avatar photoUrl={currentTeacher.profile_photo} name={currentTeacher.name} size="md" className="w-11 h-11 text-sm border shadow-xs" />
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
-                      Teacher Overview
-                    </span>
-                    <h4 className="text-2xl font-black text-foreground mt-1">{currentTeacher.name}</h4>
-                    <p className="text-xs font-semibold text-muted-foreground">
-                      {currentTeacher.email || 'No email registered'} • Assigned Students: <strong className="text-foreground">{studentsUnderTeacher.length}</strong>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-base sm:text-lg font-black text-foreground leading-tight">{currentTeacher.name}</h4>
+                      <span className="text-[9px] font-black uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                        Teacher Overview
+                      </span>
+                    </div>
+                    <p className="text-xs font-medium text-muted-foreground mt-0.5">
+                      {currentTeacher.email || 'No email registered'} · Assigned Students: <strong className="text-foreground font-bold">{studentsUnderTeacher.length}</strong>
                     </p>
                   </div>
                 </div>
@@ -538,83 +540,83 @@ export function AdminAttendanceManager({
                   onClick={handleDownloadTeacherPDF}
                   disabled={isExportingPDF}
                   variant="default"
-                  className="bg-primary hover:bg-primary/90 text-white font-black flex items-center gap-2 self-start md:self-auto shadow-md"
+                  className="bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center gap-1.5 self-start sm:self-auto shadow-xs px-3 py-1.5 h-8"
                 >
-                  {isExportingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  {isExportingPDF ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
                   Download Teacher Summary PDF
                 </BouncyButton>
               </div>
 
-              {/* KPI Cards for this teacher in selected period */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-primary text-white p-5 rounded-2xl text-center shadow-sm">
-                  <span className="text-xs font-bold uppercase tracking-widest text-primary-foreground/80 block">Scheduled Classes</span>
-                  <span className="text-3xl md:text-5xl font-black">{teacherTotalScheduled}</span>
-                  <span className="text-[10px] text-white/70 block mt-1">In selected period</span>
+              {/* KPI Cards for this teacher in selected period - Compact */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+                <div className="bg-primary text-white p-3 sm:p-3.5 rounded-xl text-center shadow-xs flex flex-col justify-center">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-primary-foreground/80 block">Scheduled Classes</span>
+                  <span className="text-2xl sm:text-3xl font-black leading-tight mt-0.5">{teacherTotalScheduled}</span>
+                  <span className="text-[9px] text-white/70 block mt-0.5">In selected period</span>
                 </div>
 
-                <div className="bg-green-600 text-white p-5 rounded-2xl text-center shadow-sm">
-                  <span className="text-xs font-bold uppercase tracking-widest text-green-100 block">Completed / Attended</span>
-                  <span className="text-3xl md:text-5xl font-black">{teacherTotalAttended}</span>
-                  <span className="text-[10px] text-green-100/80 block mt-1">Classes conducted</span>
+                <div className="bg-emerald-600 text-white p-3 sm:p-3.5 rounded-xl text-center shadow-xs flex flex-col justify-center">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-100 block">Completed / Attended</span>
+                  <span className="text-2xl sm:text-3xl font-black leading-tight mt-0.5">{teacherTotalAttended}</span>
+                  <span className="text-[9px] text-emerald-100/80 block mt-0.5">Classes conducted</span>
                 </div>
 
-                <div className="bg-destructive text-white p-5 rounded-2xl text-center shadow-sm">
-                  <span className="text-xs font-bold uppercase tracking-widest text-destructive-foreground/80 block">Not Attended / Absent</span>
-                  <span className="text-3xl md:text-5xl font-black">{teacherTotalNotAttended}</span>
-                  <span className="text-[10px] text-white/70 block mt-1">Missed sessions</span>
+                <div className="bg-rose-600 text-white p-3 sm:p-3.5 rounded-xl text-center shadow-xs flex flex-col justify-center">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-rose-100 block">Not Attended / Absent</span>
+                  <span className="text-2xl sm:text-3xl font-black leading-tight mt-0.5">{teacherTotalNotAttended}</span>
+                  <span className="text-[9px] text-rose-100/80 block mt-0.5">Missed sessions</span>
                 </div>
 
-                <div className="bg-secondary text-secondary-foreground p-5 rounded-2xl text-center shadow-sm">
-                  <span className="text-xs font-bold uppercase tracking-widest text-secondary-foreground/70 block">Average Attendance</span>
-                  <span className="text-3xl md:text-5xl font-black">{teacherOverallPercentage}%</span>
-                  <span className="text-[10px] text-secondary-foreground/70 block mt-1">Batch turn-out</span>
+                <div className="bg-slate-100 text-slate-800 border border-slate-200 p-3 sm:p-3.5 rounded-xl text-center shadow-xs flex flex-col justify-center">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 block">Average Attendance</span>
+                  <span className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight mt-0.5">{teacherOverallPercentage}%</span>
+                  <span className="text-[9px] text-slate-500 block mt-0.5">Batch turn-out</span>
                 </div>
               </div>
 
-              {/* Sub-breakdown Ribbon */}
-              <div className="bg-white p-4 rounded-2xl border-2 border-border shadow-sm grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
-                <div className="p-3 bg-red-50 rounded-xl border border-red-100">
-                  <span className="text-[11px] font-bold text-red-700 block uppercase">Teacher Unavailable</span>
-                  <span className="text-xl font-black text-red-900">{teacherTeacherUnavailable}</span>
+              {/* Sub-breakdown Ribbon - Ultra Compact */}
+              <div className="bg-white p-2 rounded-xl border-2 border-border shadow-xs grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                <div className="px-2 py-1.5 bg-red-50/80 rounded-lg border border-red-100 flex items-center justify-between sm:flex-col sm:justify-center">
+                  <span className="text-[9px] sm:text-[10px] font-bold text-red-700 uppercase tracking-tight">Teacher Unavailable</span>
+                  <span className="text-sm sm:text-base font-black text-red-900 sm:mt-0.5">{teacherTeacherUnavailable}</span>
                 </div>
-                <div className="p-3 bg-orange-50 rounded-xl border border-orange-100">
-                  <span className="text-[11px] font-bold text-orange-700 block uppercase">Student Unavailable</span>
-                  <span className="text-xl font-black text-orange-900">{teacherStudentUnavailable}</span>
+                <div className="px-2 py-1.5 bg-orange-50/80 rounded-lg border border-orange-100 flex items-center justify-between sm:flex-col sm:justify-center">
+                  <span className="text-[9px] sm:text-[10px] font-bold text-orange-700 uppercase tracking-tight">Student Unavailable</span>
+                  <span className="text-sm sm:text-base font-black text-orange-900 sm:mt-0.5">{teacherStudentUnavailable}</span>
                 </div>
-                <div className="p-3 bg-amber-50 rounded-xl border border-amber-100">
-                  <span className="text-[11px] font-bold text-amber-700 block uppercase">Student on Break</span>
-                  <span className="text-xl font-black text-amber-900">{teacherBreak}</span>
+                <div className="px-2 py-1.5 bg-amber-50/80 rounded-lg border border-amber-100 flex items-center justify-between sm:flex-col sm:justify-center">
+                  <span className="text-[9px] sm:text-[10px] font-bold text-amber-700 uppercase tracking-tight">Student on Break</span>
+                  <span className="text-sm sm:text-base font-black text-amber-900 sm:mt-0.5">{teacherBreak}</span>
                 </div>
-                <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
-                  <span className="text-[11px] font-bold text-blue-700 block uppercase">Assigned Students</span>
-                  <span className="text-xl font-black text-blue-900">{studentsUnderTeacher.length}</span>
+                <div className="px-2 py-1.5 bg-blue-50/80 rounded-lg border border-blue-100 flex items-center justify-between sm:flex-col sm:justify-center">
+                  <span className="text-[9px] sm:text-[10px] font-bold text-blue-700 uppercase tracking-tight">Assigned Students</span>
+                  <span className="text-sm sm:text-base font-black text-blue-900 sm:mt-0.5">{studentsUnderTeacher.length}</span>
                 </div>
               </div>
 
               {/* Students Breakdown Table */}
               <AnimatedCard delay={0.2} className="p-0 overflow-hidden border-2 border-border">
-                <div className="p-4 sm:p-5 border-b-2 border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/20">
+                <div className="p-3 sm:p-3.5 border-b-2 border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/20">
                   <div>
-                    <h4 className="font-black text-foreground text-lg flex items-center gap-2">
+                    <h4 className="font-black text-foreground text-base sm:text-lg flex items-center gap-2">
                       <span>Students Under {currentTeacher.name}</span>
-                      <span className="text-primary font-bold text-sm bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/20">
+                      <span className="text-primary font-bold text-xs bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
                         {studentsUnderTeacher.length} {studentsUnderTeacher.length === 1 ? 'Student' : 'Students'}
                       </span>
                     </h4>
-                    <span className="text-xs font-semibold text-muted-foreground mt-0.5 block">
+                    <span className="text-[11px] font-semibold text-muted-foreground mt-0.5 block">
                       Classes & Attendance Period: <strong className="text-foreground">{dateRange.label}</strong>
                     </span>
                   </div>
 
-                  <div className="relative w-full sm:w-72">
+                  <div className="relative w-full sm:w-64">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                     <input
                       type="text"
                       placeholder="Filter this teacher's students..."
                       value={teacherStudentsSearchQuery}
                       onChange={(e) => setTeacherStudentsSearchQuery(e.target.value)}
-                      className="w-full pl-9 pr-3 py-1.5 rounded-xl border-2 border-border text-xs font-semibold bg-white outline-none focus:border-primary"
+                      className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-border text-xs font-semibold bg-white outline-none focus:border-primary"
                     />
                   </div>
                 </div>
