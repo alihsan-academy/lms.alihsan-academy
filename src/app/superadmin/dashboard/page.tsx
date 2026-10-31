@@ -904,7 +904,7 @@ export default function SuperAdminDashboard() {
               </section>
 
               {/* Academy Overview Cards */}
-              <section>
+              <section id="academy-overview-section">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                   <div>
                     <h3 className="text-2xl font-black text-foreground">Academy Overview</h3>
@@ -1070,6 +1070,19 @@ export default function SuperAdminDashboard() {
                     setStatsFilterType('custom')
                     setStatsCustomStart(start)
                     setStatsCustomEnd(end)
+                    try {
+                      const startDateObj = new Date(`${start}T00:00:00`)
+                      const monthName = format(startDateObj, 'MMMM yyyy')
+                      toast.success(`Dashboard filtered to ${monthName}`, {
+                        description: `Showing active students, attendance, and classes for ${monthName}.`
+                      })
+                    } catch {}
+                    const el = document.getElementById('academy-overview-section')
+                    if (el) {
+                      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    } else {
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                    }
                   }}
                 />
               </section>

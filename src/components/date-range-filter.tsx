@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Calendar, Filter, ChevronRight } from 'lucide-react'
 import { DateFilterType, DateRange, getDateRange } from '@/lib/attendance-utils'
 import { motion } from 'framer-motion'
@@ -28,6 +28,11 @@ export function DateRangeFilter({
 }: DateRangeFilterProps) {
   const [localStart, setLocalStart] = useState(customStart || '')
   const [localEnd, setLocalEnd] = useState(customEnd || '')
+
+  useEffect(() => {
+    setLocalStart(customStart || '')
+    setLocalEnd(customEnd || '')
+  }, [customStart, customEnd])
 
   const filterOptions: { id: DateFilterType; label: string }[] = [
     { id: 'last_7_days', label: 'Last 7 Days' },

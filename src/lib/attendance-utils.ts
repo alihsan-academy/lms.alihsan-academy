@@ -100,9 +100,9 @@ export function getDateRange(
     }
     case 'custom': {
       if (customStart && customEnd) {
-        const start = new Date(customStart)
+        const start = customStart.includes('T') ? new Date(customStart) : new Date(`${customStart}T00:00:00`)
         start.setHours(0, 0, 0, 0)
-        const end = new Date(customEnd)
+        const end = customEnd.includes('T') ? new Date(customEnd) : new Date(`${customEnd}T23:59:59.999`)
         end.setHours(23, 59, 59, 999)
         return {
           start,
