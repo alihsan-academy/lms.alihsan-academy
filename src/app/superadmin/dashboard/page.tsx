@@ -20,6 +20,7 @@ import { AdminAttendanceManager } from '@/components/admin-attendance-manager'
 import { DateRangeFilter } from '@/components/date-range-filter'
 import { MonthlyStudentTrendChart } from '@/components/monthly-student-trend-chart'
 import { AcademicDistributionCard, normalizeTerm, normalizeYear } from '@/components/academic-distribution-card'
+import { UnifiedAdminAnalyticsWidget } from '@/components/unified-admin-analytics-widget'
 import { DateFilterType, getDateRange, isDateWithinRange, parseClassMetadata } from '@/lib/attendance-utils'
 
 type Tab = 'statistics' | 'students' | 'teachers' | 'attendance' | 'manage'
@@ -1073,164 +1074,22 @@ export default function SuperAdminDashboard() {
                 />
               </section>
 
+              {/* Unified 3-in-1 Analytics: Students Under Teachers (with Style B Quick Roster Modal), Student Attendance, & Teacher Performance */}
               <section>
-                <h3 className="text-2xl font-black text-foreground mb-4">Students Under Each Teacher</h3>
-                <AnimatedCard delay={0.2} className="p-0 overflow-hidden border-2 border-border">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse min-w-[650px]">
-                      <thead>
-                        <tr className="bg-muted border-b-2 border-border">
-                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Teacher Info</th>
-                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Total Students</th>
-                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Assigned Students</th>
-                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Classes (Done/Total)</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y-2 divide-border">
-                        {teachers.map((t, index) => {
-                          const assignedStudentsList = statsFilteredStudents.filter(s => s.teacher_id === t.id);
-                          const assignedStudentsNames = assignedStudentsList.map(s => s.name);
-                          const teacherClasses = statsFilteredClasses.filter(c => c.teacher_id === t.id);
-                          const completedClasses = teacherClasses.filter(c => 
-                            c.status === 'completed' || attendanceRecords.some(a => a.class_id === c.id && a.status === 'present')
-                          ).length;
-                          return (
-                            <motion.tr 
-                              key={t.id} 
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: index * 0.05 }}
-                              className="hover:bg-muted/30 transition-colors"
-                            >
-                              <td className="p-4">
-                                <p className="font-bold text-foreground text-lg">{t.name}</p>
-                                <p className="text-sm font-medium text-muted-foreground">{t.email}</p>
-                              </td>
-                              <td className="p-4 font-black text-primary text-xl">{assignedStudentsList.length}</td>
-                              <td className="p-4 text-sm font-medium text-foreground max-w-xs truncate" title={assignedStudentsNames.join(', ')}>
-                                {assignedStudentsNames.length > 0 ? assignedStudentsNames.join(', ') : 'None'}
-                              </td>
-                              <td className="p-4 text-sm font-bold text-foreground">
-                                {completedClasses} / {teacherClasses.length}
-                              </td>
-                            </motion.tr>
-                          )
-                        })}
-                        {teachers.length === 0 && (
-                          <tr><td colSpan={4} className="p-8 text-center text-muted-foreground font-bold">No data available yet</td></tr>
-                        )}
-                      </tbody>
-                    </table>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                  <div>
+                    <h3 className="text-2xl font-black text-foreground">Academy Performance & Rosters</h3>
+                    <p className="text-xs text-muted-foreground font-medium">
+                      Compact view of faculty assignments, student attendance, and teacher performance for {statsDateRange.label}.
+                    </p>
                   </div>
-                </AnimatedCard>
-              </section>
-
-              <section>
-                <h3 className="text-2xl font-black text-foreground mb-4">Each Student's Attendance</h3>
-                <AnimatedCard delay={0.3} className="p-0 overflow-hidden border-2 border-border">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse min-w-[650px]">
-                      <thead>
-                        <tr className="bg-muted border-b-2 border-border">
-                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Student Info</th>
-                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Teacher(s)</th>
-                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Scheduled</th>
-                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Attended</th>
-                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Progress</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y-2 divide-border">
-                        {statsFilteredStudents.map(s => {
-                          const studentClasses = statsFilteredClasses.filter(c => c.student_id === s.id);
-                          const studentAttendance = attendanceRecords.filter(a => 
-                            studentClasses.some(c => c.id === a.class_id) && a.status === 'present'
-                          );
-                          const totalScheduled = studentClasses.length;
-                          const totalAttended = studentAttendance.length;
-                          const percentage = totalScheduled > 0 ? Math.round((totalAttended / totalScheduled) * 100) : 0;
-                          const teacherNames = Array.from(new Set(studentClasses.map(c => teachers.find(t => t.id === c.teacher_id)?.name))).filter(Boolean).join(', ');
-                          
-                          let color = 'bg-destructive';
-                          if (percentage >= 76) color = 'bg-primary';
-                          else if (percentage >= 51) color = 'bg-secondary';
-
-                          return (
-                            <tr key={s.id} className="hover:bg-muted/30 transition-colors">
-                              <td className="p-4">
-                                <p className="font-bold text-foreground text-lg">{s.name}</p>
-                              </td>
-                              <td className="p-4 text-sm font-medium text-foreground">{teacherNames || 'None'}</td>
-                              <td className="p-4 font-black text-foreground">{totalScheduled}</td>
-                              <td className="p-4 font-black text-foreground">{totalAttended}</td>
-                              <td className="p-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden border-2 border-border p-[1px]">
-                                    <div className={`h-full rounded-full ${color}`} style={{ width: `${percentage}%` }} />
-                                  </div>
-                                  <span className="text-xs font-black text-foreground w-8">{percentage}%</span>
-                                </div>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                        {statsFilteredStudents.length === 0 && (
-                          <tr><td colSpan={5} className="p-8 text-center text-muted-foreground font-bold">No students found matching current period/term filter</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </AnimatedCard>
-              </section>
-
-              <section>
-                <h3 className="text-2xl font-black text-foreground mb-4">Each Teacher's Performance</h3>
-                <AnimatedCard delay={0.4} className="p-0 overflow-hidden border-2 border-border">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse min-w-[650px]">
-                      <thead>
-                        <tr className="bg-muted border-b-2 border-border">
-                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Teacher Info</th>
-                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Classes Created</th>
-                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Classes Completed</th>
-                          <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Completion Rate</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y-2 divide-border">
-                        {teachers.map(t => {
-                          const teacherClasses = statsFilteredClasses.filter(c => c.teacher_id === t.id);
-                          const completedClasses = teacherClasses.filter(c => c.status === 'completed').length;
-                          const completionRate = teacherClasses.length > 0 ? Math.round((completedClasses / teacherClasses.length) * 100) : 0;
-                          
-                          let color = 'bg-destructive';
-                          if (completionRate >= 76) color = 'bg-primary';
-                          else if (completionRate >= 51) color = 'bg-secondary';
-
-                          return (
-                            <tr key={t.id} className="hover:bg-muted/30 transition-colors">
-                              <td className="p-4">
-                                <p className="font-bold text-foreground text-lg">{t.name}</p>
-                                <p className="text-sm font-medium text-muted-foreground">{t.email}</p>
-                              </td>
-                              <td className="p-4 font-black text-foreground">{teacherClasses.length}</td>
-                              <td className="p-4 font-black text-foreground">{completedClasses}</td>
-                              <td className="p-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden border-2 border-border p-[1px]">
-                                    <div className={`h-full rounded-full ${color}`} style={{ width: `${completionRate}%` }} />
-                                  </div>
-                                  <span className="text-xs font-black text-foreground w-8">{completionRate}%</span>
-                                </div>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                        {teachers.length === 0 && (
-                          <tr><td colSpan={4} className="p-8 text-center text-muted-foreground font-bold">No data available yet</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </AnimatedCard>
+                </div>
+                <UnifiedAdminAnalyticsWidget
+                  teachers={teachers}
+                  students={statsFilteredStudents}
+                  classes={statsFilteredClasses}
+                  attendanceRecords={attendanceRecords}
+                />
               </section>
             </PageTransition>
           )}
