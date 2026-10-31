@@ -20,46 +20,52 @@ export async function GET(request: Request) {
 
     const supabaseAdmin = getAdminClient()
 
-    // 1. Fetch profiles & student_profiles
-    const { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
-
-    const { data: studentProfile } = await supabaseAdmin
-      .from('student_profiles')
-      .select('*')
-      .eq('user_id', user.id)
-      .single()
-
-    // 2. Fetch classes
-    const { data: classesData } = await supabaseAdmin
-      .from('classes')
-      .select('*')
-      .eq('student_id', user.id)
-      .order('scheduled_at', { ascending: true })
+    // Parallel fetch of profile, student profile, classes, and attendance
+    const [
+      { data: profile },
+      { data: studentProfile },
+      { data: classesData },
+      { data: attendance }
+    ] = await Promise.all([
+      supabaseAdmin
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single(),
+      supabaseAdmin
+        .from('student_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single(),
+      supabaseAdmin
+        .from('classes')
+        .select('*')
+        .eq('student_id', user.id)
+        .order('scheduled_at', { ascending: true }),
+      supabaseAdmin
+        .from('attendance')
+        .select('*')
+        .eq('student_id', user.id)
+    ])
 
     const allClasses = classesData || []
 
-    // 3. Fetch teachers for those classes
+    // Fetch teachers for those classes in parallel
     const teacherIds = Array.from(new Set(allClasses.map((c: any) => c.teacher_id))).filter(Boolean)
-    const { data: teacherProfiles } = await supabaseAdmin
-      .from('teacher_profiles')
-      .select('user_id, name, profile_photo')
-      .in('user_id', teacherIds)
-
-    // 4. Fetch attendance
-    const { data: attendance } = await supabaseAdmin
-      .from('attendance')
-      .select('*')
-      .eq('student_id', user.id)
+    let teacherProfiles: any[] = []
+    if (teacherIds.length > 0) {
+      const { data: teachers } = await supabaseAdmin
+        .from('teacher_profiles')
+        .select('user_id, name, profile_photo')
+        .in('user_id', teacherIds)
+      teacherProfiles = teachers || []
+    }
 
     return NextResponse.json({
       profile: profile || null,
       studentProfile: studentProfile || null,
       classes: allClasses,
-      teachers: teacherProfiles || [],
+      teachers: teacherProfiles,
       attendance: attendance || []
     })
   } catch (error: any) {

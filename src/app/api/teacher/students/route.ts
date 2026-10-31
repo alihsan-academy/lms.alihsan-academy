@@ -20,6 +20,20 @@ export async function GET(request: Request) {
 
     const supabaseAdmin = getAdminClient()
 
+    // Parallel fetch teacher profile and auth metadata alongside student records
+    const teacherProfilePromise = supabaseAdmin
+      .from('teacher_profiles')
+      .select('name')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    const authUsersPromise = supabaseAdmin.auth.admin
+      .listUsers({ perPage: 1000 })
+      .catch((e: any) => {
+        console.warn('Could not list auth users metadata in teacher route:', e)
+        return { data: { users: [] }, error: e }
+      })
+
     let students: any[] | null = null
     const primaryQuery = await supabaseAdmin
       .from('student_profiles')
@@ -72,23 +86,15 @@ export async function GET(request: Request) {
       students = primaryQuery.data
     }
 
-    // Fetch auth metadata to reliably retrieve year/term and stopped info
-    let authMetaMap = new Map<string, any>()
-    try {
-      const { data: authUsersData } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 })
-      if (authUsersData?.users) {
-        authMetaMap = new Map(authUsersData.users.map((u: any) => [u.id, u.user_metadata || {}]))
-      }
-    } catch (e) {
-      console.warn('Could not list auth users metadata in teacher route:', e)
-    }
+    const [{ data: teacherProfile }, authUsersData] = await Promise.all([
+      teacherProfilePromise,
+      authUsersPromise
+    ])
 
-    // Fetch teacher profile using service role to bypass RLS recursion
-    const { data: teacherProfile } = await supabaseAdmin
-      .from('teacher_profiles')
-      .select('name')
-      .eq('user_id', user.id)
-      .maybeSingle()
+    let authMetaMap = new Map<string, any>()
+    if (authUsersData?.data?.users) {
+      authMetaMap = new Map(authUsersData.data.users.map((u: any) => [u.id, u.user_metadata || {}]))
+    }
 
     const mappedStudents = students?.map((s: any) => {
       const meta = authMetaMap.get(s.user_id) || {}

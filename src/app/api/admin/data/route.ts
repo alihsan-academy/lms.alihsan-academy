@@ -64,21 +64,58 @@ export async function GET(request: Request) {
       )
     }
 
-    // Fetch joined profiles for students
-    const { data: students, error: sError } = await supabase
-      .from('profiles')
-      .select('id, email, role, created_at, student_profiles(*)')
-      .eq('role', 'student')
+    // Execute all queries in parallel for peak performance under 500+ concurrent users
+    const [
+      studentsResult,
+      teachersResult,
+      allUsersResult,
+      attendanceResult,
+      classesResult,
+      authUsersResult
+    ] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('id, email, role, created_at, student_profiles(*)')
+        .eq('role', 'student'),
+      supabase
+        .from('profiles')
+        .select('id, email, role, created_at, teacher_profiles(*)')
+        .eq('role', 'teacher'),
+      supabase
+        .from('profiles')
+        .select('id, email, role, student_profiles(name), teacher_profiles(name)')
+        .neq('role', 'superadmin'),
+      supabase
+        .from('attendance')
+        .select(`
+          *,
+          classes (
+            scheduled_at
+          )
+        `)
+        .order('marked_at', { ascending: false }),
+      supabase
+        .from('classes')
+        .select('*'),
+      supabase.auth.admin.listUsers({ perPage: 1000 }).catch((e: any) => {
+        console.warn('Could not list auth users metadata:', e)
+        return { data: { users: [] }, error: e }
+      })
+    ])
 
-    // Fetch auth metadata to know login_revoked and stopped_by
+    const { data: students, error: sError } = studentsResult
+    const { data: teachers, error: tError } = teachersResult
+    const { data: allUsers, error: uError } = allUsersResult
+    const { data: attendance, error: aError } = attendanceResult
+    const { data: classes, error: cError } = classesResult
+
+    if (sError || tError || uError) throw sError || tError || uError
+    if (aError || cError) console.error("Error fetching attendance or classes", aError, cError)
+
+    // Build auth metadata map
     let authMetaMap = new Map<string, any>()
-    try {
-      const { data: authUsersData } = await supabase.auth.admin.listUsers({ perPage: 1000 })
-      if (authUsersData?.users) {
-        authMetaMap = new Map(authUsersData.users.map((u: any) => [u.id, u.user_metadata || {}]))
-      }
-    } catch (e) {
-      console.warn('Could not list auth users metadata:', e)
+    if (authUsersResult?.data?.users) {
+      authMetaMap = new Map(authUsersResult.data.users.map((u: any) => [u.id, u.user_metadata || {}]))
     }
 
     const enrichedStudents = (students || []).map((s: any) => {
@@ -109,38 +146,6 @@ export async function GET(request: Request) {
         }))
       }
     })
-
-    // Fetch joined profiles for teachers
-    const { data: teachers, error: tError } = await supabase
-      .from('profiles')
-      .select('id, email, role, created_at, teacher_profiles(*)')
-      .eq('role', 'teacher')
-
-    // Fetch all non-superadmin users for manage access
-    const { data: allUsers, error: uError } = await supabase
-      .from('profiles')
-      .select('id, email, role, student_profiles(name), teacher_profiles(name)')
-      .neq('role', 'superadmin')
-
-    if (sError || tError || uError) throw sError || tError || uError
-
-    // Fetch attendance for the dashboard
-    const { data: attendance, error: aError } = await supabase
-      .from('attendance')
-      .select(`
-        *,
-        classes (
-          scheduled_at
-        )
-      `)
-      .order('marked_at', { ascending: false })
-
-    // Fetch classes for statistics
-    const { data: classes, error: cError } = await supabase
-      .from('classes')
-      .select('*')
-      
-    if (aError || cError) console.error("Error fetching attendance or classes", aError, cError)
 
     return NextResponse.json({ 
       students: enrichedStudents || [], 
