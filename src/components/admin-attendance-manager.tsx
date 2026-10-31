@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { 
   Search, 
   UserCheck, 
@@ -18,7 +18,8 @@ import {
   Sparkles,
   X,
   Lock,
-  Key
+  Key,
+  ChevronDown
 } from 'lucide-react'
 import { Avatar } from '@/components/avatar'
 import { AnimatedCard } from '@/components/animated-card'
@@ -66,6 +67,7 @@ export function AdminAttendanceManager({
   // Search queries
   const [teacherSearchQuery, setTeacherSearchQuery] = useState('')
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>(teachers[0]?.id || '')
+  const [teacherStudentsSearchQuery, setTeacherStudentsSearchQuery] = useState('')
 
   const [studentSearchQuery, setStudentSearchQuery] = useState('')
   const [selectedStudentId, setSelectedStudentId] = useState<string>('')
@@ -107,58 +109,111 @@ export function AdminAttendanceManager({
   // Selected teacher
   const currentTeacher = teachers.find((t) => t.id === selectedTeacherId) || filteredTeachers[0]
 
-  // Students under the selected teacher
-  const studentsUnderTeacher = currentTeacher
-    ? students.filter((s) => s.teacher_id === currentTeacher.id)
-    : []
+  // Students under the selected teacher (by assigned teacher_id or having classes conducted by this teacher)
+  const studentsUnderTeacher = useMemo(() => {
+    if (!currentTeacher) return []
+    return students.filter((s) => 
+      s.teacher_id === currentTeacher.id || 
+      classes.some((c: any) => c.teacher_id === currentTeacher.id && c.student_id === s.id)
+    )
+  }, [currentTeacher, students, classes])
 
-  // Compute stats for current teacher
-  let teacherTotalScheduled = 0
-  let teacherTotalAttended = 0
-  let teacherTotalAbsent = 0
-  let teacherTeacherUnavailable = 0
-  let teacherStudentUnavailable = 0
-  let teacherBreak = 0
+  // Compute breakdown for each student under this teacher, within the selected dateRange
+  const teacherStudentsBreakdown = useMemo(() => {
+    if (!currentTeacher) return []
+    return studentsUnderTeacher.map((s) => {
+      // Classes strictly conducted between THIS teacher and THIS student
+      const studentTeacherClasses = classes.filter((c: any) => 
+        c.student_id === s.id && 
+        (c.teacher_id === currentTeacher.id || (!c.teacher_id && s.teacher_id === currentTeacher.id))
+      )
+      const summary = calculateStudentAttendanceSummary(studentTeacherClasses, attendance, s, dateRange)
 
-  const teacherStudentsBreakdown = studentsUnderTeacher.map((s) => {
-    const studentClasses = classes.filter((c: any) => c.student_id === s.id)
-    const summary = calculateStudentAttendanceSummary(studentClasses, attendance, s, dateRange)
+      let remarks = ''
+      if (s.enrolment_status === 'break' && s.break_reason) {
+        remarks = `Break: ${s.break_reason}`
+      } else if (summary.teacherUnavailableCount > 0) {
+        remarks = `${summary.teacherUnavailableCount} Teacher Missed`
+      } else if (summary.studentUnavailableCount > 0) {
+        remarks = `${summary.studentUnavailableCount} Student Missed`
+      }
 
-    teacherTotalScheduled += summary.totalScheduled
-    teacherTotalAttended += summary.attendedCount
-    teacherTotalAbsent += (summary.notAttendedCount - summary.teacherUnavailableCount - summary.studentUnavailableCount - summary.breakCount)
-    teacherTeacherUnavailable += summary.teacherUnavailableCount
-    teacherStudentUnavailable += summary.studentUnavailableCount
-    teacherBreak += summary.breakCount
+      return {
+        student: s,
+        registration_number: s.registration_number || 'N/A',
+        name: s.name,
+        year: s.year || s.class_name || 'N/A',
+        term: s.term || 'N/A',
+        enrolment_status: s.enrolment_status || 'ongoing',
+        scheduled: summary.totalScheduled,
+        attended: summary.attendedCount,
+        notAttended: summary.notAttendedCount,
+        teacherUnavailable: summary.teacherUnavailableCount,
+        studentUnavailable: summary.studentUnavailableCount,
+        breakCount: summary.breakCount,
+        remarks,
+        percentage: summary.attendanceRate,
+        summary,
+      }
+    })
+  }, [studentsUnderTeacher, classes, attendance, dateRange, currentTeacher])
 
-    let remarks = ''
-    if (s.enrolment_status === 'break' && s.break_reason) {
-      remarks = `Break: ${s.break_reason}`
-    } else if (summary.teacherUnavailableCount > 0) {
-      remarks = `${summary.teacherUnavailableCount} Teacher Missed`
-    } else if (summary.studentUnavailableCount > 0) {
-      remarks = `${summary.studentUnavailableCount} Student Missed`
-    }
+  const teacherStats = useMemo(() => {
+    let scheduled = 0
+    let attended = 0
+    let absent = 0
+    let teacherUnavailable = 0
+    let studentUnavailable = 0
+    let breakCount = 0
+
+    teacherStudentsBreakdown.forEach((item) => {
+      scheduled += item.scheduled
+      attended += item.attended
+      absent += (item.notAttended - item.teacherUnavailable - item.studentUnavailable - item.breakCount)
+      teacherUnavailable += item.teacherUnavailable
+      studentUnavailable += item.studentUnavailable
+      breakCount += item.breakCount
+    })
+
+    const notAttended = absent + teacherUnavailable + studentUnavailable + breakCount
+    const completedOrMissed = attended + notAttended
+    const overallPercentage = completedOrMissed > 0
+      ? Math.round((attended / completedOrMissed) * 100)
+      : 0
 
     return {
-      student: s,
-      registration_number: s.registration_number || 'N/A',
-      name: s.name,
-      enrolment_status: s.enrolment_status || 'ongoing',
-      scheduled: summary.totalScheduled,
-      attended: summary.attendedCount,
-      notAttended: summary.notAttendedCount,
-      remarks,
-      percentage: summary.attendanceRate,
-      summary,
+      scheduled,
+      attended,
+      absent,
+      teacherUnavailable,
+      studentUnavailable,
+      breakCount,
+      notAttended,
+      overallPercentage
     }
-  })
+  }, [teacherStudentsBreakdown])
 
-  const teacherTotalNotAttended = teacherTotalAbsent + teacherTeacherUnavailable + teacherStudentUnavailable + teacherBreak
-  const teacherCompletedOrMissed = teacherTotalAttended + teacherTotalNotAttended
-  const teacherOverallPercentage = teacherCompletedOrMissed > 0
-    ? Math.round((teacherTotalAttended / teacherCompletedOrMissed) * 100)
-    : 0
+  const teacherTotalScheduled = teacherStats.scheduled
+  const teacherTotalAttended = teacherStats.attended
+  const teacherTotalNotAttended = teacherStats.notAttended
+  const teacherTeacherUnavailable = teacherStats.teacherUnavailable
+  const teacherStudentUnavailable = teacherStats.studentUnavailable
+  const teacherBreak = teacherStats.breakCount
+  const teacherOverallPercentage = teacherStats.overallPercentage
+
+  // Filter students under teacher by in-table search query
+  const displayStudentsBreakdown = useMemo(() => {
+    if (!teacherStudentsSearchQuery.trim()) return teacherStudentsBreakdown
+    const q = teacherStudentsSearchQuery.toLowerCase()
+    return teacherStudentsBreakdown.filter((item) => {
+      return (
+        item.name.toLowerCase().includes(q) ||
+        item.registration_number.toLowerCase().includes(q) ||
+        item.year.toLowerCase().includes(q) ||
+        item.term.toLowerCase().includes(q)
+      )
+    })
+  }, [teacherStudentsBreakdown, teacherStudentsSearchQuery])
 
   // Filter students for student search mode
   const filteredStudents = students.filter((s) => {
@@ -403,34 +458,59 @@ export function AdminAttendanceManager({
       {searchMode === 'teacher' && (
         <div className="space-y-6">
           {/* Teacher search & selection bar */}
-          <div className="bg-white p-5 rounded-2xl border-2 border-border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="relative w-full md:w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search teacher by name (e.g. Jamshed)..."
-                value={teacherSearchQuery}
-                onChange={(e) => setTeacherSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2.5 rounded-xl border-2 border-border font-bold text-xs bg-muted/30 focus:border-primary outline-none"
-              />
+          <div className="bg-white p-4 sm:p-5 rounded-2xl border-2 border-border shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+              <div className="relative w-full sm:w-72">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Filter teachers by name or email..."
+                  value={teacherSearchQuery}
+                  onChange={(e) => setTeacherSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border-2 border-border font-bold text-xs bg-muted/30 focus:border-primary outline-none"
+                />
+              </div>
+
+              {/* Comprehensive Dropdown to pick from all teachers */}
+              <div className="relative min-w-[240px]">
+                <select
+                  value={currentTeacher?.id || ''}
+                  onChange={(e) => {
+                    setSelectedTeacherId(e.target.value)
+                  }}
+                  className="w-full px-3 py-2.5 rounded-xl border-2 border-border font-bold text-xs bg-white text-foreground outline-none focus:border-primary cursor-pointer appearance-none pr-8"
+                >
+                  {teachers.map((t) => {
+                    const studentCount = students.filter(
+                      (s) => s.teacher_id === t.id || classes.some((c: any) => c.teacher_id === t.id && c.student_id === s.id)
+                    ).length
+                    return (
+                      <option key={t.id} value={t.id}>
+                        {t.name} ({studentCount} {studentCount === 1 ? 'student' : 'students'})
+                      </option>
+                    )
+                  })}
+                </select>
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              </div>
             </div>
 
             {/* Teacher selector pills */}
-            <div className="flex flex-wrap items-center gap-2 max-w-xl overflow-x-auto">
-              {filteredTeachers.slice(0, 6).map((t) => {
+            <div className="flex flex-wrap items-center gap-2 max-w-xl overflow-x-auto scrollbar-none py-1">
+              {filteredTeachers.slice(0, 5).map((t) => {
                 const isSelected = (currentTeacher?.id === t.id)
                 return (
                   <button
                     key={t.id}
                     onClick={() => setSelectedTeacherId(t.id)}
-                    className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-2 border ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-2 border cursor-pointer ${
                       isSelected
-                        ? 'border-primary bg-primary/10 text-primary'
+                        ? 'border-primary bg-primary/10 text-primary font-bold shadow-xs'
                         : 'border-border bg-white text-muted-foreground hover:border-primary/40'
                     }`}
                   >
                     <Avatar photoUrl={t.profile_photo} name={t.name} size="sm" />
-                    <span>{t.name}</span>
+                    <span className="truncate max-w-[130px]">{t.name}</span>
                   </button>
                 )
               })}
@@ -514,39 +594,116 @@ export function AdminAttendanceManager({
 
               {/* Students Breakdown Table */}
               <AnimatedCard delay={0.2} className="p-0 overflow-hidden border-2 border-border">
-                <div className="p-5 border-b-2 border-border flex justify-between items-center bg-muted/20">
-                  <h4 className="font-black text-foreground text-lg">
-                    Students Under {currentTeacher.name} <span className="text-primary font-bold">({studentsUnderTeacher.length})</span>
-                  </h4>
-                  <span className="text-xs font-semibold text-muted-foreground">{dateRange.label}</span>
+                <div className="p-4 sm:p-5 border-b-2 border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/20">
+                  <div>
+                    <h4 className="font-black text-foreground text-lg flex items-center gap-2">
+                      <span>Students Under {currentTeacher.name}</span>
+                      <span className="text-primary font-bold text-sm bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/20">
+                        {studentsUnderTeacher.length} {studentsUnderTeacher.length === 1 ? 'Student' : 'Students'}
+                      </span>
+                    </h4>
+                    <span className="text-xs font-semibold text-muted-foreground mt-0.5 block">
+                      Classes & Attendance Period: <strong className="text-foreground">{dateRange.label}</strong>
+                    </span>
+                  </div>
+
+                  <div className="relative w-full sm:w-72">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                    <input
+                      type="text"
+                      placeholder="Filter this teacher's students..."
+                      value={teacherStudentsSearchQuery}
+                      onChange={(e) => setTeacherStudentsSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-3 py-1.5 rounded-xl border-2 border-border text-xs font-semibold bg-white outline-none focus:border-primary"
+                    />
+                  </div>
                 </div>
 
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse min-w-[750px]">
+                  <table className="w-full text-left border-collapse min-w-[850px]">
                     <thead>
-                      <tr className="bg-muted border-b-2 border-border">
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-wider">Reg No</th>
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-wider">Student Name</th>
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-wider">Status</th>
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-wider text-center">Scheduled</th>
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-wider text-center">Attended</th>
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-wider text-center">Not Attended</th>
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-wider">Remarks / Issues</th>
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-wider text-center">Rate</th>
-                        <th className="p-4 text-xs font-black text-foreground uppercase tracking-wider text-right">Actions</th>
+                      <tr className="bg-muted border-b-2 border-border text-xs font-black text-foreground uppercase tracking-wider">
+                        <th className="p-4 min-w-[110px]">Reg No</th>
+                        <th className="p-4 min-w-[220px]">Student Details</th>
+                        <th className="p-4 min-w-[170px]">Classes Completed</th>
+                        <th className="p-4 min-w-[150px]">Completion %</th>
+                        <th className="p-4 min-w-[120px]">Status</th>
+                        <th className="p-4 min-w-[160px]">Period Breakdown</th>
+                        <th className="p-4 min-w-[140px]">Remarks</th>
+                        <th className="p-4 text-right min-w-[130px]">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y-2 divide-border">
-                      {teacherStudentsBreakdown.length > 0 ? (
-                        teacherStudentsBreakdown.map((item) => (
+                      {displayStudentsBreakdown.length > 0 ? (
+                        displayStudentsBreakdown.map((item) => (
                           <tr key={item.student.id} className="hover:bg-muted/30 transition-colors">
-                            <td className="p-4 font-black text-primary text-sm">{item.registration_number}</td>
+                            {/* Reg No */}
+                            <td className="p-4 font-mono font-bold text-xs">
+                              <span className="bg-emerald-50 text-emerald-900 border border-emerald-200 px-2 py-0.5 rounded">
+                                {item.registration_number}
+                              </span>
+                            </td>
+
+                            {/* Student Details: Name, Year & Term */}
                             <td className="p-4">
                               <div className="flex items-center gap-3">
                                 <Avatar photoUrl={item.student.profile_photo} name={item.name} size="sm" />
-                                <span className="font-bold text-foreground text-sm">{item.name}</span>
+                                <div>
+                                  <span className="font-bold text-foreground text-sm block">{item.name}</span>
+                                  <span className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                                    <span>{item.year}</span>
+                                    <span>·</span>
+                                    <span className="text-primary font-bold">{item.term}</span>
+                                  </span>
+                                </div>
                               </div>
                             </td>
+
+                            {/* Classes Completed in Period (Count) */}
+                            <td className="p-4">
+                              <div className="flex items-baseline gap-1.5">
+                                <span className="text-base font-black text-emerald-800">
+                                  {item.attended}
+                                </span>
+                                <span className="text-xs font-bold text-muted-foreground">
+                                  / {item.scheduled} completed
+                                </span>
+                              </div>
+                              <span className="text-[10px] text-muted-foreground block font-medium">
+                                in {dateRange.label}
+                              </span>
+                            </td>
+
+                            {/* Percentage of Classes Completed in Period */}
+                            <td className="p-4">
+                              <div className="flex items-center gap-2">
+                                <div className="w-20 h-2.5 bg-muted rounded-full overflow-hidden border border-border">
+                                  <div
+                                    className={`h-full rounded-full transition-all ${
+                                      item.percentage >= 75
+                                        ? 'bg-emerald-600'
+                                        : item.percentage >= 50
+                                        ? 'bg-amber-500'
+                                        : 'bg-rose-500'
+                                    }`}
+                                    style={{ width: `${Math.min(item.percentage, 100)}%` }}
+                                  />
+                                </div>
+                                <span
+                                  className={`text-xs font-black ${
+                                    item.percentage >= 75
+                                      ? 'text-emerald-700'
+                                      : item.percentage >= 50
+                                      ? 'text-amber-700'
+                                      : 'text-rose-700'
+                                  }`}
+                                >
+                                  {item.percentage}%
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* Enrolment Status */}
                             <td className="p-4">
                               {item.enrolment_status === 'stopped' ? (
                                 item.student?.login_revoked ? (
@@ -566,13 +723,27 @@ export function AdminAttendanceManager({
                                 </span>
                               )}
                             </td>
-                            <td className="p-4 text-center font-bold text-foreground text-sm">{item.scheduled}</td>
-                            <td className="p-4 text-center font-black text-green-700 text-sm">{item.attended}</td>
-                            <td className="p-4 text-center font-black text-red-700 text-sm">{item.notAttended}</td>
+
+                            {/* Period Breakdown */}
+                            <td className="p-4">
+                              <div className="text-xs space-y-0.5">
+                                <span className="block text-emerald-800 font-bold">
+                                  Attended: {item.attended}
+                                </span>
+                                <span className="text-[11px] text-muted-foreground block">
+                                  Absent: {item.notAttended - item.teacherUnavailable - item.studentUnavailable - item.breakCount}
+                                  {item.teacherUnavailable > 0 && ` · Missed: ${item.teacherUnavailable}`}
+                                  {item.breakCount > 0 && ` · Break: ${item.breakCount}`}
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* Remarks */}
                             <td className="p-4 text-xs font-medium text-muted-foreground">
                               {item.remarks || '-'}
                             </td>
-                            <td className="p-4 text-center font-black text-foreground text-base">{item.percentage}%</td>
+
+                            {/* Actions */}
                             <td className="p-4 text-right">
                               <BouncyButton
                                 size="sm"
@@ -587,8 +758,10 @@ export function AdminAttendanceManager({
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={9} className="p-8 text-center text-muted-foreground font-bold">
-                            No students assigned to this teacher yet.
+                          <td colSpan={8} className="p-8 text-center text-muted-foreground font-bold">
+                            {studentsUnderTeacher.length === 0
+                              ? `No students assigned to ${currentTeacher.name} yet.`
+                              : `No students match "${teacherStudentsSearchQuery}".`}
                           </td>
                         </tr>
                       )}
