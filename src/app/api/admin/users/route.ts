@@ -213,15 +213,20 @@ export async function POST(request: Request) {
 
     // 3. Create student/teacher profile
     if (role === 'student') {
-      const studentPayload: any = {
+      const cleanTerm = term ? (
+        String(term).trim().toLowerCase().includes('1') ? 'Term 01' :
+        String(term).trim().toLowerCase().includes('2') ? 'Term 02' :
+        String(term).trim()
+      ) : null
+
+      const baseStudentPayload: any = {
         user_id: userId,
         name: fullName,
         registration_number: registrationNumber || null,
         teacher_id: effectiveTeacherId,
         class_name: effectiveYear,
-        year: effectiveYear,
-        term: term || null,
         dob: dob ? new Date(dob).toISOString() : null,
+        date_of_birth: dob ? new Date(dob).toISOString() : null,
         guardian_name: guardianName || null,
         guardian_mobile: guardianMobile || null,
         address: address || null,
@@ -230,11 +235,32 @@ export async function POST(request: Request) {
         enrolment_status: enrolmentStatus || 'ongoing'
       }
 
-      const { error: spError } = await supabaseAdmin
+      // Try with year and term in case columns exist in database schema
+      let { error: spError } = await supabaseAdmin
         .from('student_profiles')
-        .upsert(studentPayload, { onConflict: 'user_id' })
+        .upsert({ ...baseStudentPayload, year: effectiveYear, term: cleanTerm }, { onConflict: 'user_id' })
 
-      if (spError) throw spError
+      if (spError) {
+        // Fallback without year & term columns if schema cache does not have them
+        const { error: retryError } = await supabaseAdmin
+          .from('student_profiles')
+          .upsert(baseStudentPayload, { onConflict: 'user_id' })
+
+        if (retryError) throw retryError
+      }
+
+      // Ensure Supabase Auth user metadata holds year and term so it is universally available
+      await supabaseAdmin.auth.admin.updateUserById(userId, {
+        user_metadata: {
+          name: fullName,
+          full_name: fullName,
+          role: role,
+          registration_number: registrationNumber || null,
+          year: effectiveYear,
+          term: cleanTerm,
+          class_name: effectiveYear
+        }
+      })
     }
 
     if (role === 'teacher') {

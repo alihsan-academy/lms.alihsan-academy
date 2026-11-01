@@ -12,6 +12,7 @@ import { motion } from 'framer-motion'
 import { AnimatedCard } from '@/components/animated-card'
 import { BouncyButton } from '@/components/bouncy-button'
 import { SecurityPasswordCard } from '@/components/security-password-card'
+import { normalizeTerm } from '@/components/academic-distribution-card'
 
 function calculateCompletion(data: any) {
   const fields = [
@@ -70,7 +71,9 @@ export default function StudentProfilePage() {
         academy_joined_date: stud?.academy_joined_date ? format(parseISO(stud.academy_joined_date), 'yyyy-MM-dd') : '',
         class_name: stud?.class_name || user.user_metadata?.class_name || user.user_metadata?.year || '',
         year: stud?.year || stud?.class_name || user.user_metadata?.year || user.user_metadata?.class_name || '',
-        term: stud?.term || user.user_metadata?.term || '',
+        term: normalizeTerm(stud?.term || user.user_metadata?.term) !== 'Unassigned' 
+          ? normalizeTerm(stud?.term || user.user_metadata?.term) 
+          : (stud?.term || user.user_metadata?.term || ''),
         enrolment_status: stud?.enrolment_status || user.user_metadata?.enrolment_status || 'ongoing',
         break_from_date: stud?.break_from_date || '',
         break_to_date: stud?.break_to_date || '',

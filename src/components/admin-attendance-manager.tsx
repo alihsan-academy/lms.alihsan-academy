@@ -37,6 +37,7 @@ import { generateStudentAttendancePDF, generateTeacherAttendancePDF, generateInt
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 import { StudentStatusModal } from '@/components/student-status-modal'
+import { normalizeTerm, normalizeYear } from '@/components/academic-distribution-card'
 
 interface AdminAttendanceManagerProps {
   students: any[]
@@ -142,8 +143,8 @@ export function AdminAttendanceManager({
         student: s,
         registration_number: s.registration_number || 'N/A',
         name: s.name,
-        year: s.year || s.class_name || 'N/A',
-        term: s.term || 'N/A',
+        year: normalizeYear(s.year, s.class_name),
+        term: normalizeTerm(s.term) !== 'Unassigned' ? normalizeTerm(s.term) : (s.term || 'N/A'),
         enrolment_status: s.enrolment_status || 'ongoing',
         scheduled: summary.totalScheduled,
         attended: summary.attendedCount,

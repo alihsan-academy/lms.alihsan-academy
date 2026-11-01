@@ -206,7 +206,7 @@ export async function POST(request: Request) {
       .update(updateData)
       .eq('id', studentRecord.id)
 
-    if (updateError && (updateError.message?.includes('year') || updateError.message?.includes('term') || updateError.code === '42703')) {
+    if (updateError && (updateError.message?.includes('year') || updateError.message?.includes('term') || updateError.message?.includes('schema cache') || updateError.code === '42703' || updateError.code === 'PGRST204')) {
       const fallbackData = { ...updateData }
       delete fallbackData.year
       delete fallbackData.term

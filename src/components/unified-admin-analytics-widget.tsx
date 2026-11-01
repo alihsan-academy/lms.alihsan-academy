@@ -17,6 +17,7 @@ import {
   Lock,
   PauseCircle
 } from 'lucide-react'
+import { normalizeTerm } from '@/components/academic-distribution-card'
 
 interface UnifiedAdminAnalyticsWidgetProps {
   teachers: any[]
@@ -704,7 +705,7 @@ export function UnifiedAdminAnalyticsWidget({
                     ? s.registration_number
                     : 'No Reg No'
                   const year = s.year || s.class_name || 'N/A'
-                  const term = s.term || 'N/A'
+                  const term = normalizeTerm(s.term) !== 'Unassigned' ? normalizeTerm(s.term) : (s.term || 'N/A')
                   const status = s.enrolment_status || 'ongoing'
 
                   return (

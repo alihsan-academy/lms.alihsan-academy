@@ -3,6 +3,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Pencil } from "lucide-react";
+import { normalizeTerm } from "@/components/academic-distribution-card";
 
 export function StudentPreviewModal({
   student,
@@ -48,7 +49,7 @@ export function StudentPreviewModal({
               <span className="font-bold text-foreground">Class / Year:</span> {student.year || student.class_name || "—"}
             </p>
             <p className="text-xs sm:text-sm font-semibold text-muted-foreground">
-              <span className="font-bold text-foreground">Term:</span> {student.term || "—"}
+              <span className="font-bold text-foreground">Term:</span> {student.term ? (normalizeTerm(student.term) !== 'Unassigned' ? normalizeTerm(student.term) : student.term) : "—"}
             </p>
             <p className="text-xs sm:text-sm font-semibold text-muted-foreground">
               <span className="font-bold text-foreground">Status:</span>{" "}

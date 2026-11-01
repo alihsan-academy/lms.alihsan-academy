@@ -5,13 +5,13 @@ import { GraduationCap, BookOpen, Layers, Users, ArrowUpRight, CheckCircle2 } fr
 import { motion } from 'framer-motion'
 import { AnimatedCard } from '@/components/animated-card'
 
-export function normalizeTerm(rawTerm?: string | null): 'Term 1' | 'Term 2' | 'Unassigned' {
+export function normalizeTerm(rawTerm?: string | null): 'Term 01' | 'Term 02' | 'Unassigned' {
   if (!rawTerm) return 'Unassigned'
   const t = String(rawTerm).trim().toLowerCase()
-  if (t === 'term 1' || t === 'term-01' || t === 'term 01' || t === 'term-1' || t === 'term1' || t === '1') return 'Term 1'
-  if (t === 'term 2' || t === 'term-02' || t === 'term 02' || t === 'term-2' || t === 'term2' || t === '2') return 'Term 2'
-  if (t.includes('1')) return 'Term 1'
-  if (t.includes('2')) return 'Term 2'
+  if (t === 'term 01' || t === 'term-01' || t === 'term 1' || t === 'term-1' || t === 'term1' || t === '1') return 'Term 01'
+  if (t === 'term 02' || t === 'term-02' || t === 'term 2' || t === 'term-2' || t === 'term2' || t === '2') return 'Term 02'
+  if (t.includes('1')) return 'Term 01'
+  if (t.includes('2')) return 'Term 02'
   return 'Unassigned'
 }
 
@@ -54,8 +54,8 @@ export function AcademicDistributionCard({
       const yearLabel = normalizeYear(s.year, s.class_name)
       const termLabel = normalizeTerm(s.term)
 
-      if (termLabel === 'Term 1') term1Total++
-      else if (termLabel === 'Term 2') term2Total++
+      if (termLabel === 'Term 01') term1Total++
+      else if (termLabel === 'Term 02') term2Total++
       else unassignedTermTotal++
 
       if (!yearMap.has(yearLabel)) {
@@ -70,8 +70,8 @@ export function AcademicDistributionCard({
       }
 
       const row = yearMap.get(yearLabel)!
-      if (termLabel === 'Term 1') row.term1Count++
-      else if (termLabel === 'Term 2') row.term2Count++
+      if (termLabel === 'Term 01') row.term1Count++
+      else if (termLabel === 'Term 02') row.term2Count++
       else row.unassignedTermCount++
       row.total++
     })
@@ -113,16 +113,16 @@ export function AcademicDistributionCard({
             Academic Year & Term Distribution
           </h3>
           <p className="text-xs text-muted-foreground font-medium mt-0.5">
-            Student breakdown across academic years, separated by Term 1 and Term 2
+            Student breakdown across academic years, separated by Term 01 and Term 02
           </p>
         </div>
       </div>
 
       {/* Top 3 Summary Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/* Term 1 Card */}
+        {/* Term 01 Card */}
         <div 
-          onClick={() => onSelectTerm?.('Term 1')}
+          onClick={() => onSelectTerm?.('Term 01')}
           className={`bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border-2 border-emerald-500/20 rounded-2xl p-4 transition-all ${
             onSelectTerm ? 'cursor-pointer hover:border-emerald-500/40 hover:shadow-xs active:scale-[0.99]' : ''
           }`}
@@ -130,7 +130,7 @@ export function AcademicDistributionCard({
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
               <BookOpen className="h-3.5 w-3.5 text-emerald-600" />
-              Term 1 Students
+              Term 01 Students
             </span>
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
               {totalStudents > 0 ? Math.round((term1Total / totalStudents) * 100) : 0}%
@@ -142,9 +142,9 @@ export function AcademicDistributionCard({
           </div>
         </div>
 
-        {/* Term 2 Card */}
+        {/* Term 02 Card */}
         <div 
-          onClick={() => onSelectTerm?.('Term 2')}
+          onClick={() => onSelectTerm?.('Term 02')}
           className={`bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border-2 border-amber-500/20 rounded-2xl p-4 transition-all ${
             onSelectTerm ? 'cursor-pointer hover:border-amber-500/40 hover:shadow-xs active:scale-[0.99]' : ''
           }`}
@@ -152,7 +152,7 @@ export function AcademicDistributionCard({
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
               <BookOpen className="h-3.5 w-3.5 text-amber-600" />
-              Term 2 Students
+              Term 02 Students
             </span>
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
               {totalStudents > 0 ? Math.round((term2Total / totalStudents) * 100) : 0}%
@@ -192,17 +192,17 @@ export function AcademicDistributionCard({
                 <th className="py-3 px-4 text-center w-32">
                   <span className="inline-flex items-center gap-1 text-emerald-800">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-                    Term 1
+                    Term 01
                   </span>
                 </th>
                 <th className="py-3 px-4 text-center w-32">
                   <span className="inline-flex items-center gap-1 text-amber-800">
                     <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
-                    Term 2
+                    Term 02
                   </span>
                 </th>
                 <th className="py-3 px-4 text-center w-28">Total</th>
-                <th className="py-3 px-4 text-left">Term 1 / Term 2 Split</th>
+                <th className="py-3 px-4 text-left">Term 01 / Term 02 Split</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
@@ -262,14 +262,14 @@ export function AcademicDistributionCard({
                               <div 
                                 style={{ width: `${t1Pct}%` }}
                                 className="h-full bg-emerald-500" 
-                                title={`Term 1: ${row.term1Count} (${t1Pct}%)`}
+                                title={`Term 01: ${row.term1Count} (${t1Pct}%)`}
                               />
                             )}
                             {t2Pct > 0 && (
                               <div 
                                 style={{ width: `${t2Pct}%` }}
                                 className="h-full bg-amber-500" 
-                                title={`Term 2: ${row.term2Count} (${t2Pct}%)`}
+                                title={`Term 02: ${row.term2Count} (${t2Pct}%)`}
                               />
                             )}
                           </div>
@@ -300,7 +300,7 @@ export function AcademicDistributionCard({
                   <td className="py-3 px-4 text-center font-black text-amber-800 text-sm">{term2Total}</td>
                   <td className="py-3 px-4 text-center font-black text-foreground text-sm">{totalStudents}</td>
                   <td className="py-3 px-4 text-muted-foreground font-bold text-[11px]">
-                    {term1Total} in Term 1 · {term2Total} in Term 2
+                    {term1Total} in Term 01 · {term2Total} in Term 02
                   </td>
                 </tr>
               </tfoot>

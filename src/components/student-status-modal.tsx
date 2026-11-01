@@ -20,6 +20,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Avatar } from '@/components/avatar'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { normalizeTerm } from '@/components/academic-distribution-card'
 
 export type EnrolmentStatus = 'ongoing' | 'break' | 'stopped'
 
@@ -72,7 +73,8 @@ export function StudentStatusModal({
       const current = (student.enrolment_status as EnrolmentStatus) || 'ongoing'
       setSelectedStatus(['ongoing', 'break', 'stopped'].includes(current) ? current : 'ongoing')
       setYear(student.year || student.class_name || '')
-      setTerm(student.term || '')
+      const initialTerm = student.term ? normalizeTerm(student.term) : ''
+      setTerm(initialTerm === 'Unassigned' ? '' : initialTerm)
       setBreakFromDate(student.break_from_date || '')
       setBreakToDate(student.break_to_date || '')
       setBreakReason(student.break_reason || '')
@@ -239,8 +241,8 @@ export function StudentStatusModal({
                   className="w-full rounded-md border border-border/80 bg-white px-2.5 py-1 text-xs font-medium h-8 cursor-pointer text-foreground focus:border-primary outline-none"
                 >
                   <option value="">Select Term</option>
-                  <option value="Term-01">Term 1</option>
-                  <option value="Term-02">Term 2</option>
+                  <option value="Term 01">Term 01</option>
+                  <option value="Term 02">Term 02</option>
                 </select>
               </div>
             </div>

@@ -1301,8 +1301,8 @@ export default function SuperAdminDashboard() {
                       onChange={(e) => setStudentTermFilter(e.target.value)}
                     >
                       <option value="all">All Terms</option>
-                      <option value="Term 1">Term 1</option>
-                      <option value="Term 2">Term 2</option>
+                      <option value="Term 01">Term 01</option>
+                      <option value="Term 02">Term 02</option>
                     </select>
                     <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                   </div>
@@ -1395,8 +1395,8 @@ export default function SuperAdminDashboard() {
                                 {normalizeYear(s.year, s.class_name)}
                               </span>
                               <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider whitespace-nowrap border ${
-                                normalizeTerm(s.term) === 'Term 1' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
-                                normalizeTerm(s.term) === 'Term 2' ? 'bg-amber-50 text-amber-800 border-amber-200' :
+                                normalizeTerm(s.term) === 'Term 01' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
+                                normalizeTerm(s.term) === 'Term 02' ? 'bg-amber-50 text-amber-800 border-amber-200' :
                                 'bg-slate-50 text-slate-600 border-slate-200'
                               }`}>
                                 {normalizeTerm(s.term)}
@@ -1737,8 +1737,8 @@ export default function SuperAdminDashboard() {
                               className="w-full rounded-md border border-border bg-white px-2 py-1 text-xs font-medium h-7.5 cursor-pointer text-foreground focus:border-primary outline-none"
                             >
                               <option value="">Select Term</option>
-                              <option value="Term-01">Term 1 (Term-01)</option>
-                              <option value="Term-02">Term 2 (Term-02)</option>
+                              <option value="Term 01">Term 01</option>
+                              <option value="Term 02">Term 02</option>
                             </select>
                           </div>
 
@@ -2279,13 +2279,13 @@ export default function SuperAdminDashboard() {
                           <div className="space-y-1">
                             <Label className="text-[11px] font-bold text-foreground uppercase tracking-wider">Term</Label>
                             <select
-                              value={normalizeTerm(inlineTerm) === 'Term 1' ? 'Term-01' : normalizeTerm(inlineTerm) === 'Term 2' ? 'Term-02' : inlineTerm}
+                              value={normalizeTerm(inlineTerm) === 'Term 01' ? 'Term 01' : normalizeTerm(inlineTerm) === 'Term 02' ? 'Term 02' : inlineTerm}
                               onChange={(e) => setInlineTerm(e.target.value)}
                               className="w-full rounded-md border border-input bg-white px-2.5 py-1 text-xs font-semibold h-9 cursor-pointer text-foreground"
                             >
                               <option value="">Select term</option>
-                              <option value="Term-01">Term 1</option>
-                              <option value="Term-02">Term 2</option>
+                              <option value="Term 01">Term 01</option>
+                              <option value="Term 02">Term 02</option>
                             </select>
                           </div>
                         </div>
@@ -2295,19 +2295,19 @@ export default function SuperAdminDashboard() {
                           <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">
                             Progression:
                           </span>
-                          {normalizeTerm(inlineTerm) === 'Term 1' && (
+                          {normalizeTerm(inlineTerm) === 'Term 01' && (
                             <button
                               type="button"
                               onClick={() => {
-                                setInlineTerm('Term-02')
-                                toast.info('Advanced to Term 2. Click "Save Status" to confirm.')
+                                setInlineTerm('Term 02')
+                                toast.info('Advanced to Term 02. Click "Save Status" to confirm.')
                               }}
                               className="px-2.5 py-1 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
                             >
-                              <span>Advance to Term 2</span>
+                              <span>Advance to Term 02</span>
                             </button>
                           )}
-                          {normalizeTerm(inlineTerm) === 'Term 2' && (
+                          {normalizeTerm(inlineTerm) === 'Term 02' && (
                             <button
                               type="button"
                               onClick={() => {
@@ -2315,24 +2315,24 @@ export default function SuperAdminDashboard() {
                                 if (!isNaN(currentNum)) {
                                   setInlineYear(`Year ${currentNum + 1}`)
                                 }
-                                setInlineTerm('Term-01')
-                                toast.info(`Promoted to ${!isNaN(currentNum) ? `Year ${currentNum + 1}` : 'Next Year'}, Term 1. Click "Save Status" to confirm.`)
+                                setInlineTerm('Term 01')
+                                toast.info(`Promoted to ${!isNaN(currentNum) ? `Year ${currentNum + 1}` : 'Next Year'}, Term 01. Click "Save Status" to confirm.`)
                               }}
                               className="px-2.5 py-1 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
                             >
-                              <span>Promote to Next Year (Term 1)</span>
+                              <span>Promote to Next Year (Term 01)</span>
                             </button>
                           )}
                           {normalizeTerm(inlineTerm) === 'Unassigned' && (
                             <button
                               type="button"
                               onClick={() => {
-                                setInlineTerm('Term-01')
-                                toast.info('Set to Term 1. Click "Save Status" to confirm.')
+                                setInlineTerm('Term 01')
+                                toast.info('Set to Term 01. Click "Save Status" to confirm.')
                               }}
                               className="px-2.5 py-1 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
                             >
-                              <span>Set to Term 1</span>
+                              <span>Set to Term 01</span>
                             </button>
                           )}
                         </div>
