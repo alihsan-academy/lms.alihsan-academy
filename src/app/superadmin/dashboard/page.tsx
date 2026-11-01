@@ -1700,29 +1700,52 @@ export default function SuperAdminDashboard() {
                         </div>
                       </div>
 
-                      {/* Section 2: Academy Details */}
+                      {/* Section 2: Academy Details & Teacher Assignment */}
                       <div className="bg-muted/20 p-2.5 sm:p-3 rounded-xl border border-border/70 space-y-2.5">
-                        <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-primary">
-                          <span className="w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[9px]">2</span>
-                          <span>Academy Details</span>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-primary">
+                            <span className="w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[9px]">2</span>
+                            <span>Academy Details & Teacher Assignment</span>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground font-semibold">
+                            {newUser.teacherId ? '✓ Teacher Selected' : '● Unassigned'}
+                          </span>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Assigned Teacher</label>
-                            <select 
-                              className="w-full px-2 py-1 border border-border rounded-lg bg-white focus:border-primary outline-none font-medium h-7.5 text-xs cursor-pointer"
-                              value={newUser.teacherId}
-                              onChange={e => setNewUser({...newUser, teacherId: e.target.value})}
-                            >
-                              <option value="">Not Assigned (Teacher Unassigned)</option>
-                              {teachers.map(t => (
-                                <option key={t.id} value={t.id}>{t.name}</option>
-                              ))}
-                            </select>
-                            <span className="text-[9px] text-muted-foreground block">
-                              {!newUser.teacherId ? 'Tagged as "Teacher Unassigned" until assigned.' : 'Teacher can schedule classes.'}
-                            </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                          {/* Prominent Teacher Assignment Dropdown */}
+                          <div className="space-y-1 sm:col-span-1 bg-white p-2 rounded-lg border-2 border-primary/30 shadow-2xs">
+                            <label className="text-[10px] font-black text-foreground uppercase tracking-wider flex items-center gap-1">
+                              <UserCheck className="h-3 w-3 text-primary" />
+                              <span>Assign Teacher</span>
+                              <span className="text-[9px] font-normal text-muted-foreground">(Optional)</span>
+                            </label>
+                            <div className="relative">
+                              <select 
+                                className="w-full pl-2 pr-7 py-1 border border-border focus:border-primary rounded-md bg-white outline-none font-semibold h-8 text-xs cursor-pointer text-foreground appearance-none"
+                                value={newUser.teacherId}
+                                onChange={e => setNewUser({...newUser, teacherId: e.target.value})}
+                              >
+                                <option value="">— Leave Unassigned (Teacher Unassigned Tag) —</option>
+                                {teachers.map(t => (
+                                  <option key={t.id} value={t.id}>
+                                    {t.name} {t.email ? `(${t.email})` : ''}
+                                  </option>
+                                ))}
+                              </select>
+                              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                            </div>
+                            <div className="mt-1">
+                              {newUser.teacherId ? (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded leading-none">
+                                  ✓ Assigned to {teachers.find(t => t.id === newUser.teacherId)?.name}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded leading-none">
+                                  ● Tagged as &quot;Teacher Unassigned&quot;
+                                </span>
+                              )}
+                            </div>
                           </div>
 
                           <div className="space-y-1">
@@ -1731,21 +1754,30 @@ export default function SuperAdminDashboard() {
                               type="date"
                               value={newUser.academyJoinedDate || ''}
                               onChange={e => setNewUser({...newUser, academyJoinedDate: e.target.value})}
-                              className="bg-white h-7.5 text-xs font-medium"
+                              className="bg-white h-8 text-xs font-medium"
                             />
+                            <span className="text-[9px] text-muted-foreground block">
+                              Defaults to today if left empty.
+                            </span>
                           </div>
 
                           <div className="space-y-1">
                             <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Enrolment Status</label>
-                            <select 
-                              className="w-full px-2 py-1 border border-border rounded-lg bg-white focus:border-primary outline-none font-medium h-7.5 text-xs cursor-pointer"
-                              value={newUser.enrolmentStatus || 'ongoing'}
-                              onChange={e => setNewUser({...newUser, enrolmentStatus: e.target.value})}
-                            >
-                              <option value="ongoing">Ongoing</option>
-                              <option value="break">On Break</option>
-                              <option value="stopped">Stopped</option>
-                            </select>
+                            <div className="relative">
+                              <select 
+                                className="w-full pl-2 pr-7 py-1 border border-border rounded-lg bg-white focus:border-primary outline-none font-medium h-8 text-xs cursor-pointer appearance-none"
+                                value={newUser.enrolmentStatus || 'ongoing'}
+                                onChange={e => setNewUser({...newUser, enrolmentStatus: e.target.value})}
+                              >
+                                <option value="ongoing">Ongoing (Active classes)</option>
+                                <option value="break">On Break (Temporary leave)</option>
+                                <option value="stopped">Stopped (Discontinued)</option>
+                              </select>
+                              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                            </div>
+                            <span className="text-[9px] text-muted-foreground block">
+                              Initial student enrolment status.
+                            </span>
                           </div>
                         </div>
                       </div>
