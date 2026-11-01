@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
 import { AcademyHeader } from '@/components/academy-header'
-import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, CheckCircle2, Search, AlertCircle, X, RefreshCw, Trash, Pencil, Save, ChevronDown, UserCheck, Clock, XCircle, Lock, Key, Calendar, Filter } from 'lucide-react'
+import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, CheckCircle2, Search, AlertCircle, X, RefreshCw, Trash, Pencil, Save, ChevronDown, UserCheck, Clock, XCircle, Lock, Key, Calendar, Filter, Copy, Mail } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -58,7 +58,37 @@ export default function SuperAdminDashboard() {
   const [removeAccessSearchQuery, setRemoveAccessSearchQuery] = useState('')
   const [removeAccessRoleFilter, setRemoveAccessRoleFilter] = useState('all')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [newUser, setNewUser] = useState({ email: '', password: '', role: 'student', name: '', className: '', teacherId: '', registrationNumber: '' })
+  const [newUser, setNewUser] = useState({
+    email: '',
+    password: '',
+    role: 'student',
+    name: '',
+    registrationNumber: '',
+    year: '',
+    className: '',
+    term: '',
+    dob: '',
+    guardianName: '',
+    guardianMobile: '',
+    address: '',
+    academyJoinedDate: '',
+    teacherId: '',
+    enrolmentStatus: 'ongoing',
+    dateOfJoining: '',
+    mobileNumber: '',
+    educationalQualifications: '',
+    currentCountry: '',
+    currentState: '',
+  })
+  const [createdCredentials, setCreatedCredentials] = useState<{
+    role: string
+    name: string
+    email: string
+    temporaryPassword: string
+    loginPath: string
+    teacherAssigned: boolean
+    teacherName?: string
+  } | null>(null)
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null)
   const [reassigningStudentId, setReassigningStudentId] = useState<string | null>(null)
   const [selectedTeacherId, setSelectedTeacherId] = useState('')
@@ -671,8 +701,36 @@ export default function SuperAdminDashboard() {
       
       if (!response.ok) throw new Error(result.error || "Failed to create user")
       
-      toast.success("User created successfully.")
-      setNewUser({ email: '', password: '', role: 'student', name: '', className: '', teacherId: '', registrationNumber: '' })
+      toast.success("User profile created successfully.")
+      if (result.credentials) {
+        const assignedTeacherObj = teachers.find(t => t.id === newUser.teacherId)
+        setCreatedCredentials({
+          ...result.credentials,
+          teacherName: assignedTeacherObj?.name || 'Unassigned'
+        })
+      }
+      setNewUser({
+        email: '',
+        password: '',
+        role: newUser.role || 'student',
+        name: '',
+        registrationNumber: '',
+        year: '',
+        className: '',
+        term: '',
+        dob: '',
+        guardianName: '',
+        guardianMobile: '',
+        address: '',
+        academyJoinedDate: '',
+        teacherId: '',
+        enrolmentStatus: 'ongoing',
+        dateOfJoining: '',
+        mobileNumber: '',
+        educationalQualifications: '',
+        currentCountry: '',
+        currentState: '',
+      })
       fetchData()
     } catch (error: any) {
       toast.error(error.message)
@@ -1407,145 +1465,481 @@ export default function SuperAdminDashboard() {
           )}
 
           {activeTab === 'manage' && (
-            <PageTransition key="manage" className="space-y-8">
+            <PageTransition key="manage" className="space-y-4">
               
-              <AnimatedCard delay={0.1} className="p-6 md:p-8 border-t-8 border-t-primary">
-                <h3 className="text-2xl font-black text-foreground mb-6 flex items-center gap-3">
-                  <span className="bg-primary/20 p-2 rounded-xl text-primary"><UserPlus className="h-6 w-6" /></span>
-                  Create New Profile
-                </h3>
-                
-                <div className="bg-secondary/10 border-2 border-secondary/20 text-secondary-foreground p-4 rounded-xl mb-8 font-semibold flex items-start gap-3">
-                  <AlertCircle className="h-6 w-6 flex-shrink-0" />
-                  <p>
-                    <strong>Note:</strong> Creating users directly from this dashboard requires the <code>SUPABASE_SERVICE_ROLE_KEY</code> to be configured in your environment variables.
-                  </p>
+              {/* Credentials & Welcome Mail Pipeline Modal / Notification Banner */}
+              {createdCredentials && (
+                <AnimatedCard delay={0.1} className="p-3.5 sm:p-4 rounded-xl border-2 border-emerald-500/40 bg-emerald-50/40 shadow-xs space-y-2.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs sm:text-sm font-black text-emerald-950">
+                          {createdCredentials.role === 'student' ? 'Student' : createdCredentials.role === 'teacher' ? 'Teacher' : 'Admin'} Profile Created & Credentials Generated
+                        </h4>
+                        <p className="text-[11px] font-semibold text-emerald-800">
+                          {createdCredentials.name} · {createdCredentials.email}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setCreatedCredentials(null)}
+                      className="text-emerald-800 hover:text-emerald-950 text-xs font-bold p-1 rounded-md hover:bg-emerald-100/60 transition-colors cursor-pointer"
+                    >
+                      ✕ Close
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-white p-2.5 rounded-lg border border-emerald-200 text-xs">
+                    <div>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase block">Login Email</span>
+                      <strong className="text-foreground font-mono">{createdCredentials.email}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase block">Temporary Password</span>
+                      <strong className="text-emerald-700 font-mono">{createdCredentials.temporaryPassword}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase block">Portal URL</span>
+                      <a href={createdCredentials.loginPath} target="_blank" rel="noreferrer" className="text-primary font-semibold underline truncate block">
+                        {typeof window !== 'undefined' ? `${window.location.origin}${createdCredentials.loginPath}` : createdCredentials.loginPath}
+                      </a>
+                    </div>
+                  </div>
+
+                  {createdCredentials.role === 'student' && (
+                    <div className="text-[11px] font-medium text-emerald-900 bg-emerald-100/60 px-2.5 py-1.5 rounded-md flex items-center gap-2">
+                      <span className="font-bold">Database Pipeline:</span>
+                      {createdCredentials.teacherAssigned ? (
+                        <span>Assigned to <strong>{createdCredentials.teacherName}</strong>. Classes can now be scheduled by the teacher.</span>
+                      ) : (
+                        <span>Student is tagged under <strong className="text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded">Teacher Unassigned</strong>. Once you assign a teacher from the Students tab, classes can be scheduled.</span>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const portalUrl = typeof window !== 'undefined' ? `${window.location.origin}${createdCredentials.loginPath}` : `https://alihsan-lms.vercel.app${createdCredentials.loginPath}`
+                        const message = `Welcome to Al-Ihsan Academy, ${createdCredentials.name}!\n\nHere are your LMS login credentials:\n• Platform URL: ${portalUrl}\n• Email: ${createdCredentials.email}\n• Temporary Password: ${createdCredentials.temporaryPassword}\n\nPlease log in and update your profile settings.`
+                        navigator.clipboard.writeText(message)
+                        toast.success("Credentials message copied to clipboard!")
+                      }}
+                      className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-lg transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      Copy Welcome & Credentials Message
+                    </button>
+
+                    <a
+                      href={`mailto:${createdCredentials.email}?subject=${encodeURIComponent('Welcome to Al-Ihsan Academy - Your LMS Login Details')}&body=${encodeURIComponent(
+                        `Dear ${createdCredentials.name},\n\nWelcome to Al-Ihsan Academy!\n\nYour academy LMS portal account has been created. You can log in using the details below:\n\nPlatform Login URL: ${typeof window !== 'undefined' ? `${window.location.origin}${createdCredentials.loginPath}` : `https://alihsan-lms.vercel.app${createdCredentials.loginPath}`}\nRegistered Email: ${createdCredentials.email}\nTemporary Password: ${createdCredentials.temporaryPassword}\n\nUpon your first login, please update your profile settings and change your password.\n\nWarm regards,\nAl-Ihsan Academy Administration`
+                      )}`}
+                      className="px-3 py-1.5 bg-white border border-emerald-300 hover:bg-emerald-50 text-emerald-900 font-bold text-xs rounded-lg transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+                    >
+                      <Mail className="h-3.5 w-3.5 text-emerald-700" />
+                      Send Email to {createdCredentials.role === 'student' ? 'Student / Guardian' : 'Teacher'}
+                    </a>
+                  </div>
+                </AnimatedCard>
+              )}
+
+              {/* Create New Profile Card - Compact */}
+              <AnimatedCard delay={0.1} className="p-3.5 sm:p-4.5 rounded-xl border border-border shadow-xs">
+                <div className="flex items-center justify-between mb-3 pb-2 border-b border-border/70">
+                  <h3 className="text-sm sm:text-base font-black text-foreground flex items-center gap-2">
+                    <span className="bg-primary/10 p-1.5 rounded-lg text-primary"><UserPlus className="h-4 w-4" /></span>
+                    Create New Profile
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Account Role</label>
+                    <select 
+                      id="create-user-role"
+                      className="px-2.5 py-1 border border-border rounded-lg bg-white font-bold text-xs text-foreground focus:border-primary outline-none cursor-pointer h-7"
+                      value={newUser.role}
+                      onChange={e => setNewUser({...newUser, role: e.target.value})}
+                    >
+                      <option value="student">Student</option>
+                      <option value="teacher">Teacher</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
                 </div>
 
-                <form onSubmit={handleCreateUser} className="space-y-6 max-w-2xl">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label className="font-bold text-foreground text-lg">Account Role</Label>
-                      <select 
-                        id="create-user-role"
-                        className="w-full p-4 border-2 border-border rounded-xl bg-muted/30 focus:ring-4 focus:ring-primary/20 outline-none font-bold text-foreground transition-all"
-                        value={newUser.role}
-                        onChange={e => setNewUser({...newUser, role: e.target.value})}
-                      >
-                        <option value="student">Student</option>
-                        <option value="teacher">Teacher</option>
-                        <option value="admin">Admin</option>
-                      </select>
-                    </div>
+                <form onSubmit={handleCreateUser} className="space-y-3">
+                  {/* STUDENT CREATION FORM (Screenshot 2 specification) */}
+                  {newUser.role === 'student' && (
+                    <div className="space-y-3">
+                      {/* Section 1: Personal Information */}
+                      <div className="bg-muted/20 p-2.5 sm:p-3 rounded-xl border border-border/70 space-y-2.5">
+                        <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-primary">
+                          <span className="w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[9px]">1</span>
+                          <span>Personal Information</span>
+                        </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="font-bold text-foreground">Full Name</Label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Registered Email <span className="text-destructive">*</span></label>
+                            <Input 
+                              type="email"
+                              placeholder="e.g. student@gmail.com" 
+                              value={newUser.email}
+                              onChange={e => setNewUser({...newUser, email: e.target.value})}
+                              required
+                              className="bg-white h-7.5 text-xs font-medium"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Temporary Password <span className="text-destructive">*</span></label>
+                            <Input 
+                              type="password"
+                              placeholder="Min 6 characters" 
+                              value={newUser.password}
+                              onChange={e => setNewUser({...newUser, password: e.target.value})}
+                              required
+                              minLength={6}
+                              className="bg-white h-7.5 text-xs font-medium"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Registration Number <span className="text-destructive">*</span></label>
+                            <Input 
+                              placeholder="e.g. 221133" 
+                              value={newUser.registrationNumber || ''}
+                              onChange={e => setNewUser({...newUser, registrationNumber: e.target.value})}
+                              required
+                              className="bg-white h-7.5 text-xs font-medium"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Class / Year</label>
+                            <Input 
+                              placeholder="e.g. 1, Year 1, Tahfeez Grade 1" 
+                              value={newUser.year || ''}
+                              onChange={e => setNewUser({...newUser, year: e.target.value})}
+                              className="bg-white h-7.5 text-xs font-medium"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Term</label>
+                            <select
+                              value={newUser.term || ''}
+                              onChange={e => setNewUser({...newUser, term: e.target.value})}
+                              className="w-full rounded-md border border-border bg-white px-2 py-1 text-xs font-medium h-7.5 cursor-pointer text-foreground focus:border-primary outline-none"
+                            >
+                              <option value="">Select Term</option>
+                              <option value="Term-01">Term 1 (Term-01)</option>
+                              <option value="Term-02">Term 2 (Term-02)</option>
+                            </select>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Full Name <span className="text-destructive">*</span></label>
+                            <Input 
+                              placeholder="Student Full Name" 
+                              value={newUser.name}
+                              onChange={e => setNewUser({...newUser, name: e.target.value})}
+                              required
+                              className="bg-white h-7.5 text-xs font-medium"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Date of Birth</label>
+                            <Input 
+                              type="date"
+                              value={newUser.dob || ''}
+                              onChange={e => setNewUser({...newUser, dob: e.target.value})}
+                              className="bg-white h-7.5 text-xs font-medium"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Guardian Name</label>
+                            <Input 
+                              placeholder="Father/Guardian name" 
+                              value={newUser.guardianName || ''}
+                              onChange={e => setNewUser({...newUser, guardianName: e.target.value})}
+                              className="bg-white h-7.5 text-xs font-medium"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Guardian Mobile Number</label>
+                            <Input 
+                              placeholder="e.g. +44 1234 567890" 
+                              value={newUser.guardianMobile || ''}
+                              onChange={e => setNewUser({...newUser, guardianMobile: e.target.value})}
+                              className="bg-white h-7.5 text-xs font-medium"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Home Address</label>
+                          <Textarea 
+                            rows={2}
+                            placeholder="Enter your full residential address" 
+                            value={newUser.address || ''}
+                            onChange={e => setNewUser({...newUser, address: e.target.value})}
+                            className="bg-white text-xs font-medium resize-none min-h-[44px]"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Section 2: Academy Details */}
+                      <div className="bg-muted/20 p-2.5 sm:p-3 rounded-xl border border-border/70 space-y-2.5">
+                        <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-primary">
+                          <span className="w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[9px]">2</span>
+                          <span>Academy Details</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Assigned Teacher</label>
+                            <select 
+                              className="w-full px-2 py-1 border border-border rounded-lg bg-white focus:border-primary outline-none font-medium h-7.5 text-xs cursor-pointer"
+                              value={newUser.teacherId}
+                              onChange={e => setNewUser({...newUser, teacherId: e.target.value})}
+                            >
+                              <option value="">Not Assigned (Teacher Unassigned)</option>
+                              {teachers.map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                              ))}
+                            </select>
+                            <span className="text-[9px] text-muted-foreground block">
+                              {!newUser.teacherId ? 'Tagged as "Teacher Unassigned" until assigned.' : 'Teacher can schedule classes.'}
+                            </span>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Academy Joined Date</label>
+                            <Input 
+                              type="date"
+                              value={newUser.academyJoinedDate || ''}
+                              onChange={e => setNewUser({...newUser, academyJoinedDate: e.target.value})}
+                              className="bg-white h-7.5 text-xs font-medium"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Enrolment Status</label>
+                            <select 
+                              className="w-full px-2 py-1 border border-border rounded-lg bg-white focus:border-primary outline-none font-medium h-7.5 text-xs cursor-pointer"
+                              value={newUser.enrolmentStatus || 'ongoing'}
+                              onChange={e => setNewUser({...newUser, enrolmentStatus: e.target.value})}
+                            >
+                              <option value="ongoing">Ongoing</option>
+                              <option value="break">On Break</option>
+                              <option value="stopped">Stopped</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TEACHER CREATION FORM (Screenshot 3 specification) */}
+                  {newUser.role === 'teacher' && (
+                    <div className="space-y-3">
+                      {/* Section 1: Professional Information */}
+                      <div className="bg-muted/20 p-2.5 sm:p-3 rounded-xl border border-border/70 space-y-2.5">
+                        <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-primary">
+                          <span className="w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[9px]">1</span>
+                          <span>Professional Information</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Registered Email <span className="text-destructive">*</span></label>
+                            <Input 
+                              type="email"
+                              placeholder="e.g. teacher@gmail.com" 
+                              value={newUser.email}
+                              onChange={e => setNewUser({...newUser, email: e.target.value})}
+                              required
+                              className="bg-white h-7.5 text-xs font-medium"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Full Name <span className="text-destructive">*</span></label>
+                            <Input 
+                              placeholder="Teacher Full Name" 
+                              value={newUser.name}
+                              onChange={e => setNewUser({...newUser, name: e.target.value})}
+                              required
+                              className="bg-white h-7.5 text-xs font-medium"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Temporary Password <span className="text-destructive">*</span></label>
+                            <Input 
+                              type="password"
+                              placeholder="Min 6 characters" 
+                              value={newUser.password}
+                              onChange={e => setNewUser({...newUser, password: e.target.value})}
+                              required
+                              minLength={6}
+                              className="bg-white h-7.5 text-xs font-medium"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Date of Joining Academy</label>
+                            <Input 
+                              type="date"
+                              value={newUser.dateOfJoining || ''}
+                              onChange={e => setNewUser({...newUser, dateOfJoining: e.target.value})}
+                              className="bg-white h-7.5 text-xs font-medium"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Mobile Number</label>
+                            <Input 
+                              placeholder="e.g. +44 1234 567890" 
+                              value={newUser.mobileNumber || ''}
+                              onChange={e => setNewUser({...newUser, mobileNumber: e.target.value})}
+                              className="bg-white h-7.5 text-xs font-medium"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Educational Qualifications</label>
+                            <Input 
+                              placeholder="e.g. Alimiyyah, BA Islamic Studies" 
+                              value={newUser.educationalQualifications || ''}
+                              onChange={e => setNewUser({...newUser, educationalQualifications: e.target.value})}
+                              className="bg-white h-7.5 text-xs font-medium"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section 2: Location Details */}
+                      <div className="bg-muted/20 p-2.5 sm:p-3 rounded-xl border border-border/70 space-y-2.5">
+                        <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-primary">
+                          <span className="w-4 h-4 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[9px]">2</span>
+                          <span>Location Details</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Current Country</label>
+                            <Input 
+                              placeholder="e.g. United Kingdom" 
+                              value={newUser.currentCountry || ''}
+                              onChange={e => setNewUser({...newUser, currentCountry: e.target.value})}
+                              className="bg-white h-7.5 text-xs font-medium"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Current State / Region</label>
+                            <Input 
+                              placeholder="e.g. Greater London, Midlands" 
+                              value={newUser.currentState || ''}
+                              onChange={e => setNewUser({...newUser, currentState: e.target.value})}
+                              className="bg-white h-7.5 text-xs font-medium"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ADMIN CREATION FORM */}
+                  {newUser.role === 'admin' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-muted/20 p-2.5 sm:p-3 rounded-xl border border-border/70">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Full Name <span className="text-destructive">*</span></label>
                         <Input 
-                          placeholder="John Doe" 
+                          placeholder="Admin Full Name" 
                           value={newUser.name}
                           onChange={e => setNewUser({...newUser, name: e.target.value})}
                           required
-                          className="border-2 font-medium h-12"
+                          className="bg-white h-7.5 text-xs font-medium"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label className="font-bold text-foreground">Email Address</Label>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Email Address <span className="text-destructive">*</span></label>
                         <Input 
                           type="email"
-                          placeholder="john@example.com" 
+                          placeholder="admin@alihsan.com" 
                           value={newUser.email}
                           onChange={e => setNewUser({...newUser, email: e.target.value})}
                           required
-                          className="border-2 font-medium h-12"
+                          className="bg-white h-7.5 text-xs font-medium"
                         />
                       </div>
-                      <div className="space-y-2 md:col-span-2">
-                        <Label className="font-bold text-foreground">Temporary Password</Label>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Temporary Password <span className="text-destructive">*</span></label>
                         <Input 
                           type="password"
-                          placeholder="Minimum 6 characters" 
+                          placeholder="Min 6 characters" 
                           value={newUser.password}
                           onChange={e => setNewUser({...newUser, password: e.target.value})}
                           required
                           minLength={6}
-                          className="border-2 font-medium h-12"
+                          className="bg-white h-7.5 text-xs font-medium"
                         />
                       </div>
                     </div>
+                  )}
 
-                    {newUser.role === 'student' && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted/30 p-6 rounded-2xl border-2 border-border/50">
-                        <div className="space-y-2">
-                          <Label className="font-bold text-foreground">Registration Number <span className="text-destructive">*</span></Label>
-                          <Input 
-                            placeholder="e.g. 26009" 
-                            value={newUser.registrationNumber || ''}
-                            onChange={e => setNewUser({...newUser, registrationNumber: e.target.value})}
-                            required
-                            className="border-2 font-medium h-12"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="font-bold text-foreground">Assign to Teacher <span className="text-destructive">*</span></Label>
-                          <select 
-                            className="w-full p-3 border-2 border-border rounded-xl bg-white focus:ring-4 focus:ring-primary/20 outline-none font-medium h-12"
-                            value={newUser.teacherId}
-                            onChange={e => setNewUser({...newUser, teacherId: e.target.value})}
-                            required
-                          >
-                            <option value="">Select a teacher...</option>
-                            {teachers.map(t => (
-                              <option key={t.id} value={t.id}>{t.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="space-y-2 md:col-span-2">
-                          <Label className="font-bold text-foreground">Class Name (Optional)</Label>
-                          <Input 
-                            placeholder="e.g. Batch A - Quran" 
-                            value={newUser.className}
-                            onChange={e => setNewUser({...newUser, className: e.target.value})}
-                            className="border-2 font-medium h-12"
-                          />
-                        </div>
-                      </div>
-                    )}
+                  <div className="flex items-center justify-end gap-2 pt-0.5">
+                    <BouncyButton 
+                      type="submit" 
+                      disabled={isSubmitting} 
+                      className="h-8 px-4 text-xs font-bold bg-primary hover:bg-primary/90 text-white rounded-lg shadow-xs flex items-center gap-1.5 cursor-pointer"
+                    >
+                      {isSubmitting ? <Loader2 className="animate-spin h-3.5 w-3.5" /> : <UserPlus className="h-3.5 w-3.5" />}
+                      {isSubmitting ? "Creating Profile..." : "Create Profile & Generate Credentials"}
+                    </BouncyButton>
                   </div>
-
-                  <BouncyButton 
-                    type="submit" 
-                    disabled={isSubmitting} 
-                    className="w-full h-16 text-xl shadow-[0_6px_0_oklch(0.5_0.19_255)] hover:shadow-[0_2px_0_oklch(0.5_0.19_255)] active:shadow-none bg-primary hover:bg-primary/90 text-white rounded-2xl"
-                  >
-                    {isSubmitting ? <Loader2 className="animate-spin mr-2 h-6 w-6" /> : null}
-                    {isSubmitting ? "Creating Profile..." : "Create User Profile"}
-                  </BouncyButton>
                 </form>
               </AnimatedCard>
 
-              <AnimatedCard delay={0.2} className="p-6 md:p-8 border-t-8 border-t-destructive bg-destructive/5">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              {/* Danger Zone: Remove Access - Compact */}
+              <AnimatedCard delay={0.2} className="p-3.5 sm:p-4.5 rounded-xl border border-destructive/30 bg-destructive/5 shadow-xs">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-2.5 pb-2 border-b border-destructive/20">
                   <div>
-                    <h3 className="text-2xl font-black text-destructive flex items-center gap-3 m-0">
-                      <UserMinus className="h-6 w-6" /> Danger Zone: Remove Access
+                    <h3 className="text-xs sm:text-sm font-black text-destructive flex items-center gap-1.5 m-0">
+                      <UserMinus className="h-4 w-4" /> Danger Zone: Remove Access
                     </h3>
-                    <p className="text-sm text-muted-foreground font-semibold mt-1">
+                    <p className="text-[11px] text-muted-foreground font-medium mt-0.5">
                       Showing {allUsers.length} total users in academy. Revoking access removes their profile permanently.
                     </p>
                   </div>
-                  <div className="flex w-full sm:w-auto items-center gap-3">
-                    <div className="relative w-full sm:w-72">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <div className="flex w-full sm:w-auto items-center gap-2">
+                    <div className="relative w-full sm:w-60">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                       <Input 
                         placeholder="Search users..." 
                         value={removeAccessSearchQuery}
                         onChange={(e) => setRemoveAccessSearchQuery(e.target.value)}
-                        className="pl-10 border-2 bg-white font-medium focus-visible:ring-destructive"
+                        className="pl-8 pr-3 h-7.5 text-xs bg-white font-medium border-destructive/30 focus-visible:ring-destructive"
                       />
                     </div>
                     <select
-                      className="p-3 border-2 border-border rounded-xl bg-white font-bold text-foreground focus:ring-4 focus:ring-destructive/20 outline-none h-11"
+                      className="px-2 py-1 border border-border rounded-lg bg-white font-bold text-xs text-foreground outline-none h-7.5 cursor-pointer"
                       value={removeAccessRoleFilter}
                       onChange={(e) => setRemoveAccessRoleFilter(e.target.value)}
                     >
@@ -1563,28 +1957,28 @@ export default function SuperAdminDashboard() {
                     .filter(u => safeLower(u.name).includes(safeLower(removeAccessSearchQuery)) || safeLower(u.email).includes(safeLower(removeAccessSearchQuery)))
                   
                   return (
-                    <div className="overflow-x-auto border-2 border-border rounded-2xl bg-white">
-                      <table className="w-full text-left border-collapse min-w-[650px]">
+                    <div className="overflow-x-auto border border-border rounded-xl bg-white">
+                      <table className="w-full text-left border-collapse min-w-[600px]">
                         <thead>
-                          <tr className="bg-muted border-b-2 border-border">
-                            <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">User</th>
-                            <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest">Role</th>
-                            <th className="p-4 text-xs font-black text-foreground uppercase tracking-widest text-right">Action</th>
+                          <tr className="bg-muted/40 border-b border-border">
+                            <th className="px-3 py-2 text-[10px] font-black text-foreground uppercase tracking-widest">User</th>
+                            <th className="px-3 py-2 text-[10px] font-black text-foreground uppercase tracking-widest">Role</th>
+                            <th className="px-3 py-2 text-[10px] font-black text-foreground uppercase tracking-widest text-right">Action</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y-2 divide-border">
+                        <tbody className="divide-y divide-border">
                           {filteredRemoveUsers.length > 0 ? filteredRemoveUsers.map((u) => (
                             <tr key={u.id} className="hover:bg-destructive/5 transition-colors">
-                              <td className="p-4">
-                                <p className="font-bold text-foreground text-lg">{u.name}</p>
-                                <p className="text-sm font-medium text-muted-foreground">{u.email}</p>
+                              <td className="px-3 py-2">
+                                <p className="font-bold text-foreground text-xs">{u.name}</p>
+                                <p className="text-[11px] font-medium text-muted-foreground">{u.email}</p>
                               </td>
-                              <td className="p-4">
-                                <span className="bg-muted text-foreground border-2 border-border px-3 py-1 rounded-xl text-xs font-bold uppercase tracking-wider">
+                              <td className="px-3 py-2">
+                                <span className="bg-muted text-foreground border border-border px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider">
                                   {u.role}
                                 </span>
                               </td>
-                              <td className="p-4 text-right">
+                              <td className="px-3 py-2 text-right">
                                 {showConfirm === u.id ? (
                                   <div className="flex items-center justify-end gap-2">
                                     <span className="text-sm text-destructive font-black">Sure?</span>

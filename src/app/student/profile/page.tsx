@@ -148,32 +148,8 @@ export default function StudentProfilePage() {
     )
   }
 
-  const barColor = completion.percent >= 100 ? 'bg-green-500' : completion.percent >= 50 ? 'bg-secondary' : 'bg-destructive'
-
   return (
     <div className="max-w-3xl mx-auto space-y-6 sm:space-y-8 px-3.5 sm:px-6 pb-24 md:pb-8 pt-4">
-      {/* Profile XP Completion Bar */}
-      <AnimatedCard delay={0.1} className="sticky top-20 z-20 bg-background/90 backdrop-blur-md p-4 sm:p-5 rounded-xl sm:rounded-2xl border-2 border-primary/20 shadow-[0_8px_30px_rgba(0,0,0,0.05)]">
-        <div className="flex items-center justify-between mb-2 sm:mb-3">
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <Star className="h-4 w-4 sm:h-5 sm:w-5 text-secondary fill-secondary" />
-            <span className="text-xs sm:text-sm font-black text-foreground">Profile Status: {completion.percent}%</span>
-          </div>
-          <span className="text-[11px] sm:text-xs font-bold text-muted-foreground bg-muted px-2.5 sm:px-3 py-1 rounded-full">{completion.filled}/{completion.total} Sections</span>
-        </div>
-        <div className="w-full h-3.5 sm:h-4 bg-muted rounded-full overflow-hidden border-2 border-border p-0.5">
-          <motion.div 
-            initial={{ width: 0 }}
-            animate={{ width: `${completion.percent}%` }}
-            transition={{ duration: 1, type: "spring" }}
-            className={`h-full rounded-full ${barColor}`} 
-          />
-        </div>
-        {completion.percent === 100 && (
-          <p className="text-xs font-bold text-green-600 mt-2 text-center">Profile is fully complete.</p>
-        )}
-      </AnimatedCard>
-
       {/* Profile Card Section */}
       <AnimatedCard delay={0.2} className="bg-[#0D4A47] p-5 sm:p-6 flex flex-col items-center text-center relative overflow-hidden border border-[#145955] text-white rounded-xl sm:rounded-2xl shadow-sm">
         <div className="absolute top-0 right-0 p-4 opacity-10">

@@ -114,21 +114,49 @@ export async function POST(request: Request) {
       email, 
       password,
       role,
-      teacherId,
+      // Student specific fields
       registrationNumber,
-      className
+      year,
+      className,
+      term,
+      dob,
+      guardianName,
+      guardianMobile,
+      address,
+      academyJoinedDate,
+      teacherId,
+      enrolmentStatus,
+      // Teacher specific fields
+      dateOfJoining,
+      mobileNumber,
+      educationalQualifications,
+      currentCountry,
+      currentState
     } = body
 
     if (!email || !password || !fullName || !role) {
       return NextResponse.json({ error: 'fullName, email, password, and role are required' }, { status: 400 })
     }
 
+    const effectiveYear = year || className || null
+    const effectiveTeacherId = teacherId && teacherId !== 'unassigned' ? teacherId : null
+
     // 1. Create the user in Auth (or reuse existing account by email)
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: email,
       password: password,
       email_confirm: true,
-      user_metadata: { name: fullName, full_name: fullName, role: role }
+      user_metadata: { 
+        name: fullName, 
+        full_name: fullName, 
+        role: role,
+        ...(role === 'student' ? {
+          registration_number: registrationNumber || null,
+          year: effectiveYear,
+          term: term || null,
+          class_name: effectiveYear
+        } : {})
+      }
     })
 
     let userId = authData?.user?.id
@@ -152,7 +180,17 @@ export async function POST(request: Request) {
         const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
           password,
           email_confirm: true,
-          user_metadata: { name: fullName, full_name: fullName, role: role }
+          user_metadata: { 
+            name: fullName, 
+            full_name: fullName, 
+            role: role,
+            ...(role === 'student' ? {
+              registration_number: registrationNumber || null,
+              year: effectiveYear,
+              term: term || null,
+              class_name: effectiveYear
+            } : {})
+          }
         })
         if (updateError) throw updateError
       } else {
@@ -175,34 +213,67 @@ export async function POST(request: Request) {
 
     // 3. Create student/teacher profile
     if (role === 'student') {
+      const studentPayload: any = {
+        user_id: userId,
+        name: fullName,
+        registration_number: registrationNumber || null,
+        teacher_id: effectiveTeacherId,
+        class_name: effectiveYear,
+        year: effectiveYear,
+        term: term || null,
+        dob: dob ? new Date(dob).toISOString() : null,
+        guardian_name: guardianName || null,
+        guardian_mobile: guardianMobile || null,
+        address: address || null,
+        academy_joined_date: academyJoinedDate ? new Date(academyJoinedDate).toISOString() : new Date().toISOString(),
+        joined_date: academyJoinedDate || new Date().toISOString().split('T')[0],
+        enrolment_status: enrolmentStatus || 'ongoing'
+      }
+
       const { error: spError } = await supabaseAdmin
         .from('student_profiles')
-        .insert({
-          user_id: userId,
-          name: fullName,
-          registration_number: registrationNumber || null,
-          teacher_id: teacherId || null,
-          class_name: className || null,
-          joined_date: new Date().toISOString().split('T')[0]
-        })
+        .upsert(studentPayload, { onConflict: 'user_id' })
 
       if (spError) throw spError
     }
 
     if (role === 'teacher') {
+      const cleanDate = dateOfJoining || new Date().toISOString().split('T')[0]
+      const teacherPayload: any = {
+        user_id: userId,
+        name: fullName,
+        date_of_joining: cleanDate,
+        joined_date: cleanDate,
+        mobile_number: mobileNumber || null,
+        mobile: mobileNumber || null,
+        educational_qualifications: educationalQualifications || null,
+        qualification: educationalQualifications || null,
+        current_country: currentCountry || null,
+        country: currentCountry || null,
+        current_state: currentState || null,
+        state: currentState || null
+      }
+
       const { error: tpError } = await supabaseAdmin
         .from('teacher_profiles')
-        .insert({
-          user_id: userId,
-          name: fullName,
-          date_of_joining: new Date().toISOString().split('T')[0]
-        })
+        .upsert(teacherPayload, { onConflict: 'user_id' })
 
       if (tpError) throw tpError
     }
 
     const { data: userData } = await supabaseAdmin.auth.admin.getUserById(userId)
-    return NextResponse.json({ success: true, user: userData.user })
+    return NextResponse.json({ 
+      success: true, 
+      user: userData.user,
+      credentials: {
+        role,
+        name: fullName,
+        email,
+        temporaryPassword: password,
+        loginPath: role === 'student' ? '/student/login' : role === 'teacher' ? '/teacher/login' : '/admin/login',
+        teacherAssigned: role === 'student' ? !!effectiveTeacherId : true
+      }
+    })
 
   } catch (error: any) {
     console.error("Admin user creation error:", error)
