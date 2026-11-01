@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import { format, parseISO } from 'date-fns'
 import { motion } from 'framer-motion'
 import { AnimatedCard } from '@/components/animated-card'
+import { SecurityPasswordCard } from '@/components/security-password-card'
 
 function calculateCompletion(data: any) {
   const fields = [
@@ -440,6 +441,15 @@ export default function TeacherProfilePage() {
             )}
           </button>
         </div>
+      </AnimatedCard>
+
+      {/* Security & Password Settings via Email Verification */}
+      <AnimatedCard delay={0.3}>
+        <SecurityPasswordCard 
+          userEmail={profile.registered_email} 
+          userName={profile.full_name} 
+          role="teacher" 
+        />
       </AnimatedCard>
     </div>
   )

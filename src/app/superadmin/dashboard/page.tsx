@@ -22,6 +22,8 @@ import { MonthlyStudentTrendChart } from '@/components/monthly-student-trend-cha
 import { AcademicDistributionCard, normalizeTerm, normalizeYear } from '@/components/academic-distribution-card'
 import { UnifiedAdminAnalyticsWidget } from '@/components/unified-admin-analytics-widget'
 import { DateFilterType, getDateRange, isDateWithinRange, parseClassMetadata } from '@/lib/attendance-utils'
+import { SecurityPasswordCard } from '@/components/security-password-card'
+import { PasswordResetModal } from '@/components/password-reset-modal'
 
 type Tab = 'statistics' | 'students' | 'teachers' | 'attendance' | 'manage'
 
@@ -96,6 +98,13 @@ export default function SuperAdminDashboard() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [isEditingTeacher, setIsEditingTeacher] = useState(false)
   const [isSavingTeacher, setIsSavingTeacher] = useState(false)
+
+  // Security & Password Reset states
+  const [adminEmail, setAdminEmail] = useState('')
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
+  const [adminTargetEmail, setAdminTargetEmail] = useState('')
+  const [adminTargetNewPassword, setAdminTargetNewPassword] = useState('')
+  const [isUpdatingCredentials, setIsUpdatingCredentials] = useState(false)
 
   // Simple inline status & academic details management state for Student Profile
   const [inlineStatus, setInlineStatus] = useState<'ongoing' | 'break' | 'stopped'>('ongoing')
@@ -587,7 +596,84 @@ export default function SuperAdminDashboard() {
 
   useEffect(() => {
     fetchData()
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user?.email) {
+        setAdminEmail(data.user.email)
+      }
+    })
   }, [])
+
+  useEffect(() => {
+    if (selectedProfile?.email) {
+      setAdminTargetEmail(selectedProfile.email)
+      setAdminTargetNewPassword('')
+    }
+  }, [selectedProfile])
+
+  async function handleAdminUpdateCredentials() {
+    if (!selectedProfile) return
+    const targetUserId = selectedProfile.user_id || selectedProfile.id
+    if (!targetUserId) return
+
+    const emailChanged = adminTargetEmail && adminTargetEmail.trim().toLowerCase() !== (selectedProfile.email || '').toLowerCase()
+    const passwordSet = Boolean(adminTargetNewPassword && adminTargetNewPassword.trim().length >= 6)
+
+    if (!emailChanged && !passwordSet) {
+      if (adminTargetNewPassword && adminTargetNewPassword.trim().length > 0 && adminTargetNewPassword.trim().length < 6) {
+        toast.error("Password must be at least 6 characters")
+        return
+      }
+      toast.info("No credential changes detected to save.")
+      return
+    }
+
+    setIsUpdatingCredentials(true)
+    try {
+      const headers = await getAuthHeaders()
+      const payload: any = { userId: targetUserId }
+      if (emailChanged) payload.newEmail = adminTargetEmail.trim().toLowerCase()
+      if (passwordSet) payload.newPassword = adminTargetNewPassword.trim()
+
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify(payload)
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to update credentials')
+
+      toast.success(
+        emailChanged && passwordSet
+          ? "Registered email and password updated successfully!"
+          : emailChanged
+          ? "Registered email updated successfully!"
+          : "Password updated successfully!"
+      )
+      setSelectedProfile((prev: any) => ({
+        ...prev,
+        email: emailChanged ? adminTargetEmail.trim().toLowerCase() : prev.email
+      }))
+      setAdminTargetNewPassword('')
+      fetchData()
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update credentials')
+    } finally {
+      setIsUpdatingCredentials(false)
+    }
+  }
+
+  async function handleAdminSendUserPasswordReset() {
+    if (!selectedProfile?.email) return
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(selectedProfile.email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      })
+      if (error) throw error
+      toast.success(`Password reset email sent to ${selectedProfile.email}!`)
+    } catch (err: any) {
+      toast.error(err.message || "Failed to send reset link")
+    }
+  }
 
   useEffect(() => {
     setSearchQuery('')
@@ -898,7 +984,19 @@ export default function SuperAdminDashboard() {
             SuperAdmin
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {adminEmail && (
+            <button
+              type="button"
+              onClick={() => setIsPasswordModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-border bg-white text-xs font-bold text-foreground hover:bg-muted/40 transition-colors shadow-xs cursor-pointer min-h-[36px]"
+              title="Change Password via Email Verification"
+            >
+              <Key className="h-3.5 w-3.5 text-primary" />
+              <span className="hidden sm:inline">Change Password</span>
+              <span className="sm:hidden">Password</span>
+            </button>
+          )}
           <BouncyButton 
             variant="outline"
             size="sm"
@@ -1949,6 +2047,11 @@ export default function SuperAdminDashboard() {
                 </form>
               </AnimatedCard>
 
+              {/* Super Admin Password Management */}
+              {adminEmail && (
+                <SecurityPasswordCard userEmail={adminEmail} role="superadmin" />
+              )}
+
               {/* Danger Zone: Remove Access - Compact */}
               <AnimatedCard delay={0.2} className="p-3.5 sm:p-4.5 rounded-xl border border-destructive/30 bg-destructive/5 shadow-xs">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-2.5 pb-2 border-b border-destructive/20">
@@ -2637,6 +2740,84 @@ export default function SuperAdminDashboard() {
                     )}
                   </>
                 )}
+
+                {/* Superadmin Credentials & Email Management */}
+                <div className="pt-3 border-t border-border space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h5 className="font-bold text-foreground text-sm flex items-center gap-1.5">
+                        <Key className="h-4 w-4 text-primary" />
+                        Admin Credentials & Email Management
+                      </h5>
+                      <p className="text-[11px] text-muted-foreground">
+                        Safely update registered email or set temporary password for this account
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                      Super Admin
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-muted/20 rounded-xl border border-border/70 space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-bold text-foreground uppercase tracking-wider">
+                          Registered Email
+                        </Label>
+                        <Input
+                          type="email"
+                          value={adminTargetEmail}
+                          onChange={(e) => setAdminTargetEmail(e.target.value)}
+                          placeholder="e.g. parent@example.com"
+                          className="h-9 text-xs bg-white font-medium"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-bold text-foreground uppercase tracking-wider">
+                          Set New Password (Optional)
+                        </Label>
+                        <Input
+                          type="password"
+                          value={adminTargetNewPassword}
+                          onChange={(e) => setAdminTargetNewPassword(e.target.value)}
+                          placeholder="Min. 6 chars (leave blank to keep current)"
+                          className="h-9 text-xs bg-white font-medium"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-border/60">
+                      <button
+                        type="button"
+                        onClick={handleAdminSendUserPasswordReset}
+                        className="px-2.5 py-1.5 rounded-lg border border-border bg-white hover:bg-muted text-[11px] font-bold text-foreground flex items-center gap-1.5 transition-colors cursor-pointer"
+                        title="Send password reset link to user's registered email"
+                      >
+                        <Mail className="h-3.5 w-3.5 text-primary" />
+                        <span>Send Password Reset Email</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleAdminUpdateCredentials}
+                        disabled={isUpdatingCredentials}
+                        className="h-8 px-3.5 rounded-lg bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-60"
+                      >
+                        {isUpdatingCredentials ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
+                            <span>Updating...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-3.5 w-3.5" />
+                            <span>Save Credentials</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             </motion.div>
@@ -2652,6 +2833,14 @@ export default function SuperAdminDashboard() {
         <NavBtn active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={<CheckCircle className="size-4" />} label="Attendance" />
         <NavBtn active={activeTab === 'manage'} onClick={() => setActiveTab('manage')} icon={<Users className="size-4" />} label="Users" />
       </nav>
+
+      {/* Super Admin Password Reset Modal */}
+      <PasswordResetModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+        userEmail={adminEmail}
+        role="superadmin"
+      />
     </div>
   )
 }

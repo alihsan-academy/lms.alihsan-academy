@@ -371,39 +371,79 @@ export async function PATCH(request: Request) {
     const supabaseAdmin = getAdminClient()
 
     const body = await request.json()
-    const studentId = body.userId || body.studentId
-    const newTeacherId = body.teacherId || body.newTeacherId || null
+    const targetUserId = body.userId || body.studentId
+    const newTeacherId = body.teacherId !== undefined ? body.teacherId : (body.newTeacherId !== undefined ? body.newTeacherId : undefined)
+    const newEmail = body.newEmail || (body.email && body.email !== body.currentEmail ? body.email : undefined)
+    const newPassword = body.newPassword
 
-    if (!studentId) {
+    if (!targetUserId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
     }
 
-    const { data: existingStudentProfile, error: existingStudentProfileError } = await supabaseAdmin
-      .from('student_profiles')
-      .select('teacher_id')
-      .eq('user_id', studentId)
-      .maybeSingle()
+    // 1. Update Registered Email if requested
+    if (newEmail) {
+      const cleanEmail = newEmail.trim().toLowerCase()
+      if (!cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+        return NextResponse.json({ error: 'Invalid email address provided' }, { status: 400 })
+      }
 
-    if (existingStudentProfileError) throw existingStudentProfileError
+      // Update Supabase Auth user record and mark as confirmed
+      const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
+        email: cleanEmail,
+        email_confirm: true
+      })
+      if (authErr) throw authErr
 
-    const oldTeacherId = existingStudentProfile?.teacher_id || null
+      // Update profiles table
+      const { error: profileErr } = await supabaseAdmin
+        .from('profiles')
+        .update({ email: cleanEmail })
+        .eq('id', targetUserId)
+      if (profileErr) throw profileErr
+    }
 
-    const { error } = await supabaseAdmin
-      .from('student_profiles')
-      .update({ teacher_id: newTeacherId })
-      .eq('user_id', studentId)
+    // 2. Update Password if requested
+    if (newPassword) {
+      if (newPassword.length < 6) {
+        return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
+      }
+      const { error: pwdErr } = await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
+        password: newPassword
+      })
+      if (pwdErr) throw pwdErr
+    }
 
-    if (error) throw error
+    // 3. Update Teacher Assignment if requested
+    if (newTeacherId !== undefined) {
+      const effectiveTeacherId = newTeacherId === '' || newTeacherId === 'unassigned' ? null : newTeacherId
 
-    if (oldTeacherId && oldTeacherId !== newTeacherId) {
-      const { error: deleteClassesError } = await supabaseAdmin
-        .from('classes')
-        .delete()
-        .eq('student_id', studentId)
-        .eq('teacher_id', oldTeacherId)
-        .eq('status', 'scheduled')
+      const { data: existingStudentProfile, error: existingStudentProfileError } = await supabaseAdmin
+        .from('student_profiles')
+        .select('teacher_id')
+        .eq('user_id', targetUserId)
+        .maybeSingle()
 
-      if (deleteClassesError) throw deleteClassesError
+      if (existingStudentProfileError) throw existingStudentProfileError
+
+      const oldTeacherId = existingStudentProfile?.teacher_id || null
+
+      const { error } = await supabaseAdmin
+        .from('student_profiles')
+        .update({ teacher_id: effectiveTeacherId })
+        .eq('user_id', targetUserId)
+
+      if (error) throw error
+
+      if (oldTeacherId && oldTeacherId !== effectiveTeacherId) {
+        const { error: deleteClassesError } = await supabaseAdmin
+          .from('classes')
+          .delete()
+          .eq('student_id', targetUserId)
+          .eq('teacher_id', oldTeacherId)
+          .eq('status', 'scheduled')
+
+        if (deleteClassesError) throw deleteClassesError
+      }
     }
 
     return NextResponse.json({ success: true })
