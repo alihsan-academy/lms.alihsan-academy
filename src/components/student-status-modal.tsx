@@ -175,41 +175,42 @@ export function StudentStatusModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
           transition={{ duration: 0.2 }}
-          className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border-2 border-border overflow-hidden my-auto"
+          className="relative w-full max-w-lg bg-white rounded-2xl shadow-xl border border-border/80 overflow-hidden my-auto"
         >
-          {/* Header Banner */}
-          <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-4 sm:p-5 text-white flex items-center justify-between border-b border-slate-700">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400">
-                <UserCheck className="h-5 w-5" />
+          {/* Minimalist Header */}
+          <div className="px-5 py-3.5 bg-white border-b border-border/70 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                <UserCheck className="h-4 w-4" />
               </div>
               <div>
-                <h3 className="font-black text-base sm:text-lg text-white">Update Student Status</h3>
-                <p className="text-xs text-slate-300 font-medium">Manage student enrolment & schedules</p>
+                <h3 className="font-bold text-sm sm:text-base text-foreground tracking-tight">Update Student Status</h3>
+                <p className="text-[11px] text-muted-foreground font-medium">Manage student enrolment & schedule details</p>
               </div>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-colors"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
+              aria-label="Close"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5">
+          <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4">
             {/* Student Info Bar */}
-            <div className="bg-muted/40 p-3 sm:p-3.5 rounded-xl border border-border flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <Avatar photoUrl={student.profile_photo} name={student.name} size="sm" />
+            <div className="bg-muted/30 p-2.5 sm:p-3 rounded-xl border border-border/70 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Avatar photoUrl={student.profile_photo} name={student.name} size="sm" className="w-8 h-8 text-xs border border-border/60" />
                 <div className="min-w-0">
-                  <h4 className="font-extrabold text-foreground text-sm truncate">{student.name}</h4>
-                  <p className="text-xs text-muted-foreground font-mono truncate">
+                  <h4 className="font-bold text-foreground text-xs sm:text-sm truncate">{student.name}</h4>
+                  <p className="text-[11px] text-muted-foreground font-mono truncate">
                     Reg: #{student.registration_number || 'N/A'}
                   </p>
                 </div>
               </div>
-              <span className={`px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider shrink-0 border ${
+              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider shrink-0 border ${
                 student.enrolment_status === 'ongoing' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                 student.enrolment_status === 'break' ? 'bg-amber-50 text-amber-700 border-amber-200' :
                 student.enrolment_status === 'stopped' ? 'bg-rose-50 text-rose-700 border-rose-200' :
@@ -220,22 +221,22 @@ export function StudentStatusModal({
             </div>
 
             {/* Academic Level: Year & Term */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3 rounded-xl bg-muted/30 border border-border">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-2.5 rounded-xl bg-muted/20 border border-border/70">
               <div className="space-y-1">
-                <Label className="text-[11px] font-bold text-foreground uppercase tracking-wider">Class / Year</Label>
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Class / Year</label>
                 <Input
-                  placeholder="e.g. Year 1, Year 2"
+                  placeholder="e.g. Year 1, Tahfeez Grade 1"
                   value={year}
                   onChange={(e) => setYear(e.target.value)}
-                  className="bg-white h-9 text-xs font-semibold"
+                  className="bg-white h-8 text-xs font-medium border-border/80 focus:border-primary"
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-[11px] font-bold text-foreground uppercase tracking-wider">Term</Label>
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Term</label>
                 <select
                   value={term}
                   onChange={(e) => setTerm(e.target.value)}
-                  className="w-full rounded-md border border-input bg-white px-2.5 py-1 text-xs font-semibold h-9 cursor-pointer text-foreground"
+                  className="w-full rounded-md border border-border/80 bg-white px-2.5 py-1 text-xs font-medium h-8 cursor-pointer text-foreground focus:border-primary outline-none"
                 >
                   <option value="">Select Term</option>
                   <option value="Term-01">Term 1</option>
@@ -245,31 +246,33 @@ export function StudentStatusModal({
             </div>
 
             {/* Select Status Options */}
-            <div className="space-y-2.5">
-              <Label className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                 Select New Enrolment Status
-              </Label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {/* Ongoing Option */}
                 <button
                   type="button"
                   onClick={() => setSelectedStatus('ongoing')}
-                  className={`p-3 rounded-xl border-2 text-left transition-all flex flex-col justify-between gap-1.5 cursor-pointer min-h-[72px] ${
+                  className={`p-2.5 rounded-xl border text-left transition-all flex flex-col justify-between gap-1.5 cursor-pointer min-h-[66px] ${
                     selectedStatus === 'ongoing'
-                      ? 'border-emerald-500 bg-emerald-50/80 shadow-xs ring-2 ring-emerald-500/20'
-                      : 'border-border/80 bg-white hover:bg-muted/30'
+                      ? 'border-emerald-600 bg-emerald-50/70 text-emerald-950 ring-1 ring-emerald-500/30'
+                      : 'border-border/80 bg-white hover:bg-muted/30 text-foreground'
                   }`}
                 >
                   <div className="flex items-center justify-between w-full">
-                    <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+                      selectedStatus === 'ongoing' ? 'bg-emerald-600 text-white' : 'bg-emerald-100 text-emerald-700'
+                    }`}>
+                      <CheckCircle2 className="h-3 w-3" />
                     </span>
-                    <span className={`w-3.5 h-3.5 rounded-full border-2 ${
+                    <span className={`w-3 h-3 rounded-full border ${
                       selectedStatus === 'ongoing' ? 'border-emerald-600 bg-emerald-600' : 'border-muted-foreground/30'
                     }`} />
                   </div>
                   <div>
-                    <span className="font-extrabold text-xs sm:text-sm text-foreground block">Ongoing</span>
+                    <span className="font-bold text-xs block leading-tight">Ongoing</span>
                     <span className="text-[10px] text-muted-foreground font-medium block">Active classes</span>
                   </div>
                 </button>
@@ -278,22 +281,24 @@ export function StudentStatusModal({
                 <button
                   type="button"
                   onClick={() => setSelectedStatus('break')}
-                  className={`p-3 rounded-xl border-2 text-left transition-all flex flex-col justify-between gap-1.5 cursor-pointer min-h-[72px] ${
+                  className={`p-2.5 rounded-xl border text-left transition-all flex flex-col justify-between gap-1.5 cursor-pointer min-h-[66px] ${
                     selectedStatus === 'break'
-                      ? 'border-amber-500 bg-amber-50/80 shadow-xs ring-2 ring-amber-500/20'
-                      : 'border-border/80 bg-white hover:bg-muted/30'
+                      ? 'border-amber-600 bg-amber-50/70 text-amber-950 ring-1 ring-amber-500/30'
+                      : 'border-border/80 bg-white hover:bg-muted/30 text-foreground'
                   }`}
                 >
                   <div className="flex items-center justify-between w-full">
-                    <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-xs font-bold">
-                      <Clock className="h-3.5 w-3.5" />
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+                      selectedStatus === 'break' ? 'bg-amber-600 text-white' : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      <Clock className="h-3 w-3" />
                     </span>
-                    <span className={`w-3.5 h-3.5 rounded-full border-2 ${
+                    <span className={`w-3 h-3 rounded-full border ${
                       selectedStatus === 'break' ? 'border-amber-600 bg-amber-600' : 'border-muted-foreground/30'
                     }`} />
                   </div>
                   <div>
-                    <span className="font-extrabold text-xs sm:text-sm text-foreground block">On Break</span>
+                    <span className="font-bold text-xs block leading-tight">On Break</span>
                     <span className="text-[10px] text-muted-foreground font-medium block">Temporary leave</span>
                   </div>
                 </button>
@@ -302,22 +307,24 @@ export function StudentStatusModal({
                 <button
                   type="button"
                   onClick={() => setSelectedStatus('stopped')}
-                  className={`p-3 rounded-xl border-2 text-left transition-all flex flex-col justify-between gap-1.5 cursor-pointer min-h-[72px] ${
+                  className={`p-2.5 rounded-xl border text-left transition-all flex flex-col justify-between gap-1.5 cursor-pointer min-h-[66px] ${
                     selectedStatus === 'stopped'
-                      ? 'border-rose-500 bg-rose-50/80 shadow-xs ring-2 ring-rose-500/20'
-                      : 'border-border/80 bg-white hover:bg-muted/30'
+                      ? 'border-rose-600 bg-rose-50/70 text-rose-950 ring-1 ring-rose-500/30'
+                      : 'border-border/80 bg-white hover:bg-muted/30 text-foreground'
                   }`}
                 >
                   <div className="flex items-center justify-between w-full">
-                    <span className="w-6 h-6 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center text-xs font-bold">
-                      <XCircle className="h-3.5 w-3.5" />
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+                      selectedStatus === 'stopped' ? 'bg-rose-600 text-white' : 'bg-rose-100 text-rose-700'
+                    }`}>
+                      <XCircle className="h-3 w-3" />
                     </span>
-                    <span className={`w-3.5 h-3.5 rounded-full border-2 ${
+                    <span className={`w-3 h-3 rounded-full border ${
                       selectedStatus === 'stopped' ? 'border-rose-600 bg-rose-600' : 'border-muted-foreground/30'
                     }`} />
                   </div>
                   <div>
-                    <span className="font-extrabold text-xs sm:text-sm text-foreground block">Stopped</span>
+                    <span className="font-bold text-xs block leading-tight">Stopped</span>
                     <span className="text-[10px] text-muted-foreground font-medium block">Discontinued</span>
                   </div>
                 </button>
@@ -326,56 +333,56 @@ export function StudentStatusModal({
 
             {/* Dynamic Conditional Form Fields */}
             {selectedStatus === 'ongoing' && (
-              <div className="bg-emerald-50/70 border-2 border-emerald-200/80 rounded-xl p-3.5 text-xs text-emerald-900 font-semibold flex items-start gap-2.5">
-                <CheckCircle2 className="h-4 w-4 text-emerald-700 shrink-0 mt-0.5" />
+              <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-xl p-3 text-xs text-emerald-900 font-medium flex items-start gap-2">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-700 shrink-0 mt-0.5" />
                 <p className="leading-relaxed">
-                  Setting this student to <strong>Ongoing</strong> clears any previous break or stopped reasons. The student will appear as active for scheduling and attendance.
+                  Setting this student to <strong>Ongoing</strong> clears any previous break or stopped records. The student will appear as active for scheduling and attendance.
                 </p>
               </div>
             )}
 
             {selectedStatus === 'break' && (
               <motion.div
-                initial={{ opacity: 0, y: -6 }}
+                initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-amber-50/60 border-2 border-amber-200/80 rounded-xl p-4 space-y-3.5"
+                className="bg-amber-50/40 border border-amber-200/80 rounded-xl p-3.5 space-y-3"
               >
-                <div className="flex items-center gap-1.5 text-amber-900 font-bold text-xs uppercase tracking-wider">
-                  <Calendar className="h-4 w-4 text-amber-700" />
+                <div className="flex items-center gap-1.5 text-amber-900 font-bold text-[11px] uppercase tracking-wider">
+                  <Calendar className="h-3.5 w-3.5 text-amber-700" />
                   <span>Break Schedule Details</span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <div className="space-y-1">
-                    <Label className="text-xs font-bold text-amber-950">Break Start Date *</Label>
+                    <label className="text-[11px] font-semibold text-amber-950">Break Start Date *</label>
                     <Input
                       type="date"
                       value={breakFromDate}
                       onChange={(e) => setBreakFromDate(e.target.value)}
-                      className="bg-white border-amber-300 font-medium h-11 text-base sm:text-sm"
+                      className="bg-white border-amber-200 font-medium h-9 text-xs"
                       required
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs font-bold text-amber-950">Break End Date *</Label>
+                    <label className="text-[11px] font-semibold text-amber-950">Break End Date *</label>
                     <Input
                       type="date"
                       value={breakToDate}
                       onChange={(e) => setBreakToDate(e.target.value)}
-                      className="bg-white border-amber-300 font-medium h-11 text-base sm:text-sm"
+                      className="bg-white border-amber-200 font-medium h-9 text-xs"
                       required
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs font-bold text-amber-950">Reason / Remarks (Optional)</Label>
+                  <label className="text-[11px] font-semibold text-amber-950">Reason / Remarks (Optional)</label>
                   <Textarea
                     rows={2}
                     placeholder="e.g. Traveling for Umrah, School exams, Medical reasons..."
                     value={breakReason}
                     onChange={(e) => setBreakReason(e.target.value)}
-                    className="bg-white border-amber-300 font-medium resize-none text-base sm:text-sm"
+                    className="bg-white border-amber-200 font-medium resize-none text-xs"
                   />
                 </div>
               </motion.div>
@@ -383,52 +390,52 @@ export function StudentStatusModal({
 
             {selectedStatus === 'stopped' && (
               <motion.div
-                initial={{ opacity: 0, y: -6 }}
+                initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-rose-50/60 border-2 border-rose-200/80 rounded-xl p-4 space-y-3.5"
+                className="bg-rose-50/40 border border-rose-200/80 rounded-xl p-3.5 space-y-3"
               >
-                <div className="flex items-center gap-1.5 text-rose-900 font-bold text-xs uppercase tracking-wider">
-                  <AlertCircle className="h-4 w-4 text-rose-700" />
+                <div className="flex items-center gap-1.5 text-rose-900 font-bold text-[11px] uppercase tracking-wider">
+                  <AlertCircle className="h-3.5 w-3.5 text-rose-700" />
                   <span>Discontinuation Details</span>
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs font-bold text-rose-950">Last Class Date *</Label>
+                  <label className="text-[11px] font-semibold text-rose-950">Last Class Date *</label>
                   <Input
                     type="date"
                     value={lastClassDate}
                     onChange={(e) => setLastClassDate(e.target.value)}
-                    className="bg-white border-rose-300 font-medium h-11 text-base sm:text-sm"
+                    className="bg-white border-rose-200 font-medium h-9 text-xs"
                     required
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs font-bold text-rose-950">Reason for Stopping *</Label>
+                  <label className="text-[11px] font-semibold text-rose-950">Reason for Stopping *</label>
                   <Textarea
                     rows={2}
                     placeholder="e.g. Course completed, Relocated abroad, Scheduling clash..."
                     value={stoppedReason}
                     onChange={(e) => setStoppedReason(e.target.value)}
-                    className="bg-white border-rose-300 font-medium resize-none text-base sm:text-sm"
+                    className="bg-white border-rose-200 font-medium resize-none text-xs"
                     required
                   />
                 </div>
 
                 {isAdmin ? (
-                  <label className="flex items-center gap-2.5 cursor-pointer pt-1 bg-white p-2.5 rounded-lg border border-rose-200">
+                  <label className="flex items-center gap-2 cursor-pointer pt-1 bg-white p-2 rounded-lg border border-rose-200/80">
                     <input
                       type="checkbox"
                       checked={revokePortalAccess}
                       onChange={(e) => setRevokePortalAccess(e.target.checked)}
-                      className="rounded border-rose-300 text-rose-600 focus:ring-rose-500 h-4 w-4"
+                      className="rounded border-rose-300 text-rose-600 focus:ring-rose-500 h-3.5 w-3.5"
                     />
-                    <span className="text-xs font-bold text-rose-950">
+                    <span className="text-xs font-semibold text-rose-950">
                       Revoke student portal login access (Super Admin)
                     </span>
                   </label>
                 ) : (
-                  <div className="bg-amber-100/70 border border-amber-200 rounded-lg p-2.5 text-[11px] text-amber-900 leading-snug">
+                  <div className="bg-amber-50/70 border border-amber-200 rounded-lg p-2 text-[11px] text-amber-900 leading-snug">
                     <strong>Notice:</strong> Marking a student as stopped does not revoke their portal login access. Portal login revocation is managed exclusively by Academy Administration.
                   </div>
                 )}
@@ -436,29 +443,28 @@ export function StudentStatusModal({
             )}
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-3 pt-2">
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border/60">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="flex-1 h-12 rounded-xl border-2 border-border bg-white hover:bg-muted font-bold text-sm text-foreground transition-colors disabled:opacity-60 cursor-pointer min-h-[48px]"
+                className="h-9 px-4 rounded-lg border border-border bg-white hover:bg-muted font-semibold text-xs text-foreground transition-colors disabled:opacity-50 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="group relative flex-[2] h-12 min-h-[48px] bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:via-teal-700 hover:to-emerald-800 active:scale-[0.99] text-white font-extrabold text-sm sm:text-base rounded-xl shadow-[0_6px_20px_-3px_rgba(16,185,129,0.35)] hover:shadow-[0_10px_25px_-3px_rgba(16,185,129,0.45)] transition-all duration-200 border border-emerald-400/30 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer overflow-hidden"
+                className="h-9 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
               >
-                <span className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin text-white" />
-                    <span>Saving Status...</span>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Saving...</span>
                   </>
                 ) : (
                   <>
-                    <Save className="h-4 w-4" />
+                    <Save className="h-3.5 w-3.5" />
                     <span>Save Changes</span>
                   </>
                 )}
