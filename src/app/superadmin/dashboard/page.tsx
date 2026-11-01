@@ -90,6 +90,9 @@ export default function SuperAdminDashboard() {
     loginPath: string
     teacherAssigned: boolean
     teacherName?: string
+    emailSent?: boolean
+    emailSkipped?: boolean
+    emailError?: string
   } | null>(null)
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null)
   const [reassigningStudentId, setReassigningStudentId] = useState<string | null>(null)
@@ -1607,6 +1610,19 @@ export default function SuperAdminDashboard() {
                       </a>
                     </div>
                   </div>
+
+                  {/* Resend Automated Email Delivery Status */}
+                  {createdCredentials.emailSent ? (
+                    <div className="text-[11px] font-semibold text-emerald-900 bg-emerald-100/70 border border-emerald-300 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-700 shrink-0" />
+                      <span>Welcome email with login credentials has been automatically sent to <strong>{createdCredentials.email}</strong> via Resend.</span>
+                    </div>
+                  ) : createdCredentials.emailSkipped ? (
+                    <div className="text-[11px] font-medium text-amber-900 bg-amber-50 border border-amber-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5">
+                      <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                      <span>Resend pipeline ready. Add <strong>RESEND_API_KEY</strong> to Vercel to automatically send welcome emails to inboxes.</span>
+                    </div>
+                  ) : null}
 
                   {createdCredentials.role === 'student' && (
                     <div className="text-[11px] font-medium text-emerald-900 bg-emerald-100/60 px-2.5 py-1.5 rounded-md flex items-center gap-2">

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/admin'
 import { createClient as createServerSupabaseClient } from '@/lib/supabase/server'
+import { sendWelcomeCredentialsEmail } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 
@@ -211,14 +212,14 @@ export async function POST(request: Request) {
       throw profileError
     }
 
+    const cleanTerm = term ? (
+      String(term).trim().toLowerCase().includes('1') ? 'Term 01' :
+      String(term).trim().toLowerCase().includes('2') ? 'Term 02' :
+      String(term).trim()
+    ) : null
+
     // 3. Create student/teacher profile
     if (role === 'student') {
-      const cleanTerm = term ? (
-        String(term).trim().toLowerCase().includes('1') ? 'Term 01' :
-        String(term).trim().toLowerCase().includes('2') ? 'Term 02' :
-        String(term).trim()
-      ) : null
-
       const baseStudentPayload: any = {
         user_id: userId,
         name: fullName,
@@ -287,6 +288,25 @@ export async function POST(request: Request) {
       if (tpError) throw tpError
     }
 
+    const loginPath = role === 'student' ? '/student/login' : role === 'teacher' ? '/teacher/login' : '/admin/login'
+
+    // Automatically send welcome email with credentials via Resend
+    let emailResult: { success: boolean; id?: string; skipped?: boolean; error?: string } = { success: false, skipped: true }
+    try {
+      emailResult = await sendWelcomeCredentialsEmail({
+        email,
+        name: fullName,
+        role,
+        temporaryPassword: password,
+        registrationNumber: role === 'student' ? registrationNumber : null,
+        year: role === 'student' ? effectiveYear : null,
+        term: role === 'student' ? cleanTerm : null,
+        loginPath
+      })
+    } catch (e: any) {
+      console.warn('[Admin Create User] Resend automated email dispatch failed:', e?.message)
+    }
+
     const { data: userData } = await supabaseAdmin.auth.admin.getUserById(userId)
     return NextResponse.json({ 
       success: true, 
@@ -296,8 +316,11 @@ export async function POST(request: Request) {
         name: fullName,
         email,
         temporaryPassword: password,
-        loginPath: role === 'student' ? '/student/login' : role === 'teacher' ? '/teacher/login' : '/admin/login',
-        teacherAssigned: role === 'student' ? !!effectiveTeacherId : true
+        loginPath,
+        teacherAssigned: role === 'student' ? !!effectiveTeacherId : true,
+        emailSent: emailResult.success,
+        emailSkipped: emailResult.skipped,
+        emailError: emailResult.error
       }
     })
 
