@@ -47,8 +47,10 @@ export async function sendWelcomeCredentialsEmail(params: WelcomeCredentialsEmai
   }
 
   const cleanEmail = email.trim().toLowerCase()
-  const fullLoginUrl = `${siteUrl.replace(/\/$/, '')}${loginPath}`
-  const roleDisplay = role === 'student' ? 'Student' : role === 'teacher' ? 'Educator / Teacher' : 'Administrator'
+  const cleanSiteUrl = siteUrl.replace(/\/$/, '')
+  const fullLoginUrl = `${cleanSiteUrl}${loginPath}`
+  const logoUrl = `${cleanSiteUrl}/alihsan-brand-logo.jpg`
+  const roleDisplay = role === 'student' ? 'Student' : role === 'teacher' ? 'Educator' : 'Administrator'
 
   const htmlContent = `
 <!DOCTYPE html>
@@ -56,152 +58,181 @@ export async function sendWelcomeCredentialsEmail(params: WelcomeCredentialsEmai
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Welcome to Al-Ihsan Academy</title>
+  <title>Welcome to Al-Ihsan Academy of Moral Education</title>
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       margin: 0;
       padding: 0;
       background-color: #f8fafc;
       color: #0f172a;
+      -webkit-font-smoothing: antialiased;
     }
     .wrapper {
-      max-width: 600px;
+      max-width: 580px;
       margin: 0 auto;
-      padding: 32px 16px;
+      padding: 40px 16px;
     }
     .card {
       background-color: #ffffff;
-      border-radius: 18px;
+      border-radius: 14px;
       overflow: hidden;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
       border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
     }
     .header {
-      background: linear-gradient(135deg, #064e3b 0%, #047857 100%);
-      padding: 36px 32px;
+      background-color: #000000;
+      padding: 36px 32px 28px 32px;
       text-align: center;
-      color: #ffffff;
+      border-bottom: 2px solid #1e293b;
     }
-    .header h1 {
-      margin: 0;
-      font-size: 24px;
-      font-weight: 800;
-      letter-spacing: 0.5px;
+    .logo-img {
+      display: block;
+      margin: 0 auto;
+      max-width: 170px;
+      width: 170px;
+      height: auto;
     }
-    .header p {
-      margin: 6px 0 0 0;
+    .header-title {
+      margin: 14px 0 0 0;
       font-size: 13px;
-      color: #a7f3d0;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
       font-weight: 700;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      color: #cbd5e1;
+    }
+    .header-sub {
+      margin: 4px 0 0 0;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: #94a3b8;
     }
     .content {
-      padding: 32px 28px;
+      padding: 36px 32px;
+    }
+    .badge {
+      display: inline-block;
+      background-color: #f1f5f9;
+      color: #047857;
+      border: 1px solid #e2e8f0;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-bottom: 16px;
     }
     .greeting {
-      font-size: 16px;
+      font-size: 18px;
       font-weight: 700;
-      color: #064e3b;
+      color: #0f172a;
       margin-bottom: 8px;
+      line-height: 1.3;
     }
     .intro {
       font-size: 14px;
       line-height: 1.6;
-      color: #334155;
+      color: #475569;
       margin-top: 0;
-      margin-bottom: 24px;
+      margin-bottom: 26px;
     }
-    .creds-box {
-      background-color: #f0fdf4;
-      border: 2px solid #bbf7d0;
-      border-radius: 14px;
-      padding: 20px 24px;
-      margin-bottom: 24px;
+    .creds-container {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px 22px;
+      margin-bottom: 28px;
     }
-    .creds-title {
-      font-size: 12px;
-      font-weight: 800;
+    .creds-header {
+      font-size: 11px;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 1px;
-      color: #166534;
+      color: #64748b;
       margin-bottom: 14px;
-      display: flex;
-      align-items: center;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e2e8f0;
     }
     .cred-row {
       display: flex;
       justify-content: space-between;
+      align-items: center;
       padding: 8px 0;
-      border-bottom: 1px dashed #bbf7d0;
       font-size: 13px;
     }
-    .cred-row:last-child {
-      border-bottom: none;
-      padding-bottom: 0;
+    .cred-row:not(:last-child) {
+      border-bottom: 1px solid #f1f5f9;
     }
     .cred-label {
       color: #64748b;
-      font-weight: 600;
+      font-weight: 500;
     }
     .cred-value {
       color: #0f172a;
-      font-weight: 700;
+      font-weight: 600;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       text-align: right;
     }
     .cred-password {
       color: #047857;
-      background: #ffffff;
-      padding: 2px 8px;
+      background-color: #ffffff;
+      padding: 3px 8px;
       border-radius: 6px;
-      border: 1px solid #86efac;
-      font-weight: 800;
+      border: 1px solid #cbd5e1;
+      font-weight: 700;
+      letter-spacing: 0.5px;
     }
     .button-container {
       text-align: center;
-      margin: 32px 0 24px 0;
+      margin: 28px 0 32px 0;
     }
     .button {
       display: inline-block;
-      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      background-color: #047857;
       color: #ffffff !important;
       text-decoration: none;
       font-size: 14px;
-      font-weight: 700;
-      padding: 14px 36px;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+      font-weight: 600;
+      padding: 13px 34px;
+      border-radius: 8px;
+      letter-spacing: 0.2px;
     }
-    .steps {
-      background-color: #f8fafc;
-      border-radius: 12px;
-      padding: 18px 20px;
+    .guide-box {
+      border-top: 1px solid #f1f5f9;
+      padding-top: 22px;
       margin-bottom: 24px;
-      border: 1px solid #e2e8f0;
     }
-    .steps-title {
-      font-size: 12px;
-      font-weight: 800;
+    .guide-title {
+      font-size: 11px;
+      font-weight: 700;
       text-transform: uppercase;
-      color: #475569;
+      letter-spacing: 0.8px;
+      color: #64748b;
       margin-bottom: 10px;
     }
-    .steps ol {
+    .guide-list {
       margin: 0;
-      padding-left: 20px;
+      padding-left: 18px;
       font-size: 13px;
       color: #475569;
       line-height: 1.6;
+    }
+    .guide-list li {
+      margin-bottom: 4px;
     }
     .footer {
       text-align: center;
       font-size: 12px;
       color: #94a3b8;
-      padding-top: 24px;
+      padding: 24px 20px 0 20px;
       border-top: 1px solid #f1f5f9;
-      line-height: 1.5;
+      line-height: 1.6;
+    }
+    .footer strong {
+      color: #64748b;
     }
   </style>
 </head>
@@ -209,22 +240,24 @@ export async function sendWelcomeCredentialsEmail(params: WelcomeCredentialsEmai
   <div class="wrapper">
     <div class="card">
       <div class="header">
-        <h1>AL-IHSAN ACADEMY</h1>
-        <p>Moral Education LMS</p>
+        <img src="${logoUrl}" alt="Al-Ihsan Academy" class="logo-img" />
+        <div class="header-title">Al-Ihsan Academy of Moral Education</div>
+        <div class="header-sub">Learning Management System</div>
       </div>
 
       <div class="content">
+        <span class="badge">${roleDisplay} Portal</span>
         <div class="greeting">Assalamu Alaikum wa Rahmatullah, ${name}</div>
         <p class="intro">
-          Welcome to Al-Ihsan Academy! Your official <strong>${roleDisplay} Portal</strong> account has been created. You can access your classes, syllabus, and schedules using the details below:
+          Welcome to Al-Ihsan Academy of Moral Education. Your account has been provisioned on the LMS portal. Use the confidential credentials below to access your classes and academic schedule:
         </p>
 
-        <div class="creds-box">
-          <div class="creds-title">🔐 Your LMS Login Details</div>
-          
+        <div class="creds-container">
+          <div class="creds-header">Account Login Credentials</div>
+
           ${registrationNumber ? `
           <div class="cred-row">
-            <span class="cred-label">Registration / Student ID</span>
+            <span class="cred-label">Student ID</span>
             <span class="cred-value">${registrationNumber}</span>
           </div>` : ''}
 
@@ -240,13 +273,13 @@ export async function sendWelcomeCredentialsEmail(params: WelcomeCredentialsEmai
 
           ${year ? `
           <div class="cred-row">
-            <span class="cred-label">Class / Academic Year</span>
+            <span class="cred-label">Academic Year / Class</span>
             <span class="cred-value">${year}</span>
           </div>` : ''}
 
           ${term ? `
           <div class="cred-row">
-            <span class="cred-label">Academic Term</span>
+            <span class="cred-label">Term</span>
             <span class="cred-value">${term}</span>
           </div>` : ''}
         </div>
@@ -257,18 +290,18 @@ export async function sendWelcomeCredentialsEmail(params: WelcomeCredentialsEmai
           </a>
         </div>
 
-        <div class="steps">
-          <div class="steps-title">📋 Getting Started Instructions</div>
-          <ol>
-            <li>Click the button above or visit <a href="${fullLoginUrl}" style="color: #059669; font-weight: 600;">${fullLoginUrl}</a>.</li>
-            <li>Log in with your Registered Email and Temporary Password.</li>
-            <li>Upon your first sign-in, navigate to your <strong>Profile Settings</strong> to set your permanent password.</li>
+        <div class="guide-box">
+          <div class="guide-title">Next Steps</div>
+          <ol class="guide-list">
+            <li>Open the login portal at <a href="${fullLoginUrl}" style="color: #047857; text-decoration: none; font-weight: 600;">${fullLoginUrl}</a>.</li>
+            <li>Sign in using your registered email and temporary password.</li>
+            <li>Upon your first sign-in, navigate to <strong>Profile Settings</strong> to update your password.</li>
           </ol>
         </div>
 
         <div class="footer">
-          <p>This is an automated communication from Al-Ihsan Academy.</p>
-          <p>If you need assistance, please contact the academy administration.</p>
+          <p><strong>Al-Ihsan Academy of Moral Education</strong><br>Building a Generation for Tomorrow</p>
+          <p style="margin-top: 8px; font-size: 11px;">This is an automated notification. If you have questions, please reply directly to this email.</p>
         </div>
       </div>
     </div>
@@ -280,20 +313,22 @@ export async function sendWelcomeCredentialsEmail(params: WelcomeCredentialsEmai
   const textContent = `
 Assalamu Alaikum wa Rahmatullah, ${name}
 
-Welcome to Al-Ihsan Academy! Your ${roleDisplay} Portal account has been created.
+Welcome to Al-Ihsan Academy of Moral Education.
+Your ${roleDisplay} Portal account has been created on the LMS platform.
 
-Your Login Credentials:
-• Platform Login URL: ${fullLoginUrl}
+YOUR LOGIN CREDENTIALS:
+• Portal URL: ${fullLoginUrl}
 • Registered Email: ${cleanEmail}
-${registrationNumber ? `• Student ID / Reg No: ${registrationNumber}\n` : ''}• Temporary Password: ${temporaryPassword}
-${year ? `• Class / Year: ${year}\n` : ''}${term ? `• Academic Term: ${term}\n` : ''}
-Instructions:
+${registrationNumber ? `• Student ID: ${registrationNumber}\n` : ''}• Temporary Password: ${temporaryPassword}
+${year ? `• Class / Year: ${year}\n` : ''}${term ? `• Term: ${term}\n` : ''}
+NEXT STEPS:
 1. Visit ${fullLoginUrl}
 2. Log in using your email and temporary password.
-3. Update your password upon first login from your profile.
+3. Update your password upon first login from your profile settings.
 
 Warm regards,
-Al-Ihsan Academy Administration
+Al-Ihsan Academy of Moral Education
+Building a Generation for Tomorrow
   `.trim()
 
   try {
