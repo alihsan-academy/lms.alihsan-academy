@@ -49,7 +49,7 @@ export async function sendWelcomeCredentialsEmail(params: WelcomeCredentialsEmai
   const cleanEmail = email.trim().toLowerCase()
   const cleanSiteUrl = siteUrl.replace(/\/$/, '')
   const fullLoginUrl = `${cleanSiteUrl}${loginPath}`
-  const logoUrl = `${cleanSiteUrl}/alihsan-brand-logo.jpg`
+  const logoUrl = `${cleanSiteUrl}/alihsan-logo-transparent.png`
   const roleDisplay = role === 'student' ? 'Student' : role === 'teacher' ? 'Educator' : 'Administrator'
 
   const htmlContent = `
@@ -81,42 +81,42 @@ export async function sendWelcomeCredentialsEmail(params: WelcomeCredentialsEmai
       box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
     }
     .header {
-      background-color: #000000;
-      padding: 36px 32px 28px 32px;
+      background-color: #ffffff;
+      padding: 36px 32px 24px 32px;
       text-align: center;
-      border-bottom: 2px solid #1e293b;
+      border-bottom: 1px solid #f1f5f9;
     }
     .logo-img {
       display: block;
       margin: 0 auto;
-      max-width: 170px;
-      width: 170px;
+      max-width: 190px;
+      width: 190px;
       height: auto;
     }
     .header-title {
-      margin: 14px 0 0 0;
+      margin: 16px 0 0 0;
       font-size: 13px;
       font-weight: 700;
-      letter-spacing: 1.8px;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
-      color: #cbd5e1;
+      color: #0f172a;
     }
     .header-sub {
       margin: 4px 0 0 0;
       font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 1.2px;
+      font-weight: 600;
+      letter-spacing: 1px;
       text-transform: uppercase;
-      color: #94a3b8;
+      color: #64748b;
     }
     .content {
-      padding: 36px 32px;
+      padding: 32px 32px 36px 32px;
     }
     .badge {
       display: inline-block;
-      background-color: #f1f5f9;
-      color: #047857;
-      border: 1px solid #e2e8f0;
+      background-color: #f0fdf4;
+      color: #166534;
+      border: 1px solid #bbf7d0;
       font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
@@ -130,21 +130,21 @@ export async function sendWelcomeCredentialsEmail(params: WelcomeCredentialsEmai
       font-weight: 700;
       color: #0f172a;
       margin-bottom: 8px;
-      line-height: 1.3;
+      line-height: 1.35;
     }
     .intro {
       font-size: 14px;
       line-height: 1.6;
       color: #475569;
       margin-top: 0;
-      margin-bottom: 26px;
+      margin-bottom: 24px;
     }
     .creds-container {
       background-color: #f8fafc;
       border: 1px solid #e2e8f0;
       border-radius: 12px;
       padding: 20px 22px;
-      margin-bottom: 28px;
+      margin-bottom: 26px;
     }
     .creds-header {
       font-size: 11px;
@@ -187,7 +187,7 @@ export async function sendWelcomeCredentialsEmail(params: WelcomeCredentialsEmai
     }
     .button-container {
       text-align: center;
-      margin: 28px 0 32px 0;
+      margin: 28px 0;
     }
     .button {
       display: inline-block;
@@ -232,7 +232,12 @@ export async function sendWelcomeCredentialsEmail(params: WelcomeCredentialsEmai
       line-height: 1.6;
     }
     .footer strong {
-      color: #64748b;
+      color: #475569;
+    }
+    .footer-link {
+      color: #047857;
+      text-decoration: none;
+      font-weight: 600;
     }
   </style>
 </head>
@@ -301,7 +306,10 @@ export async function sendWelcomeCredentialsEmail(params: WelcomeCredentialsEmai
 
         <div class="footer">
           <p><strong>Al-Ihsan Academy of Moral Education</strong><br>Building a Generation for Tomorrow</p>
-          <p style="margin-top: 8px; font-size: 11px;">This is an automated notification. If you have questions, please reply directly to this email.</p>
+          <p style="margin: 8px 0 0 0;">
+            Official Website: <a href="https://www.alihsanacademy.uk" class="footer-link" target="_blank">www.alihsanacademy.uk</a>
+          </p>
+          <p style="margin-top: 10px; font-size: 11px;">This is an automated notification. If you have questions, please reply directly to this email.</p>
         </div>
       </div>
     </div>
@@ -329,6 +337,7 @@ NEXT STEPS:
 Warm regards,
 Al-Ihsan Academy of Moral Education
 Building a Generation for Tomorrow
+Website: www.alihsanacademy.uk
   `.trim()
 
   try {
