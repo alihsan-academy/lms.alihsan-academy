@@ -34,7 +34,7 @@ export async function sendWelcomeCredentialsEmail(params: WelcomeCredentialsEmai
     year,
     term,
     loginPath = role === 'student' ? '/student/login' : role === 'teacher' ? '/teacher/login' : '/admin/login',
-    siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://alihsan-lms.vercel.app'
+    siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://learn.alihsanacademy.uk'
   } = params
 
   if (!resend) {
