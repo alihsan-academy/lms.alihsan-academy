@@ -49,7 +49,7 @@ export async function sendWelcomeCredentialsEmail(params: WelcomeCredentialsEmai
   const cleanEmail = email.trim().toLowerCase()
   const cleanSiteUrl = siteUrl.replace(/\/$/, '')
   const fullLoginUrl = `${cleanSiteUrl}${loginPath}`
-  const logoUrl = `${cleanSiteUrl}/alihsan-logo-transparent.png`
+  const logoUrl = `${cleanSiteUrl}/alihsan-logo-emerald.png`
   const roleDisplay = role === 'student' ? 'Student' : role === 'teacher' ? 'Educator' : 'Administrator'
 
   const htmlContent = `
@@ -82,41 +82,41 @@ export async function sendWelcomeCredentialsEmail(params: WelcomeCredentialsEmai
     }
     .header {
       background-color: #ffffff;
-      padding: 36px 32px 24px 32px;
+      padding: 28px 32px 18px 32px;
       text-align: center;
       border-bottom: 1px solid #f1f5f9;
     }
     .logo-img {
       display: block;
       margin: 0 auto;
-      max-width: 190px;
-      width: 190px;
+      max-width: 100px;
+      width: 100px;
       height: auto;
     }
     .header-title {
-      margin: 16px 0 0 0;
+      margin: 10px 0 0 0;
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: 1.5px;
       text-transform: uppercase;
-      color: #0f172a;
+      color: #064e3b;
     }
     .header-sub {
-      margin: 4px 0 0 0;
+      margin: 2px 0 0 0;
       font-size: 11px;
       font-weight: 600;
       letter-spacing: 1px;
       text-transform: uppercase;
-      color: #64748b;
+      color: #059669;
     }
     .content {
-      padding: 32px 32px 36px 32px;
+      padding: 34px 32px 38px 32px;
     }
     .badge {
       display: inline-block;
-      background-color: #f0fdf4;
-      color: #166534;
-      border: 1px solid #bbf7d0;
+      background-color: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
       font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
@@ -131,6 +131,7 @@ export async function sendWelcomeCredentialsEmail(params: WelcomeCredentialsEmai
       color: #0f172a;
       margin-bottom: 8px;
       line-height: 1.35;
+      letter-spacing: -0.2px;
     }
     .intro {
       font-size: 14px;
@@ -160,8 +161,8 @@ export async function sendWelcomeCredentialsEmail(params: WelcomeCredentialsEmai
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 8px 0;
-      font-size: 13px;
+      padding: 8.5px 0;
+      font-size: 13.5px;
     }
     .cred-row:not(:last-child) {
       border-bottom: 1px solid #f1f5f9;
@@ -172,18 +173,18 @@ export async function sendWelcomeCredentialsEmail(params: WelcomeCredentialsEmai
     }
     .cred-value {
       color: #0f172a;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       font-weight: 600;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       text-align: right;
+      letter-spacing: -0.1px;
     }
     .cred-password {
       color: #047857;
       background-color: #ffffff;
-      padding: 3px 8px;
+      padding: 3px 10px;
       border-radius: 6px;
-      border: 1px solid #cbd5e1;
+      border: 1px solid #86efac;
       font-weight: 700;
-      letter-spacing: 0.5px;
     }
     .button-container {
       text-align: center;
@@ -196,7 +197,7 @@ export async function sendWelcomeCredentialsEmail(params: WelcomeCredentialsEmai
       text-decoration: none;
       font-size: 14px;
       font-weight: 600;
-      padding: 13px 34px;
+      padding: 13px 36px;
       border-radius: 8px;
       letter-spacing: 0.2px;
     }
@@ -232,12 +233,19 @@ export async function sendWelcomeCredentialsEmail(params: WelcomeCredentialsEmai
       line-height: 1.6;
     }
     .footer strong {
-      color: #475569;
+      color: #334155;
+    }
+    .footer-website {
+      margin: 8px 0 0 0;
     }
     .footer-link {
       color: #047857;
       text-decoration: none;
       font-weight: 600;
+      font-size: 13px;
+    }
+    .footer-link:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
@@ -245,7 +253,7 @@ export async function sendWelcomeCredentialsEmail(params: WelcomeCredentialsEmai
   <div class="wrapper">
     <div class="card">
       <div class="header">
-        <img src="${logoUrl}" alt="Al-Ihsan Academy" class="logo-img" />
+        <img src="${logoUrl}" alt="Al-Ihsan Academy of Moral Education" class="logo-img" />
         <div class="header-title">Al-Ihsan Academy of Moral Education</div>
         <div class="header-sub">Learning Management System</div>
       </div>
@@ -306,8 +314,8 @@ export async function sendWelcomeCredentialsEmail(params: WelcomeCredentialsEmai
 
         <div class="footer">
           <p><strong>Al-Ihsan Academy of Moral Education</strong><br>Building a Generation for Tomorrow</p>
-          <p style="margin: 8px 0 0 0;">
-            Official Website: <a href="https://www.alihsanacademy.uk" class="footer-link" target="_blank">www.alihsanacademy.uk</a>
+          <p class="footer-website">
+            <a href="https://www.alihsanacademy.uk" class="footer-link" target="_blank">www.alihsanacademy.uk</a>
           </p>
           <p style="margin-top: 10px; font-size: 11px;">This is an automated notification. If you have questions, please reply directly to this email.</p>
         </div>
@@ -337,7 +345,7 @@ NEXT STEPS:
 Warm regards,
 Al-Ihsan Academy of Moral Education
 Building a Generation for Tomorrow
-Website: www.alihsanacademy.uk
+www.alihsanacademy.uk
   `.trim()
 
   try {
