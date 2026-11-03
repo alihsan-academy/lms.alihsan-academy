@@ -300,6 +300,7 @@ Al-Ihsan Academy Administration
     const { data, error } = await resend.emails.send({
       from: DEFAULT_FROM,
       to: [cleanEmail],
+      replyTo: process.env.RESEND_REPLY_TO || undefined,
       subject: `Welcome to Al-Ihsan Academy – Your LMS Login Credentials (${name})`,
       html: htmlContent,
       text: textContent,
