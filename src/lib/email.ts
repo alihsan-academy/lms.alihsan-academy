@@ -33,7 +33,7 @@ export async function sendWelcomeCredentialsEmail(params: WelcomeCredentialsEmai
     registrationNumber,
     year,
     term,
-    loginPath = role === 'student' ? '/student/login' : role === 'teacher' ? '/teacher/login' : '/admin/login',
+    loginPath = role === 'student' ? '/student/login' : role === 'teacher' ? '/teacher/login' : '/portal-superadmin/login',
     siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://learn.alihsanacademy.uk'
   } = params
 

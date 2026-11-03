@@ -288,7 +288,7 @@ export async function POST(request: Request) {
       if (tpError) throw tpError
     }
 
-    const loginPath = role === 'student' ? '/student/login' : role === 'teacher' ? '/teacher/login' : '/admin/login'
+    const loginPath = role === 'student' ? '/student/login' : role === 'teacher' ? '/teacher/login' : '/portal-superadmin/login'
 
     // Automatically send welcome email with credentials via Resend
     let emailResult: { success: boolean; id?: string; skipped?: boolean; error?: string } = { success: false, skipped: true }

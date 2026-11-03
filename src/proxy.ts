@@ -3,6 +3,12 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/admin'
 
 export default async function proxy(request: NextRequest) {
+  // Explicitly disable /admin/login - return 404 Not Found so it cannot be probed or used.
+  // The administrative portal is exclusively at /portal-superadmin/login.
+  if (request.nextUrl.pathname === '/admin/login' || request.nextUrl.pathname === '/admin/login/') {
+    return NextResponse.rewrite(new URL('/_not-found', request.url), { status: 404 })
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -54,7 +60,7 @@ export default async function proxy(request: NextRequest) {
 
     const isProtectedRoute = (request.nextUrl.pathname.startsWith('/student') && request.nextUrl.pathname !== '/student/login') ||
                              (request.nextUrl.pathname.startsWith('/teacher') && request.nextUrl.pathname !== '/teacher/login') ||
-                             (request.nextUrl.pathname.startsWith('/admin')) ||
+                             (request.nextUrl.pathname.startsWith('/admin') && request.nextUrl.pathname !== '/admin/login') ||
                              request.nextUrl.pathname.startsWith('/superadmin')
 
     const getUserRole = async (): Promise<string | null> => {
