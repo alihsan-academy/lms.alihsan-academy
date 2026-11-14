@@ -94,7 +94,7 @@ export default function SharedLogin({
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     if (!email || !password) {
-      setError('Please fill in both email and password.')
+      setError(portalType === 'student' ? 'Please fill in both Admission Number (or email) and password.' : 'Please fill in both email and password.')
       return
     }
 
@@ -103,11 +103,31 @@ export default function SharedLogin({
 
     try {
       const supabase = createClient()
+      let loginEmail = email.trim()
+
+      // If student enters Admission / Registration Number without '@', resolve to auth email
+      if (portalType === 'student' && !loginEmail.includes('@')) {
+        const resolveResponse = await fetch('/api/auth/resolve-identifier', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: loginEmail, role: 'student' }),
+        })
+        const resolveData = await resolveResponse.json()
+        if (!resolveResponse.ok || !resolveData.email) {
+          setError(
+            resolveData.error ||
+              `No student account found with Admission Number "${loginEmail}". Please check your admission number or enter your registered email.`
+          )
+          setLoading(false)
+          return
+        }
+        loginEmail = resolveData.email
+      }
 
       // 1. Sign in
       const { data: authData, error: authError } =
         await supabase.auth.signInWithPassword({
-          email: email.trim(),
+          email: loginEmail,
           password: password,
         })
 
@@ -117,7 +137,7 @@ export default function SharedLogin({
         if (isNetworkAuthError(msg)) {
           setError('Network issue connecting to server. Please check your internet connection.')
         } else {
-          setError(msg || 'Invalid email or password. Please try again.')
+          setError(portalType === 'student' ? 'Invalid credentials. Please verify your Admission Number/email and password.' : (msg || 'Invalid email or password. Please try again.'))
         }
         setLoading(false)
         return
@@ -199,22 +219,43 @@ export default function SharedLogin({
   const handleResetPassword = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     setResetMessage({ type: '', text: '' })
-    const trimmedEmail = resetEmail.trim().toLowerCase()
-    if (!trimmedEmail) {
-      setResetMessage({ type: 'error', text: 'Please enter your email address' })
-      return
-    }
-
-    if (!trimmedEmail.includes('@') || !trimmedEmail.includes('.')) {
-      setResetMessage({ type: 'error', text: 'Please enter a valid email address' })
+    let targetEmail = resetEmail.trim()
+    if (!targetEmail) {
+      setResetMessage({
+        type: 'error',
+        text: portalType === 'student' ? 'Please enter your Admission Number or email address' : 'Please enter your email address',
+      })
       return
     }
 
     setResetLoading(true)
     try {
+      // If student typed Admission Number without '@', resolve to registered email
+      if (portalType === 'student' && !targetEmail.includes('@')) {
+        const resolveResponse = await fetch('/api/auth/resolve-identifier', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: targetEmail, role: 'student' }),
+        })
+        const resolveData = await resolveResponse.json()
+        if (!resolveResponse.ok || !resolveData.email) {
+          setResetMessage({
+            type: 'error',
+            text: resolveData.error || `No student account found with Admission Number "${targetEmail}".`,
+          })
+          setResetLoading(false)
+          return
+        }
+        targetEmail = resolveData.email
+      } else if (!targetEmail.includes('@') || !targetEmail.includes('.')) {
+        setResetMessage({ type: 'error', text: 'Please enter a valid email address' })
+        setResetLoading(false)
+        return
+      }
+
       const supabase = createClient()
       const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined
-      const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+      const { error } = await supabase.auth.resetPasswordForEmail(targetEmail.toLowerCase(), {
         redirectTo: redirectUrl,
       })
 
@@ -227,7 +268,12 @@ export default function SharedLogin({
           setResetMessage({ type: 'error', text: error.message })
         }
       } else {
-        setResetMessage({ type: 'success', text: 'Password reset link sent to your email! Please check your inbox and spam folder.' })
+        setResetMessage({
+          type: 'success',
+          text: portalType === 'student'
+            ? `Password reset link sent to your registered email (${targetEmail.replace(/(.{2})(.*)(@.*)/, '$1***$3')})! Please check your inbox and spam folder.`
+            : 'Password reset link sent to your email! Please check your inbox and spam folder.',
+        })
         setResetEmail('')
       }
     } catch {
@@ -481,7 +527,10 @@ export default function SharedLogin({
                 {emailLabel}
               </label>
               <input
-                type="email"
+                type={portalType === 'student' ? 'text' : 'email'}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck="false"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={inputPlaceholder}
@@ -564,14 +613,19 @@ export default function SharedLogin({
                 Reset Password
               </h3>
               <div style={{ fontSize: '12px', color: '#4A6362', marginBottom: '10px' }}>
-                Enter your email address to receive reset instructions.
+                {portalType === 'student'
+                  ? 'Enter your Admission Number or email address to receive reset instructions.'
+                  : 'Enter your email address to receive reset instructions.'}
               </div>
               <form onSubmit={handleResetPassword}>
                 <input
-                  type="email"
+                  type={portalType === 'student' ? 'text' : 'email'}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck="false"
                   value={resetEmail}
                   onChange={(e) => setResetEmail(e.target.value)}
-                  placeholder="name@alihsanacademy.uk"
+                  placeholder={portalType === 'student' ? 'e.g. AIA-1024 or registered email' : 'name@alihsanacademy.uk'}
                   disabled={resetLoading}
                   className="w-full h-11 border border-[#DDE4E0] rounded-lg px-3.5 py-2.5 text-base md:text-sm text-[#112221] outline-none bg-white focus:border-[#1A6B4A] transition-all box-border font-sans mb-2"
                 />
