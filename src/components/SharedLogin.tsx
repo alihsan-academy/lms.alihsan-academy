@@ -94,7 +94,7 @@ export default function SharedLogin({
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     if (!email || !password) {
-      setError(portalType === 'student' ? 'Please fill in both Admission Number (or email) and password.' : 'Please fill in both email and password.')
+      setError(portalType === 'student' ? 'Please fill in both Registration Number (or email) and password.' : 'Please fill in both email and password.')
       return
     }
 
@@ -105,7 +105,7 @@ export default function SharedLogin({
       const supabase = createClient()
       let loginEmail = email.trim()
 
-      // If student enters Admission / Registration Number without '@', resolve to auth email
+      // If student enters Registration / Admission Number without '@', resolve to auth email
       if (portalType === 'student' && !loginEmail.includes('@')) {
         const resolveResponse = await fetch('/api/auth/resolve-identifier', {
           method: 'POST',
@@ -116,7 +116,7 @@ export default function SharedLogin({
         if (!resolveResponse.ok || !resolveData.email) {
           setError(
             resolveData.error ||
-              `No student account found with Admission Number "${loginEmail}". Please check your admission number or enter your registered email.`
+              `No student account found with Registration Number "${loginEmail}". Please check your number or enter your registered email.`
           )
           setLoading(false)
           return
@@ -137,7 +137,7 @@ export default function SharedLogin({
         if (isNetworkAuthError(msg)) {
           setError('Network issue connecting to server. Please check your internet connection.')
         } else {
-          setError(portalType === 'student' ? 'Invalid credentials. Please verify your Admission Number/email and password.' : (msg || 'Invalid email or password. Please try again.'))
+          setError(portalType === 'student' ? 'Invalid credentials. Please verify your Registration Number/email and password.' : (msg || 'Invalid email or password. Please try again.'))
         }
         setLoading(false)
         return
@@ -223,14 +223,14 @@ export default function SharedLogin({
     if (!targetEmail) {
       setResetMessage({
         type: 'error',
-        text: portalType === 'student' ? 'Please enter your Admission Number or email address' : 'Please enter your email address',
+        text: portalType === 'student' ? 'Please enter your Registration Number or email address' : 'Please enter your email address',
       })
       return
     }
 
     setResetLoading(true)
     try {
-      // If student typed Admission Number without '@', resolve to registered email
+      // If student typed Registration Number without '@', resolve to registered email
       if (portalType === 'student' && !targetEmail.includes('@')) {
         const resolveResponse = await fetch('/api/auth/resolve-identifier', {
           method: 'POST',
@@ -241,7 +241,7 @@ export default function SharedLogin({
         if (!resolveResponse.ok || !resolveData.email) {
           setResetMessage({
             type: 'error',
-            text: resolveData.error || `No student account found with Admission Number "${targetEmail}".`,
+            text: resolveData.error || `No student account found with Registration Number "${targetEmail}".`,
           })
           setResetLoading(false)
           return
@@ -614,7 +614,7 @@ export default function SharedLogin({
               </h3>
               <div style={{ fontSize: '12px', color: '#4A6362', marginBottom: '10px' }}>
                 {portalType === 'student'
-                  ? 'Enter your Admission Number or email address to receive reset instructions.'
+                  ? 'Enter your Registration Number or email address to receive reset instructions.'
                   : 'Enter your email address to receive reset instructions.'}
               </div>
               <form onSubmit={handleResetPassword}>
@@ -625,7 +625,7 @@ export default function SharedLogin({
                   spellCheck="false"
                   value={resetEmail}
                   onChange={(e) => setResetEmail(e.target.value)}
-                  placeholder={portalType === 'student' ? 'e.g. AIA-1024 or registered email' : 'name@alihsanacademy.uk'}
+                  placeholder={portalType === 'student' ? 'e.g. 11223 or registered email' : 'name@alihsanacademy.uk'}
                   disabled={resetLoading}
                   className="w-full h-11 border border-[#DDE4E0] rounded-lg px-3.5 py-2.5 text-base md:text-sm text-[#112221] outline-none bg-white focus:border-[#1A6B4A] transition-all box-border font-sans mb-2"
                 />
