@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { classId, studentId, status, recordingUrl, remarks } = await request.json()
+    const { classId, studentId, status, recordingUrl, remarks, homework } = await request.json()
     if (!classId || !studentId) {
       return NextResponse.json({ error: 'classId and studentId are required' }, { status: 400 })
     }
@@ -76,6 +76,7 @@ export async function POST(request: Request) {
       status_detail: status || 'present',
       reason: status || 'present',
       remarks: remarks || '',
+      homework: typeof homework === 'string' ? homework.trim() : (existingMeta.homework || null),
     })
 
     const { error: updateError } = await supabaseAdmin

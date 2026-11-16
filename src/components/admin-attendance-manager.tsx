@@ -1038,14 +1038,26 @@ export function AdminAttendanceManager({
                             {a.classes?.scheduled_at ? formatUKDateTime(a.classes.scheduled_at) : formatUKDateTime(a.marked_at)}
                           </td>
                           <td className="p-4">
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
-                              parsed.status === 'present' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                            }`}>
-                              {parsed.statusLabel}
-                            </span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
+                                parsed.status === 'present' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                              }`}>
+                                {parsed.statusLabel}
+                              </span>
+                              {parsed.duration_minutes ? (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                  {parsed.duration_minutes}m
+                                </span>
+                              ) : null}
+                            </div>
                           </td>
                           <td className="p-4 text-xs text-muted-foreground">
-                            {parsed.remarks || '-'}
+                            <div>{parsed.remarks || '-'}</div>
+                            {parsed.homework && (
+                              <div className="text-[11px] text-amber-800 font-semibold mt-0.5">
+                                HW: {parsed.homework}
+                              </div>
+                            )}
                           </td>
                           <td className="p-4">
                             {parsed.recording_url ? (

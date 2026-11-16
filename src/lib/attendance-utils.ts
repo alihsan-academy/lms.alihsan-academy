@@ -25,6 +25,8 @@ export interface ParsedClassRecord {
   teacher_name?: string
   student_name?: string
   student_reg?: string
+  duration_minutes?: number | null
+  homework?: string | null
 }
 
 export interface AttendanceSummary {
@@ -135,6 +137,8 @@ export function parseClassMetadata(
   let remarks = ''
   let statusDetail = ''
   let title = c.title || 'Moral Class Alihsan Academy'
+  let duration_minutes: number | null = null
+  let homework: string | null = null
 
   if (c.recording_url) {
     if (typeof c.recording_url === 'string' && c.recording_url.trim().startsWith('{')) {
@@ -143,6 +147,8 @@ export function parseClassMetadata(
         recording_url = parsed.recording_url || null
         remarks = parsed.remarks || ''
         statusDetail = parsed.status_detail || parsed.reason || ''
+        duration_minutes = parsed.duration_minutes || parsed.duration || null
+        homework = parsed.homework || null
         if (parsed.title) {
           title = parsed.title
         }
@@ -156,6 +162,11 @@ export function parseClassMetadata(
 
   const attStatus = attendanceRecord?.status || 'unmarked'
   const isClassCompleted = c.status === 'completed'
+
+  // If completed and no explicit duration recorded, default standard session duration is 45 mins
+  if (isClassCompleted && !duration_minutes) {
+    duration_minutes = 45
+  }
 
   let resolvedStatus: ParsedClassRecord['status'] = 'scheduled'
   let statusLabel = 'Scheduled'
@@ -234,6 +245,8 @@ export function parseClassMetadata(
     statusLabel,
     remarks,
     badgeVariant,
+    duration_minutes,
+    homework,
   }
 }
 

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
 import { AcademyHeader } from '@/components/academy-header'
-import { Home, BarChart3, User, Loader2, Calendar, Clock, Video, Award, Zap, Star, Trophy, Download, AlertCircle, FileText, CheckCircle2, XCircle } from 'lucide-react'
+import { Home, BarChart3, User, Loader2, Calendar, Clock, Video, Award, Zap, Star, Trophy, Download, AlertCircle, FileText, CheckCircle2, XCircle, BookOpen } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { Avatar } from '@/components/avatar'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -648,6 +648,14 @@ function AttendanceTab({
                             <strong>Note:</strong> {item.remarks}
                           </p>
                         )}
+                        {item.homework && (
+                          <div className="mt-2 text-xs font-medium bg-amber-50 text-amber-900 px-3 py-1.5 rounded-lg border border-amber-200 flex items-start gap-1.5">
+                            <BookOpen className="h-3.5 w-3.5 text-amber-700 shrink-0 mt-0.5" />
+                            <div>
+                              <strong>Assigned Homework:</strong> {item.homework}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -662,6 +670,14 @@ function AttendanceTab({
                           <Video className="h-3.5 w-3.5" /> Watch Recording
                         </a>
                       )}
+
+                      {/* Duration Badge for completed classes */}
+                      {item.raw_status === 'completed' && item.duration_minutes ? (
+                        <span className="px-3 py-1.5 bg-emerald-50 text-emerald-800 rounded-xl text-xs font-bold border-2 border-emerald-200 flex items-center gap-1">
+                          <Clock className="h-3.5 w-3.5 text-emerald-700" />
+                          <span>{item.duration_minutes} mins</span>
+                        </span>
+                      ) : null}
 
                       {/* Status Badges */}
                       {item.badgeVariant === 'present' && (

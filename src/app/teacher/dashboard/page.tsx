@@ -72,11 +72,12 @@ export default function TeacherDashboard() {
     return () => clearInterval(timer)
   }, [])
 
-  // Modal for completing/marking class
+  // Modal for class notes, homework & status
   const [pendingCompleteClass, setPendingCompleteClass] = useState<any>(null)
   const [completionStatus, setCompletionStatus] = useState<'present' | 'absent' | 'teacher_unavailable' | 'student_unavailable' | 'break'>('present')
   const [recordingUrl, setRecordingUrl] = useState('')
   const [classRemarks, setClassRemarks] = useState('')
+  const [classHomework, setClassHomework] = useState('')
   const [isCompleting, setIsCompleting] = useState(false)
   
   // Modal for editing student details & enrolment status
@@ -204,16 +205,18 @@ export default function TeacherDashboard() {
           status: completionStatus,
           recordingUrl: recordingUrl.trim() || null,
           remarks: classRemarks.trim() || null,
+          homework: classHomework.trim() || null,
         })
       })
 
       const result = await response.json()
-      if (!response.ok) throw new Error(result.error || "Failed to mark class status")
+      if (!response.ok) throw new Error(result.error || "Failed to save class notes")
 
-      toast.success("Class status updated successfully.")
+      toast.success("Class notes & homework saved successfully.")
       setPendingCompleteClass(null)
       setRecordingUrl('')
       setClassRemarks('')
+      setClassHomework('')
       setCompletionStatus('present')
       
       await fetchClasses(selectedStudentId)
@@ -578,7 +581,13 @@ export default function TeacherDashboard() {
                               </div>
                               {parsed.remarks && (
                                 <p className="text-[11px] bg-muted/60 text-muted-foreground px-2 py-0.5 rounded font-medium inline-block">
-                                  <strong className="text-foreground">Note:</strong> {parsed.remarks}
+                                  <strong className="text-foreground">Remarks:</strong> {parsed.remarks}
+                                </p>
+                              )}
+                              {parsed.homework && (
+                                <p className="text-[11px] bg-amber-50 text-amber-900 border border-amber-200/70 px-2 py-0.5 rounded font-medium inline-flex items-center gap-1">
+                                  <BookOpen className="h-3 w-3 text-amber-700 shrink-0" />
+                                  <span><strong>Homework:</strong> {parsed.homework}</span>
                                 </p>
                               )}
                               {c.meet_link && (
@@ -604,6 +613,14 @@ export default function TeacherDashboard() {
                                 {parsed.statusLabel}
                               </span>
 
+                              {/* Duration Badge for completed classes */}
+                              {c.status === 'completed' && parsed.duration_minutes ? (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                                  <Clock className="h-3 w-3 text-emerald-700" />
+                                  <span>{parsed.duration_minutes} mins</span>
+                                </span>
+                              ) : null}
+
                               {parsed.recording_url && (
                                 <a href={parsed.recording_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded hover:bg-teal-100 transition-colors">
                                   <Video className="h-3 w-3" />
@@ -619,16 +636,17 @@ export default function TeacherDashboard() {
                                   setCompletionStatus(c.status === 'completed' && parsed.status !== 'present' && parsed.status !== 'scheduled' ? parsed.status : 'present')
                                   setRecordingUrl(parsed.recording_url || '')
                                   setClassRemarks(parsed.remarks || '')
+                                  setClassHomework(parsed.homework || '')
                                 }} 
-                                className="w-full sm:w-auto px-3 py-2 rounded-md text-xs font-semibold bg-[#1E293B] hover:bg-[#0F172A] text-white transition-colors flex items-center justify-center gap-1.5 shadow-sm min-h-[38px]"
+                                className="w-full sm:w-auto px-3.5 py-2 rounded-xl text-xs font-bold bg-[#1E293B] hover:bg-[#0F172A] text-white transition-colors flex items-center justify-center gap-1.5 shadow-sm min-h-[38px] cursor-pointer"
                               >
-                                <CheckCircle className="h-3.5 w-3.5" />
-                                {c.status === 'completed' ? 'Update Status' : 'Mark Attendance'}
+                                <BookOpen className="h-3.5 w-3.5 text-amber-300" />
+                                {c.status === 'completed' ? 'Class Notes & Homework' : 'Add Notes & Homework'}
                               </button>
                             ) : (
                               <div className="w-full sm:w-auto px-3 py-1.5 rounded-md text-xs font-semibold bg-muted/70 text-muted-foreground border border-border/70 flex items-center justify-center gap-1.5 min-h-[38px]">
                                 <Clock className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                                <span>Attendance opens after class time</span>
+                                <span>Notes open after class</span>
                               </div>
                             )}
                           </div>
@@ -877,89 +895,57 @@ export default function TeacherDashboard() {
                   <X className="h-4 w-4" />
                 </button>
 
-                <h3 className="text-lg font-bold mb-0.5">Mark Class Attendance</h3>
-                <p className="text-xs text-muted-foreground font-medium mb-4">
-                  Record attendance outcome, attach recording links, and provide notes.
-                </p>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <BookOpen className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-foreground">Class Notes & Homework</h3>
+                    <p className="text-xs text-muted-foreground font-medium">
+                      Add lesson notes and assigned tasks for the student.
+                    </p>
+                  </div>
+                </div>
 
                 <form onSubmit={handleCompleteClassSubmit} className="space-y-4">
-                  {/* Status Selection */}
-                  <div className="space-y-2">
-                    <Label className="text-foreground font-bold text-xs uppercase tracking-wider">Attendance Outcome *</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setCompletionStatus('present')}
-                        className={`p-2.5 rounded-xl border text-left font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
-                          completionStatus === 'present'
-                            ? 'border-emerald-500 bg-emerald-50 text-emerald-900 shadow-xs'
-                            : 'border-border bg-white text-muted-foreground hover:bg-muted/30'
-                        }`}
-                      >
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
-                        <div>
-                          <span>Attended</span>
-                          <span className="block text-[10px] font-normal text-emerald-700">Class completed</span>
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setCompletionStatus('student_unavailable')}
-                        className={`p-2.5 rounded-xl border text-left font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
-                          completionStatus === 'student_unavailable'
-                            ? 'border-orange-500 bg-orange-50 text-orange-900 shadow-xs'
-                            : 'border-border bg-white text-muted-foreground hover:bg-muted/30'
-                        }`}
-                      >
-                        <XCircle className="h-4 w-4 text-orange-600 flex-shrink-0" />
-                        <div>
-                          <span>Student Absent</span>
-                          <span className="block text-[10px] font-normal text-orange-700">Student unavailable</span>
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setCompletionStatus('teacher_unavailable')}
-                        className={`p-2.5 rounded-xl border text-left font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
-                          completionStatus === 'teacher_unavailable'
-                            ? 'border-rose-500 bg-rose-50 text-rose-900 shadow-xs'
-                            : 'border-border bg-white text-muted-foreground hover:bg-muted/30'
-                        }`}
-                      >
-                        <AlertCircle className="h-4 w-4 text-rose-600 flex-shrink-0" />
-                        <div>
-                          <span>Teacher Missed</span>
-                          <span className="block text-[10px] font-normal text-rose-700">Teacher unavailable</span>
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setCompletionStatus('break')}
-                        className={`p-2.5 rounded-xl border text-left font-bold text-xs transition-all flex items-center gap-2 cursor-pointer ${
-                          completionStatus === 'break'
-                            ? 'border-amber-500 bg-amber-50 text-amber-900 shadow-xs'
-                            : 'border-border bg-white text-muted-foreground hover:bg-muted/30'
-                        }`}
-                      >
-                        <Clock className="h-4 w-4 text-amber-600 flex-shrink-0" />
-                        <div>
-                          <span>On Break</span>
-                          <span className="block text-[10px] font-normal text-amber-700">Approved leave</span>
-                        </div>
-                      </button>
+                  {/* Student Homework / Next Task */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-foreground font-bold text-xs uppercase tracking-wider">
+                        Assigned Homework / Next Task
+                      </Label>
+                      <span className="text-[10px] font-semibold text-muted-foreground">Visible to student</span>
                     </div>
+                    <textarea 
+                      rows={2}
+                      placeholder="e.g. Memorise Surah Al-Mulk ayat 1-10; practice Tajweed rules on page 14..."
+                      value={classHomework}
+                      onChange={(e) => setClassHomework(e.target.value)}
+                      className="w-full rounded-xl border-2 border-border p-3 text-base md:text-sm font-medium placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors resize-none"
+                    />
                   </div>
 
-                  {/* Recording Link */}
+                  {/* Teacher Remarks */}
                   <div className="space-y-1.5">
-                    <Label className="text-foreground font-bold text-xs">Recording Link (optional)</Label>
+                    <Label className="text-foreground font-bold text-xs uppercase tracking-wider">
+                      Teacher Remarks / Lesson Notes
+                    </Label>
+                    <textarea 
+                      rows={2}
+                      placeholder="e.g. Excellent progress today! Pronunciation was clear and tajweed rules were well-applied."
+                      value={classRemarks}
+                      onChange={(e) => setClassRemarks(e.target.value)}
+                      className="w-full rounded-xl border-2 border-border p-3 text-base md:text-sm font-medium placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors resize-none"
+                    />
+                  </div>
+
+                  {/* Recording Link (optional) */}
+                  <div className="space-y-1.5">
+                    <Label className="text-foreground font-bold text-xs uppercase tracking-wider">Recording Link (Optional)</Label>
                     <div className="relative">
                       <Video className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input 
-                        placeholder="https://tldv.io/app/meetings/... or Zoom link"
+                        placeholder="https://tldv.io/app/meetings/... or Drive link"
                         value={recordingUrl}
                         onChange={(e) => setRecordingUrl(e.target.value)}
                         className="pl-9 h-11 rounded-xl border-2 font-medium text-base md:text-sm"
@@ -967,18 +953,15 @@ export default function TeacherDashboard() {
                     </div>
                   </div>
 
-                  {/* Remarks / Reason */}
-                  <div className="space-y-1.5">
-                    <Label className="text-foreground font-bold text-xs">Remarks / Reason (optional)</Label>
-                    <Input 
-                      placeholder="e.g. Completed Surah Al-Mulk, internet connectivity issue, etc."
-                      value={classRemarks}
-                      onChange={(e) => setClassRemarks(e.target.value)}
-                      className="h-11 rounded-xl border-2 font-medium text-base md:text-sm"
-                    />
+                  {/* Automated Attendance Banner */}
+                  <div className="p-3 bg-emerald-50/80 border border-emerald-200/80 rounded-xl flex items-center gap-2.5">
+                    <Sparkles className="h-4 w-4 text-emerald-700 shrink-0" />
+                    <p className="text-[11px] text-emerald-800 font-medium leading-tight">
+                      Attendance & session duration are automatically verified via Google Meet.
+                    </p>
                   </div>
 
-                  <div className="flex gap-3 pt-3">
+                  <div className="flex gap-3 pt-2">
                     <BouncyButton 
                       type="button"
                       variant="ghost" 
@@ -994,7 +977,7 @@ export default function TeacherDashboard() {
                       className="flex-1 bg-primary hover:bg-primary/90 text-white font-black"
                     >
                       {isCompleting ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : null}
-                      Save Attendance
+                      Save Notes & Homework
                     </BouncyButton>
                   </div>
                 </form>
@@ -1287,6 +1270,7 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
     time: '', 
     repeatWeekly: false 
   })
+  const [showCustomMeetInput, setShowCustomMeetInput] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
@@ -1397,22 +1381,57 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
           </div>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label className="text-foreground font-bold">Google Meet Link</Label>
-            <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-              ✨ Auto-generated if blank
-            </span>
+        {/* Google Meet Room Section */}
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50/60 to-emerald-50 border-2 border-emerald-200/80 shadow-xs space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                <Video className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-extrabold text-emerald-950">Academy Google Meet</span>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full">
+                    <Sparkles className="h-2.5 w-2.5" /> Auto-Generated
+                  </span>
+                </div>
+                <p className="text-xs text-emerald-800/90 font-medium mt-0.5 leading-snug">
+                  An official Academy room with automated attendance tracking will be created automatically.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (showCustomMeetInput) {
+                  setFormData(prev => ({ ...prev, meetLink: '' }))
+                }
+                setShowCustomMeetInput(!showCustomMeetInput)
+              }}
+              className="text-[11px] font-bold text-emerald-800 hover:text-emerald-950 underline underline-offset-2 shrink-0 pt-0.5 cursor-pointer"
+            >
+              {showCustomMeetInput ? 'Use Auto-Generated' : '+ Custom link'}
+            </button>
           </div>
-          <div className="relative">
-            <Video className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input 
-              placeholder="Leave blank to auto-create Google Meet room, or paste link"
-              value={formData.meetLink}
-              onChange={(e) => setFormData(prev => ({ ...prev, meetLink: e.target.value }))}
-              className="pl-10 h-14 rounded-xl border-2 font-medium"
-            />
-          </div>
+
+          {showCustomMeetInput && (
+            <div className="pt-3 border-t border-emerald-200 space-y-2">
+              <Label className="text-xs font-bold text-emerald-950">Manual Meeting Link (Optional Override)</Label>
+              <div className="relative">
+                <Video className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="https://meet.google.com/..."
+                  value={formData.meetLink}
+                  onChange={(e) => setFormData(prev => ({ ...prev, meetLink: e.target.value }))}
+                  className="pl-9 h-11 rounded-xl border-2 bg-white font-medium text-base md:text-sm"
+                />
+              </div>
+              <p className="text-[11px] text-amber-900 bg-amber-50 p-2.5 rounded-lg border border-amber-200 leading-relaxed font-medium">
+                ⚠️ <strong>Note:</strong> Automated attendance verification and Academy cloud recording are only supported on auto-generated Academy domain links.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
