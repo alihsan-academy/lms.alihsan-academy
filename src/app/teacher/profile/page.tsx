@@ -2,7 +2,7 @@
 
 import { useState, useEffect, ChangeEvent } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Lock, Users, Star, Award, GraduationCap, MapPin, ShieldCheck, Camera, Save, Clock } from 'lucide-react'
+import { Loader2, Users, Star, Award, GraduationCap, MapPin, ShieldCheck, Camera, Save, Clock } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -260,7 +260,6 @@ export default function TeacherProfilePage() {
             <div className="space-y-1">
               <Label className="flex items-center gap-1 text-muted-foreground font-semibold text-[11px] uppercase tracking-wider">
                 <span>Registered Email</span>
-                <Lock className="h-2.5 w-2.5 text-muted-foreground/60" />
               </Label>
               <Input 
                 value={profile.registered_email || ''} 
@@ -273,7 +272,6 @@ export default function TeacherProfilePage() {
             <div className="space-y-1">
               <Label className="flex items-center gap-1 text-muted-foreground font-semibold text-[11px] uppercase tracking-wider">
                 <span>Full Name</span>
-                <Lock className="h-2.5 w-2.5 text-muted-foreground/60" />
               </Label>
               <Input 
                 value={profile.full_name || 'Not specified'} 
@@ -286,7 +284,6 @@ export default function TeacherProfilePage() {
             <div className="space-y-1">
               <Label className="flex items-center gap-1 text-muted-foreground font-semibold text-[11px] uppercase tracking-wider">
                 <span>Date of Joining Academy</span>
-                <Lock className="h-2.5 w-2.5 text-muted-foreground/60" />
               </Label>
               <Input 
                 value={profile.date_of_joining ? (profile.date_of_joining.includes('-') ? format(parseISO(profile.date_of_joining), 'MMM d, yyyy') : profile.date_of_joining) : 'Not specified'} 
@@ -299,7 +296,6 @@ export default function TeacherProfilePage() {
             <div className="space-y-1">
               <Label className="flex items-center gap-1 text-muted-foreground font-semibold text-[11px] uppercase tracking-wider">
                 <span>Mobile Number</span>
-                <Lock className="h-2.5 w-2.5 text-muted-foreground/60" />
               </Label>
               <Input 
                 value={profile.mobile_number || 'Not specified'} 
@@ -312,7 +308,6 @@ export default function TeacherProfilePage() {
             <div className="space-y-1 md:col-span-2">
               <Label className="flex items-center gap-1 text-muted-foreground font-semibold text-[11px] uppercase tracking-wider">
                 <span>Educational Qualifications</span>
-                <Lock className="h-2.5 w-2.5 text-muted-foreground/60" />
               </Label>
               <Textarea 
                 value={profile.educational_qualifications || 'Not specified'} 
@@ -335,7 +330,6 @@ export default function TeacherProfilePage() {
             <div className="space-y-1">
               <Label className="flex items-center gap-1 text-muted-foreground font-semibold text-[11px] uppercase tracking-wider">
                 <span>Current Country</span>
-                <Lock className="h-2.5 w-2.5 text-muted-foreground/60" />
               </Label>
               <Input 
                 value={profile.current_country || 'Not specified'} 
@@ -348,7 +342,6 @@ export default function TeacherProfilePage() {
             <div className="space-y-1">
               <Label className="flex items-center gap-1 text-muted-foreground font-semibold text-[11px] uppercase tracking-wider">
                 <span>Current State/Region</span>
-                <Lock className="h-2.5 w-2.5 text-muted-foreground/60" />
               </Label>
               <Input 
                 value={profile.current_state || 'Not specified'} 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, ChangeEvent } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Upload, Lock, Shield, Star, Award, Save } from 'lucide-react'
+import { Loader2, Upload, Shield, Star, Award, Save } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -195,19 +195,19 @@ export default function StudentProfilePage() {
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 bg-muted/30 p-3.5 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-border/50">
             <div className="space-y-1.5 sm:space-y-2">
-              <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">Registered Email <Lock className="h-3 w-3" /></Label>
+              <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">Registered Email</Label>
               <Input value={profile.registered_email} disabled className="bg-muted border-none opacity-70 font-medium h-11 text-base md:text-sm" />
             </div>
 
             <div className="space-y-1.5 sm:space-y-2">
-              <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">Registration Number <Lock className="h-3 w-3" /></Label>
+              <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">Registration Number</Label>
               <Input value={profile.registration_number} disabled className="bg-primary/5 border-primary/20 font-black text-primary h-11 text-base md:text-sm" />
             </div>
 
             {/* Class / Year (Locked for Student) */}
             <div className="space-y-1.5 sm:space-y-2">
               <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">
-                Class / Year <Lock className="h-3 w-3" />
+                Class / Year
               </Label>
               <Input
                 value={profile.year || profile.class_name || 'Not Assigned'}
@@ -219,7 +219,7 @@ export default function StudentProfilePage() {
             {/* Term (Locked for Student) */}
             <div className="space-y-1.5 sm:space-y-2">
               <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">
-                Term <Lock className="h-3 w-3" />
+                Term
               </Label>
               <Input
                 value={profile.term || 'Not Assigned'}
@@ -262,7 +262,7 @@ export default function StudentProfilePage() {
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 bg-muted/30 p-3.5 sm:p-6 rounded-xl sm:rounded-2xl border-2 border-border/50">
             <div className="space-y-1.5 sm:space-y-2">
-              <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">Assigned Teacher <Lock className="h-3 w-3" /></Label>
+              <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider">Assigned Teacher</Label>
               <Input value={profile.assigned_teacher_name} disabled className="bg-muted border-none opacity-70 font-medium h-11 text-base md:text-sm" />
             </div>
 
@@ -273,7 +273,7 @@ export default function StudentProfilePage() {
 
             <div className="space-y-1.5 sm:space-y-2 md:col-span-2 mt-2">
               <Label className="flex items-center gap-2 text-muted-foreground font-bold text-xs uppercase tracking-wider mb-2">
-                Enrolment Status <Lock className="h-3 w-3" />
+                Enrolment Status
               </Label>
               <div className="flex flex-col gap-2 bg-white/50 rounded-xl p-3.5 sm:p-4 border-2 border-border/30">
                 <div className="flex items-center">
