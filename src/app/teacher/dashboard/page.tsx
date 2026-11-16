@@ -1398,11 +1398,16 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
         </div>
 
         <div className="space-y-2">
-          <Label className="text-foreground font-bold">Meeting Link (Zoom / Google Meet)</Label>
+          <div className="flex items-center justify-between">
+            <Label className="text-foreground font-bold">Google Meet Link</Label>
+            <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+              ✨ Auto-generated if blank
+            </span>
+          </div>
           <div className="relative">
             <Video className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input 
-              placeholder="https://meet.google.com/xxx-xxxx-xxx"
+              placeholder="Leave blank to auto-create Google Meet room, or paste link"
               value={formData.meetLink}
               onChange={(e) => setFormData(prev => ({ ...prev, meetLink: e.target.value }))}
               className="pl-10 h-14 rounded-xl border-2 font-medium"

@@ -2,6 +2,7 @@ import { getAdminClient } from '@/lib/supabase/admin'
 import { createClient as createServerSupabaseClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { addWeeks } from 'date-fns'
+import { createGoogleMeetRoom } from '@/lib/google-meet'
 
 export async function POST(request: Request) {
   try {
@@ -27,17 +28,13 @@ export async function POST(request: Request) {
     }
 
     const sessionTitle = (title && typeof title === 'string' && title.trim()) ? title.trim() : 'Moral Class Alihsan Academy'
-    const metaPayload = JSON.stringify({
-      title: sessionTitle,
-      recording_url: null,
-    })
 
     const supabaseAdmin = getAdminClient()
 
-    // Verify caller role
+    // Verify caller role and email
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('role')
+      .select('role, email')
       .eq('id', user.id)
       .single()
 
@@ -71,6 +68,42 @@ export async function POST(request: Request) {
     const utcOffset = new Date(dateTimeString).getTime() - ukDate.getTime()
     const scheduledUTC = new Date(new Date(dateTimeString).getTime() + utcOffset)
 
+    // Resolve Google Meet Link: auto-generate via Google Calendar/Meet API if not manually passed
+    let effectiveMeetLink = (meetLink && typeof meetLink === 'string' && meetLink.trim()) ? meetLink.trim() : null
+    let googleEventId: string | null = null
+
+    if (!effectiveMeetLink) {
+      try {
+        const { data: studentRecord } = await supabaseAdmin
+          .from('student_profiles')
+          .select('name')
+          .eq('user_id', studentId)
+          .maybeSingle()
+
+        const meetResult = await createGoogleMeetRoom({
+          teacherEmail: profile.email || user.email || '',
+          studentName: studentRecord?.name || 'Student',
+          summary: `${sessionTitle} (${studentRecord?.name || 'Student'})`,
+          startTime: scheduledUTC,
+          endTime: new Date(scheduledUTC.getTime() + 45 * 60 * 1000)
+        })
+
+        if (meetResult.success && meetResult.meetLink) {
+          effectiveMeetLink = meetResult.meetLink
+          googleEventId = meetResult.eventId || null
+        }
+      } catch (meetGenError) {
+        console.warn('[Class Create] Auto Google Meet generation failed, proceeding:', meetGenError)
+      }
+    }
+
+    const metaPayload = JSON.stringify({
+      title: sessionTitle,
+      recording_url: null,
+      google_event_id: googleEventId,
+      auto_generated_meet: !!googleEventId
+    })
+
     const classesToCreate = []
 
     if (repeatWeekly) {
@@ -78,7 +111,7 @@ export async function POST(request: Request) {
         classesToCreate.push({
           teacher_id: user.id,
           student_id: studentId,
-          meet_link: meetLink || null,
+          meet_link: effectiveMeetLink || null,
           scheduled_at: addWeeks(scheduledUTC, i).toISOString(),
           status: 'scheduled',
           recording_url: metaPayload
@@ -88,7 +121,7 @@ export async function POST(request: Request) {
       classesToCreate.push({
         teacher_id: user.id,
         student_id: studentId,
-        meet_link: meetLink || null,
+        meet_link: effectiveMeetLink || null,
         scheduled_at: scheduledUTC.toISOString(),
         status: 'scheduled',
         recording_url: metaPayload
