@@ -80,8 +80,17 @@ export async function POST(request: Request) {
           .eq('user_id', studentId)
           .maybeSingle()
 
+        const { data: studentAuthProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('email')
+          .eq('id', studentId)
+          .maybeSingle()
+
+        const studentEmail = studentAuthProfile?.email || null
+
         const meetResult = await createGoogleMeetRoom({
           teacherEmail: profile.email || user.email || '',
+          studentEmail: studentEmail || undefined,
           studentName: studentRecord?.name || 'Student',
           summary: `${sessionTitle} (${studentRecord?.name || 'Student'})`,
           startTime: scheduledUTC,

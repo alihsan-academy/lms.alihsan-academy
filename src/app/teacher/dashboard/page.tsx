@@ -605,12 +605,6 @@ export default function TeacherDashboard() {
                                   <span><strong>Homework:</strong> {parsed.homework}</span>
                                 </p>
                               )}
-                              {c.meet_link && (
-                                <a href={c.meet_link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 bg-[#0D4A47]/10 text-[#0D4A47] hover:bg-[#0D4A47]/20 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors mt-1">
-                                  <Video className="h-3.5 w-3.5" />
-                                  Join Meeting Link
-                                </a>
-                              )}
                             </div>
                           </div>
 
@@ -644,26 +638,40 @@ export default function TeacherDashboard() {
                               )}
                             </div>
 
-                            {isClassTimeReached ? (
-                              <button
-                                onClick={() => {
-                                  setPendingCompleteClass(c)
-                                  setCompletionStatus(c.status === 'completed' && parsed.status !== 'present' && parsed.status !== 'scheduled' ? parsed.status : 'present')
-                                  setRecordingUrl(parsed.recording_url || '')
-                                  setClassRemarks(parsed.remarks || '')
-                                  setClassHomework(parsed.homework || '')
-                                }} 
-                                className="w-full sm:w-auto px-3.5 py-2 rounded-xl text-xs font-bold bg-[#1E293B] hover:bg-[#0F172A] text-white transition-colors flex items-center justify-center gap-1.5 shadow-sm min-h-[38px] cursor-pointer"
-                              >
-                                <BookOpen className="h-3.5 w-3.5 text-amber-300" />
-                                {c.status === 'completed' ? 'Class Notes & Homework' : 'Add Notes & Homework'}
-                              </button>
-                            ) : (
-                              <div className="w-full sm:w-auto px-3 py-1.5 rounded-md text-xs font-semibold bg-muted/70 text-muted-foreground border border-border/70 flex items-center justify-center gap-1.5 min-h-[38px]">
-                                <Clock className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                                <span>Notes open after class</span>
-                              </div>
-                            )}
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto mt-1">
+                              {c.meet_link && (
+                                <a
+                                  href={c.meet_link}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs sm:text-sm font-black bg-[#0D4A47] hover:bg-[#083836] text-white transition-all flex items-center justify-center gap-2 shadow-sm min-h-[40px] cursor-pointer"
+                                >
+                                  <Video className="h-4 w-4 text-emerald-300" />
+                                  <span>Join Google Meet</span>
+                                </a>
+                              )}
+
+                              {isClassTimeReached ? (
+                                <button
+                                  onClick={() => {
+                                    setPendingCompleteClass(c)
+                                    setCompletionStatus(c.status === 'completed' && parsed.status !== 'present' && parsed.status !== 'scheduled' ? parsed.status : 'present')
+                                    setRecordingUrl(parsed.recording_url || '')
+                                    setClassRemarks(parsed.remarks || '')
+                                    setClassHomework(parsed.homework || '')
+                                  }} 
+                                  className="w-full sm:w-auto px-3.5 py-2 rounded-xl text-xs font-bold bg-[#1E293B] hover:bg-[#0F172A] text-white transition-colors flex items-center justify-center gap-1.5 shadow-sm min-h-[40px] cursor-pointer"
+                                >
+                                  <BookOpen className="h-3.5 w-3.5 text-amber-300" />
+                                  {c.status === 'completed' ? 'Class Notes & Homework' : 'Add Notes & Homework'}
+                                </button>
+                              ) : (
+                                <div className="w-full sm:w-auto px-3 py-1.5 rounded-xl text-xs font-semibold bg-muted/70 text-muted-foreground border border-border/70 flex items-center justify-center gap-1.5 min-h-[40px]">
+                                  <Clock className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                                  <span>Notes open after class</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </AnimatedCard>

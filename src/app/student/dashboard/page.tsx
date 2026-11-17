@@ -58,19 +58,32 @@ export default function StudentDashboard() {
 
       const classesData = rawClasses.map((c: any) => {
         let title = 'Moral Class Alihsan Academy'
-        let recordingUrl = c.recording_url
+        let actualRecordingUrl = null
+        let homework = null
+        let durationMinutes = null
+
         if (c.title) title = c.title
-        if (c.recording_url && typeof c.recording_url === 'string' && c.recording_url.trim().startsWith('{')) {
-          try {
-            const parsed = JSON.parse(c.recording_url)
-            if (parsed.title) title = parsed.title
-            recordingUrl = parsed.recording_url || null
-          } catch (e) {}
+        if (c.recording_url && typeof c.recording_url === 'string') {
+          if (c.recording_url.trim().startsWith('{')) {
+            try {
+              const parsed = JSON.parse(c.recording_url)
+              if (parsed.title) title = parsed.title
+              actualRecordingUrl = parsed.recording_url || null
+              homework = parsed.homework || null
+              durationMinutes = parsed.duration_minutes || parsed.duration || null
+            } catch (e) {}
+          } else {
+            actualRecordingUrl = c.recording_url
+          }
         }
         return {
           ...c,
           title,
-          recording_url: recordingUrl,
+          // CRITICAL: Preserve c.recording_url raw string so calculateStudentAttendanceSummary -> parseClassMetadata parses homework, remarks, duration
+          recording_url: c.recording_url,
+          actual_recording_url: actualRecordingUrl,
+          homework,
+          duration_minutes: durationMinutes,
         }
       })
 
@@ -357,14 +370,23 @@ function HomeTab({ studentName, todayClass, upcomingClasses, teachers, onRefresh
                         <Clock className="h-4 w-4 shrink-0" />
                         <span>{formatUKTime(todayClass.scheduled_at)} (UK Time)</span>
                       </div>
+                      {todayClass.homework && (
+                        <div className="mt-3 text-xs sm:text-sm font-medium bg-amber-50 text-amber-950 p-2.5 rounded-xl border border-amber-200 flex items-start gap-2 max-w-md">
+                          <BookOpen className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-bold text-amber-900">Assigned Homework:</span>{' '}
+                            <span>{todayClass.homework}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </>
                 )
               })()}
             </div>
-            {todayClass.status === 'completed' && todayClass.recording_url ? (
+            {todayClass.status === 'completed' && (todayClass.actual_recording_url || todayClass.recording_url?.startsWith('http')) ? (
               <a 
-                href={todayClass.recording_url} 
+                href={todayClass.actual_recording_url || todayClass.recording_url} 
                 target="_blank" 
                 rel="noreferrer"
                 className="w-full sm:w-auto bg-[#1E293B] hover:bg-[#0F172A] text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2 text-center whitespace-nowrap min-h-[44px]"

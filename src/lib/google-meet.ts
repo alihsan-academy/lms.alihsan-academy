@@ -13,6 +13,7 @@ function getCleanPrivateKey(rawKey?: string): string | null {
 
 export interface CreateMeetRoomParams {
   teacherEmail: string
+  studentEmail?: string
   studentName?: string
   summary?: string
   description?: string
@@ -42,6 +43,7 @@ export async function createGoogleMeetRoom(params: CreateMeetRoomParams): Promis
 
   const {
     teacherEmail,
+    studentEmail,
     studentName,
     summary = studentName ? `Class: ${studentName} - Al-Ihsan Academy` : 'Moral Class - Al-Ihsan Academy',
     description = 'Online interactive lesson conducted via Al-Ihsan Academy LMS.',
@@ -67,6 +69,16 @@ export async function createGoogleMeetRoom(params: CreateMeetRoomParams): Promis
 
     const calendar = google.calendar({ version: 'v3', auth })
 
+    const attendeesList = studentEmail
+      ? [
+          {
+            email: studentEmail.trim().toLowerCase(),
+            displayName: studentName || 'Student',
+            responseStatus: 'accepted',
+          },
+        ]
+      : undefined
+
     const response = await calendar.events.insert({
       calendarId: 'primary',
       conferenceDataVersion: 1,
@@ -75,6 +87,9 @@ export async function createGoogleMeetRoom(params: CreateMeetRoomParams): Promis
         description,
         start: { dateTime: startTime.toISOString() },
         end: { dateTime: endTime.toISOString() },
+        attendees: attendeesList,
+        guestsCanSeeOtherGuests: true,
+        guestsCanInviteOthers: false,
         conferenceData: {
           createRequest: {
             requestId: `lms-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
