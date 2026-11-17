@@ -49,6 +49,7 @@ screenshots/
 *.log
 find_users.js
 teachers.csv
+teachers_data.csv
 teachers_template.csv
 teachers_imported_credentials.json
 scripts/import_teachers.js
