@@ -46,6 +46,10 @@ export interface AttendanceSummary {
   underThresholdClasses: Array<{ id: string; date: string; duration: number; title: string }>
   durationFulfillmentRate: number
   thresholdComplianceRate: number
+  averageClassMinutes: number
+  targetStandardMinutes: number
+  targetStandardFulfillmentRate: number
+  hasUnderThresholdClasses: boolean
   filteredClasses: ParsedClassRecord[]
   isOnBreak: boolean
   breakDetails?: {
@@ -359,6 +363,17 @@ export function calculateStudentAttendanceSummary(
   const underThresholdCount = underThresholdClasses.length
   const totalClassHoursFormatted = formatMinutesToHours(totalClassMinutes)
 
+  // Average minutes per conducted class
+  const averageClassMinutes = totalCompletedClasses > 0 ? Math.round(totalClassMinutes / totalCompletedClasses) : 0
+
+  // Minimum required standard: 30 minutes per conducted class
+  const targetStandardMinutes = totalCompletedClasses * 30
+  const targetStandardFulfillmentRate =
+    targetStandardMinutes > 0
+      ? Math.round((totalClassMinutes / targetStandardMinutes) * 100)
+      : 0
+  const hasUnderThresholdClasses = underThresholdCount > 0
+
   // Expected duration is 45 minutes per class that was due/scheduled
   const totalRelevantClasses = completedOrMissed > 0 ? completedOrMissed : totalScheduled
   const expectedMinutes = totalRelevantClasses * 45
@@ -400,6 +415,10 @@ export function calculateStudentAttendanceSummary(
     underThresholdClasses,
     durationFulfillmentRate,
     thresholdComplianceRate,
+    averageClassMinutes,
+    targetStandardMinutes,
+    targetStandardFulfillmentRate,
+    hasUnderThresholdClasses,
     filteredClasses: parsedList,
     isOnBreak,
     breakDetails,

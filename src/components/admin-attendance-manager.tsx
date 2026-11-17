@@ -19,7 +19,11 @@ import {
   X,
   Lock,
   Key,
-  ChevronDown
+  ChevronDown,
+  Timer,
+  Target,
+  AlertTriangle,
+  BookOpen
 } from 'lucide-react'
 import { Avatar } from '@/components/avatar'
 import { AnimatedCard } from '@/components/animated-card'
@@ -95,6 +99,10 @@ export function AdminAttendanceManager({
   const [onBreakMax, setOnBreakMax] = useState('')
   const [rateMin, setRateMin] = useState('')
   const [rateMax, setRateMax] = useState('')
+  const [thresholdFilter, setThresholdFilter] = useState<'all' | 'has_short' | 'clean'>('all')
+  const [avgDurationFilter, setAvgDurationFilter] = useState<'all' | 'under_20' | 'under_30' | 'optimal_30_plus'>('all')
+  const [totalMinutesMin, setTotalMinutesMin] = useState('')
+  const [totalMinutesMax, setTotalMinutesMax] = useState('')
 
   const dateRange = getDateRange(filterType, customStart, customEnd)
 
@@ -277,6 +285,20 @@ export function AdminAttendanceManager({
       if (!inRange(summary.teacherUnavailableCount, teacherMissedMin, teacherMissedMax)) return false
       if (!inRange(summary.breakCount, onBreakMin, onBreakMax)) return false
       if (!inRange(summary.attendanceRate, rateMin, rateMax)) return false
+      if (!inRange(summary.totalClassMinutes, totalMinutesMin, totalMinutesMax)) return false
+
+      // Below 20m Threshold Filter
+      if (thresholdFilter === 'has_short' && summary.underThresholdCount === 0) return false
+      if (thresholdFilter === 'clean' && summary.underThresholdCount > 0) return false
+
+      // Average Class Duration Filter
+      if (avgDurationFilter === 'under_20') {
+        if (summary.attendedCount === 0 || summary.averageClassMinutes >= 20) return false
+      } else if (avgDurationFilter === 'under_30') {
+        if (summary.attendedCount === 0 || summary.averageClassMinutes >= 30) return false
+      } else if (avgDurationFilter === 'optimal_30_plus') {
+        if (summary.attendedCount === 0 || summary.averageClassMinutes < 30) return false
+      }
 
       return true
     }) : []
@@ -375,6 +397,12 @@ export function AdminAttendanceManager({
       if (teacherMissedMin || teacherMissedMax) parts.push(`Tchr. Missed: ${teacherMissedMin || '0'}–${teacherMissedMax || '∞'}`)
       if (onBreakMin || onBreakMax) parts.push(`On Break: ${onBreakMin || '0'}–${onBreakMax || '∞'}`)
       if (rateMin || rateMax) parts.push(`Rate: ${rateMin || '0'}%–${rateMax || '100'}%`)
+      if (thresholdFilter === 'has_short') parts.push('Short (<20m): Yes')
+      if (thresholdFilter === 'clean') parts.push('Short (<20m): Clean (≥20m)')
+      if (avgDurationFilter === 'under_20') parts.push('Avg Length: <20m')
+      if (avgDurationFilter === 'under_30') parts.push('Avg Length: <30m')
+      if (avgDurationFilter === 'optimal_30_plus') parts.push('Avg Length: ≥30m')
+      if (totalMinutesMin || totalMinutesMax) parts.push(`Total Time: ${totalMinutesMin || '0'}m–${totalMinutesMax || '∞'}m`)
 
       generateIntelligenceFilterPDF({
         periodLabel: dateRange.label,
@@ -953,6 +981,141 @@ export function AdminAttendanceManager({
                 </div>
               </div>
 
+              {/* Duration & Quality Intelligence Ribbon */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                {/* 1. Total Attended Time */}
+                <div className="bg-gradient-to-br from-emerald-50 to-teal-50/50 border-2 border-emerald-200 p-4 rounded-2xl flex flex-col justify-between shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-emerald-800">Total Attended Time</span>
+                    <Clock className="h-4 w-4 text-emerald-700" />
+                  </div>
+                  <div className="my-2">
+                    <span className="text-2xl sm:text-3xl font-black text-emerald-950">
+                      {currentStudentSummary.totalClassHoursFormatted}
+                    </span>
+                    <span className="text-xs font-semibold text-emerald-700 block mt-0.5">
+                      {currentStudentSummary.totalClassMinutes} mins total
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100/70 border border-emerald-300/80 px-2 py-0.5 rounded-md inline-block w-fit">
+                    Real time conducted
+                  </span>
+                </div>
+
+                {/* 2. Average Class Length */}
+                <div className={`border-2 p-4 rounded-2xl flex flex-col justify-between shadow-xs ${
+                  currentStudentSummary.averageClassMinutes >= 30
+                    ? 'bg-gradient-to-br from-emerald-50 to-green-50/50 border-emerald-200'
+                    : currentStudentSummary.averageClassMinutes >= 20
+                    ? 'bg-gradient-to-br from-amber-50 to-yellow-50/50 border-amber-200'
+                    : 'bg-gradient-to-br from-rose-50 to-red-50/50 border-rose-200'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className={`text-[11px] font-black uppercase tracking-wider ${
+                      currentStudentSummary.averageClassMinutes >= 30
+                        ? 'text-emerald-800'
+                        : currentStudentSummary.averageClassMinutes >= 20
+                        ? 'text-amber-800'
+                        : 'text-rose-800'
+                    }`}>
+                      Avg Per Class
+                    </span>
+                    <Timer className={`h-4 w-4 ${
+                      currentStudentSummary.averageClassMinutes >= 30
+                        ? 'text-emerald-700'
+                        : currentStudentSummary.averageClassMinutes >= 20
+                        ? 'text-amber-700'
+                        : 'text-rose-700'
+                    }`} />
+                  </div>
+                  <div className="my-2">
+                    <span className={`text-2xl sm:text-3xl font-black ${
+                      currentStudentSummary.averageClassMinutes >= 30
+                        ? 'text-emerald-950'
+                        : currentStudentSummary.averageClassMinutes >= 20
+                        ? 'text-amber-950'
+                        : 'text-rose-950'
+                    }`}>
+                      {currentStudentSummary.averageClassMinutes}m
+                    </span>
+                    <span className="text-xs font-semibold text-muted-foreground block mt-0.5">
+                      per attended session
+                    </span>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md inline-block w-fit border ${
+                    currentStudentSummary.averageClassMinutes >= 30
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                      : currentStudentSummary.averageClassMinutes >= 20
+                      ? 'bg-amber-100 text-amber-800 border-amber-300'
+                      : 'bg-rose-100 text-rose-800 border-rose-300'
+                  }`}>
+                    {currentStudentSummary.averageClassMinutes >= 30
+                      ? '✓ Meets 30m standard'
+                      : currentStudentSummary.averageClassMinutes >= 20
+                      ? '⚠️ Below 30m target'
+                      : '🚨 Short session average'}
+                  </span>
+                </div>
+
+                {/* 3. Below 20m Threshold Alert */}
+                <div className={`border-2 p-4 rounded-2xl flex flex-col justify-between shadow-xs ${
+                  currentStudentSummary.underThresholdCount > 0
+                    ? 'bg-gradient-to-br from-rose-50 to-red-50/50 border-rose-300'
+                    : 'bg-gradient-to-br from-emerald-50 to-green-50/50 border-emerald-200'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className={`text-[11px] font-black uppercase tracking-wider ${
+                      currentStudentSummary.underThresholdCount > 0 ? 'text-rose-800' : 'text-emerald-800'
+                    }`}>
+                      &lt;20m Threshold
+                    </span>
+                    {currentStudentSummary.underThresholdCount > 0 ? (
+                      <AlertTriangle className="h-4 w-4 text-rose-600" />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    )}
+                  </div>
+                  <div className="my-2">
+                    <span className={`text-2xl sm:text-3xl font-black ${
+                      currentStudentSummary.underThresholdCount > 0 ? 'text-rose-950' : 'text-emerald-950'
+                    }`}>
+                      {currentStudentSummary.underThresholdCount}
+                    </span>
+                    <span className="text-xs font-semibold text-muted-foreground block mt-0.5">
+                      {currentStudentSummary.underThresholdCount === 1 ? 'class under 20m' : 'classes under 20m'}
+                    </span>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md inline-block w-fit border ${
+                    currentStudentSummary.underThresholdCount > 0
+                      ? 'bg-rose-100 text-rose-800 border-rose-300'
+                      : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                  }`}>
+                    {currentStudentSummary.underThresholdCount > 0
+                      ? `⚠️ ${currentStudentSummary.underThresholdCount} short sessions`
+                      : '✓ All classes ≥ 20m'}
+                  </span>
+                </div>
+
+                {/* 4. Target Delivery Rate (30m Min Standard) */}
+                <div className="bg-gradient-to-br from-indigo-50 to-blue-50/50 border-2 border-indigo-200 p-4 rounded-2xl flex flex-col justify-between shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-indigo-800">Standard Delivery</span>
+                    <Target className="h-4 w-4 text-indigo-700" />
+                  </div>
+                  <div className="my-2">
+                    <span className="text-2xl sm:text-3xl font-black text-indigo-950">
+                      {currentStudentSummary.targetStandardFulfillmentRate}%
+                    </span>
+                    <span className="text-xs font-semibold text-indigo-700 block mt-0.5">
+                      vs 30m standard ({currentStudentSummary.attendedCount * 30}m target)
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-indigo-800 font-bold bg-indigo-100 border border-indigo-300 px-2 py-0.5 rounded-md inline-block w-fit">
+                    {currentStudentSummary.thresholdComplianceRate}% quality rate
+                  </span>
+                </div>
+              </div>
+
               {/* Secondary Breakdown */}
               <div className="bg-white p-4 rounded-2xl border-2 border-border shadow-sm grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
                 <div className="p-3 bg-red-50 rounded-xl border border-red-100">
@@ -997,9 +1160,34 @@ export function AdminAttendanceManager({
                               <strong>Note:</strong> {item.remarks}
                             </p>
                           )}
+                          {item.homework && (
+                            <div className="mt-1.5 text-xs font-medium bg-amber-50 text-amber-900 px-2.5 py-1 rounded-lg border border-amber-200 flex items-center gap-1.5 w-fit">
+                              <BookOpen className="h-3 w-3 text-amber-700 shrink-0" />
+                              <span><strong>Homework:</strong> {item.homework}</span>
+                            </div>
+                          )}
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-2.5">
+                          {/* Duration Badge for completed classes */}
+                          {item.raw_status === 'completed' && item.duration_minutes ? (
+                            <span className={`px-2.5 py-1 rounded-xl text-xs font-bold border-2 flex items-center gap-1.5 ${
+                              item.duration_minutes < 20
+                                ? 'bg-rose-50 text-rose-900 border-rose-300'
+                                : item.duration_minutes < 30
+                                ? 'bg-amber-50 text-amber-900 border-amber-300'
+                                : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            }`}>
+                              <Clock className={`h-3.5 w-3.5 ${
+                                item.duration_minutes < 20 ? 'text-rose-700' : item.duration_minutes < 30 ? 'text-amber-700' : 'text-emerald-700'
+                              }`} />
+                              <span>{item.duration_minutes} mins</span>
+                              {item.duration_minutes < 20 && (
+                                <span className="text-[10px] font-black text-rose-800 uppercase bg-rose-100 px-1 py-0.5 rounded">(&lt;20m)</span>
+                              )}
+                            </span>
+                          ) : null}
+
                           {item.recording_url && (
                             <a 
                               href={item.recording_url} 
@@ -1151,6 +1339,9 @@ export function AdminAttendanceManager({
                 setTeacherMissedMin(''); setTeacherMissedMax('')
                 setOnBreakMin(''); setOnBreakMax('')
                 setRateMin(''); setRateMax('')
+                setThresholdFilter('all')
+                setAvgDurationFilter('all')
+                setTotalMinutesMin(''); setTotalMinutesMax('')
               }}
               className="text-xs font-bold text-muted-foreground hover:text-foreground border border-border px-3 py-1.5 rounded-lg transition-colors"
             >
@@ -1184,6 +1375,81 @@ export function AdminAttendanceManager({
                     {item.label}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Short Classes (<20m Threshold Alert) */}
+            <div className="bg-rose-50/70 rounded-2xl p-4 space-y-2 border border-rose-200">
+              <label className="text-[11px] font-black uppercase text-rose-700 tracking-wide flex items-center gap-1">
+                <AlertTriangle className="h-3.5 w-3.5 text-rose-600" /> Short Classes (&lt;20m Threshold)
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { id: 'all', label: 'All' },
+                  { id: 'has_short', label: '⚠️ Has <20m Classes' },
+                  { id: 'clean', label: '✓ Clean (All ≥20m)' },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setThresholdFilter(item.id as any)}
+                    className={`px-3 py-1 rounded-full text-[11px] font-black transition-all ${
+                      thresholdFilter === item.id
+                        ? 'bg-rose-600 text-white shadow-xs'
+                        : 'bg-white border border-rose-200 text-rose-800 hover:bg-rose-100/50'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Average Class Length (vs 30m Standard) */}
+            <div className="bg-indigo-50/70 rounded-2xl p-4 space-y-2 border border-indigo-200">
+              <label className="text-[11px] font-black uppercase text-indigo-700 tracking-wide flex items-center gap-1">
+                <Timer className="h-3.5 w-3.5 text-indigo-600" /> Average Class Length (Target: 30m)
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { id: 'all', label: 'All' },
+                  { id: 'under_20', label: '🚨 <20m Critical' },
+                  { id: 'under_30', label: '⚠️ <30m Sub-standard' },
+                  { id: 'optimal_30_plus', label: '✓ ≥30m Optimal' },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setAvgDurationFilter(item.id as any)}
+                    className={`px-3 py-1 rounded-full text-[11px] font-black transition-all ${
+                      avgDurationFilter === item.id
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'bg-white border border-indigo-200 text-indigo-800 hover:bg-indigo-100/50'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Total Class Time (Minutes) */}
+            <div className="bg-teal-50/70 rounded-2xl p-4 space-y-2 border border-teal-200">
+              <label className="text-[11px] font-black uppercase text-teal-700 tracking-wide flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5 text-teal-600" /> Total Class Time (Minutes)
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number" min="0" placeholder="Min mins (e.g. 60)"
+                  value={totalMinutesMin}
+                  onChange={(e) => setTotalMinutesMin(e.target.value)}
+                  className="w-full border border-teal-200 rounded-lg px-2 py-1.5 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-teal-300"
+                />
+                <span className="text-xs text-muted-foreground font-bold">—</span>
+                <input
+                  type="number" min="0" placeholder="Max mins"
+                  value={totalMinutesMax}
+                  onChange={(e) => setTotalMinutesMax(e.target.value)}
+                  className="w-full border border-teal-200 rounded-lg px-2 py-1.5 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-teal-300"
+                />
               </div>
             </div>
 
@@ -1327,6 +1593,9 @@ export function AdminAttendanceManager({
                     <th className="p-3 text-left text-xs font-black text-muted-foreground uppercase">Student</th>
                     <th className="p-3 text-left text-xs font-black text-muted-foreground uppercase">Reg No</th>
                     <th className="p-3 text-center text-xs font-black text-green-700 uppercase">Attended</th>
+                    <th className="p-3 text-center text-xs font-black text-emerald-800 uppercase">Total Time</th>
+                    <th className="p-3 text-center text-xs font-black text-indigo-700 uppercase">Avg / Class</th>
+                    <th className="p-3 text-center text-xs font-black text-rose-700 uppercase">&lt;20m Short</th>
                     <th className="p-3 text-center text-xs font-black text-orange-700 uppercase">Stu. Absent</th>
                     <th className="p-3 text-center text-xs font-black text-red-700 uppercase">Tchr. Missed</th>
                     <th className="p-3 text-center text-xs font-black text-yellow-700 uppercase">On Break</th>
@@ -1349,6 +1618,31 @@ export function AdminAttendanceManager({
                       <td className="p-3 text-xs font-bold text-muted-foreground">{s.registration_number || '—'}</td>
                       <td className="p-3 text-center">
                         <span className="inline-block bg-green-100 text-green-800 font-black text-xs px-2.5 py-0.5 rounded-full">{summary.attendedCount}</span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className="inline-block bg-emerald-50 text-emerald-900 border border-emerald-200 font-black text-xs px-2 py-0.5 rounded-md">
+                          {summary.totalClassHoursFormatted}
+                        </span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className={`inline-block font-black text-xs px-2 py-0.5 rounded-md border ${
+                          summary.averageClassMinutes >= 30
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            : summary.averageClassMinutes >= 20
+                            ? 'bg-amber-50 text-amber-800 border-amber-200'
+                            : 'bg-rose-50 text-rose-800 border-rose-200'
+                        }`}>
+                          {summary.averageClassMinutes > 0 ? `${summary.averageClassMinutes}m` : '—'}
+                        </span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className={`inline-block font-black text-xs px-2 py-0.5 rounded-full border ${
+                          summary.underThresholdCount > 0
+                            ? 'bg-rose-100 text-rose-800 border-rose-300'
+                            : 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                        }`}>
+                          {summary.underThresholdCount > 0 ? `⚠️ ${summary.underThresholdCount} short` : '✓ All ≥20m'}
+                        </span>
                       </td>
                       <td className="p-3 text-center">
                         <span className="inline-block bg-orange-100 text-orange-800 font-black text-xs px-2.5 py-0.5 rounded-full">{summary.studentUnavailableCount}</span>
