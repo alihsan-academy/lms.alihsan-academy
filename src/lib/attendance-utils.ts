@@ -171,9 +171,10 @@ export function parseClassMetadata(
   const attStatus = attendanceRecord?.status || 'unmarked'
   const isClassCompleted = c.status === 'completed'
 
-  // If completed and no explicit duration recorded, default standard session duration is 45 mins
-  if (isClassCompleted && !duration_minutes) {
-    duration_minutes = 45
+  // Ensure duration_minutes is a valid number if present
+  if (duration_minutes !== null && typeof duration_minutes !== 'number') {
+    const parsedNum = Number(duration_minutes)
+    duration_minutes = !isNaN(parsedNum) ? parsedNum : null
   }
 
   let resolvedStatus: ParsedClassRecord['status'] = 'scheduled'
@@ -312,7 +313,7 @@ export function calculateStudentAttendanceSummary(
     switch (item.status) {
       case 'present': {
         attendedCount++
-        const dur = typeof item.duration_minutes === 'number' && item.duration_minutes > 0 ? item.duration_minutes : 45
+        const dur = typeof item.duration_minutes === 'number' && item.duration_minutes >= 0 ? item.duration_minutes : 0
         totalClassMinutes += dur
         if (dur < 20) {
           underThresholdClasses.push({

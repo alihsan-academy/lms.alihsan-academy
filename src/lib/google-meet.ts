@@ -158,3 +158,76 @@ export async function createGoogleMeetRoom(params: CreateMeetRoomParams): Promis
     }
   }
 }
+
+/**
+ * Queries Google Meet API v2 to retrieve actual meeting duration in minutes
+ * by matching conference records for the given Google Meet link or meeting code.
+ */
+export async function getGoogleMeetActualDuration(
+  meetLink?: string | null,
+  teacherEmail?: string | null
+): Promise<number | null> {
+  if (!meetLink) return null
+
+  const match = meetLink.match(/meet\.google\.com\/([a-z0-9-]+)/i)
+  const meetingCode = match ? match[1].toLowerCase().replace(/[^a-z]/g, '') : null
+  if (!meetingCode) return null
+
+  const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
+  const privateKey = getCleanPrivateKey(process.env.GOOGLE_PRIVATE_KEY)
+  const adminEmail = process.env.GOOGLE_ADMIN_EMAIL || 'academy@alihsan.co.uk'
+
+  if (!serviceAccountEmail || !privateKey) return null
+
+  const targetSubject =
+    teacherEmail && (teacherEmail.endsWith('@alihsan.co.uk') || teacherEmail.endsWith('@alihsan.academy'))
+      ? teacherEmail.trim().toLowerCase()
+      : adminEmail
+
+  const attemptFetch = async (subject: string): Promise<number | null> => {
+    try {
+      const auth = new google.auth.JWT({
+        email: serviceAccountEmail,
+        key: privateKey,
+        scopes: [
+          'https://www.googleapis.com/auth/meetings.space.readonly',
+          'https://www.googleapis.com/auth/meetings.space.created',
+        ],
+        subject,
+      })
+
+      const meet = google.meet({ version: 'v2', auth })
+      const confRes = await meet.conferenceRecords.list({ pageSize: 25 })
+      const records = confRes.data.conferenceRecords || []
+
+      for (const rec of records) {
+        if (!rec.space || !rec.startTime || !rec.endTime) continue
+        try {
+          const spaceRes = await meet.spaces.get({ name: rec.space })
+          const spaceCode = spaceRes.data.meetingCode ? spaceRes.data.meetingCode.replace(/[^a-z]/g, '') : ''
+          if (spaceCode === meetingCode) {
+            const start = new Date(rec.startTime).getTime()
+            const end = new Date(rec.endTime).getTime()
+            const durationMinutes = Math.max(1, Math.round((end - start) / 60000))
+            return durationMinutes
+          }
+        } catch {
+          // Check next conference record
+        }
+      }
+    } catch (err) {
+      console.warn(`[Google Meet API] Error querying conference records for ${subject}:`, err)
+    }
+    return null
+  }
+
+  const duration = await attemptFetch(targetSubject)
+  if (duration !== null) return duration
+
+  if (targetSubject !== adminEmail) {
+    return await attemptFetch(adminEmail)
+  }
+
+  return null
+}
+

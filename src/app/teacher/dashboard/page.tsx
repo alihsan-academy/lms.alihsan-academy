@@ -78,6 +78,7 @@ export default function TeacherDashboard() {
   const [recordingUrl, setRecordingUrl] = useState('')
   const [classRemarks, setClassRemarks] = useState('')
   const [classHomework, setClassHomework] = useState('')
+  const [classDuration, setClassDuration] = useState<number | ''>('')
   const [isCompleting, setIsCompleting] = useState(false)
   
   // Modal for editing student details & enrolment status
@@ -206,6 +207,7 @@ export default function TeacherDashboard() {
           recordingUrl: recordingUrl.trim() || null,
           remarks: classRemarks.trim() || null,
           homework: classHomework.trim() || null,
+          durationMinutes: typeof classDuration === 'number' && classDuration > 0 ? classDuration : null,
         })
       })
 
@@ -217,6 +219,7 @@ export default function TeacherDashboard() {
       setRecordingUrl('')
       setClassRemarks('')
       setClassHomework('')
+      setClassDuration('')
       setCompletionStatus('present')
       
       await fetchClasses(selectedStudentId)
@@ -659,6 +662,7 @@ export default function TeacherDashboard() {
                                     setRecordingUrl(parsed.recording_url || '')
                                     setClassRemarks(parsed.remarks || '')
                                     setClassHomework(parsed.homework || '')
+                                    setClassDuration(typeof parsed.duration_minutes === 'number' ? parsed.duration_minutes : '')
                                   }} 
                                   className="w-full sm:w-auto px-3.5 py-2 rounded-xl text-xs font-bold bg-[#1E293B] hover:bg-[#0F172A] text-white transition-colors flex items-center justify-center gap-1.5 shadow-sm min-h-[40px] cursor-pointer"
                                 >
@@ -984,6 +988,36 @@ export default function TeacherDashboard() {
                       onChange={(e) => setClassRemarks(e.target.value)}
                       className="w-full rounded-xl border-2 border-border p-3 text-base md:text-sm font-medium placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors resize-none"
                     />
+                  </div>
+
+                  {/* Real Class Duration */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-foreground font-bold text-xs uppercase tracking-wider">
+                        Real Class Duration (Minutes)
+                      </Label>
+                      <span className="text-[10px] font-bold text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-full">
+                        Threshold: 20m min
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        type="number"
+                        min={1}
+                        max={180}
+                        placeholder="Auto-detected from Google Meet (or enter exact minutes e.g. 5)"
+                        value={classDuration}
+                        onChange={(e) => setClassDuration(e.target.value === '' ? '' : parseInt(e.target.value) || 0)}
+                        className="pl-9 h-11 rounded-xl border-2 font-medium"
+                      />
+                    </div>
+                    {typeof classDuration === 'number' && classDuration < 20 && classDuration > 0 && (
+                      <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 p-2 rounded-lg font-medium flex items-center gap-1.5">
+                        <AlertCircle className="h-3.5 w-3.5 text-amber-700 shrink-0" />
+                        <span>Below 20m threshold: This session will be flagged as a short class in attendance reports.</span>
+                      </p>
+                    )}
                   </div>
 
                   {/* Automated Attendance Banner */}

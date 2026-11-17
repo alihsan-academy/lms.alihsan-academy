@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAdminClient } from '@/lib/supabase/admin'
 import { createClient as createServerSupabaseClient } from '@/lib/supabase/server'
+import { getGoogleMeetActualDuration } from '@/lib/google-meet'
 
 export async function POST(request: Request) {
   try {
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { classId, studentId, status, recordingUrl, remarks, homework } = await request.json()
+    const { classId, studentId, status, recordingUrl, remarks, homework, durationMinutes } = await request.json()
     if (!classId || !studentId) {
       return NextResponse.json({ error: 'classId and studentId are required' }, { status: 400 })
     }
@@ -34,10 +35,10 @@ export async function POST(request: Request) {
 
     const isPrivileged = userProfile?.role === 'superadmin' || userProfile?.role === 'admin'
 
-    // Verify class exists and get teacher_id, scheduled_at, and recording_url
+    // Verify class exists and get teacher_id, scheduled_at, recording_url, and meet_link
     const { data: classRecord, error: fetchClassError } = await supabaseAdmin
       .from('classes')
-      .select('id, teacher_id, scheduled_at, recording_url')
+      .select('id, teacher_id, scheduled_at, recording_url, meet_link')
       .eq('id', classId)
       .single()
 
@@ -68,6 +69,30 @@ export async function POST(request: Request) {
     }
     const sessionTitle = existingMeta.title || 'Moral Class Alihsan Academy'
 
+    // Resolve real duration: prefer explicit duration if passed, else auto-detect from Google Meet
+    let finalDuration: number | null = null
+    if (typeof durationMinutes === 'number' && durationMinutes > 0) {
+      finalDuration = Math.round(durationMinutes)
+    } else if (classRecord.meet_link) {
+      const { data: teacherProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('email')
+        .eq('id', classRecord.teacher_id)
+        .maybeSingle()
+      
+      const detectedMinutes = await getGoogleMeetActualDuration(
+        classRecord.meet_link,
+        teacherProfile?.email || user.email
+      )
+      if (detectedMinutes !== null && detectedMinutes > 0) {
+        finalDuration = detectedMinutes
+      } else {
+        finalDuration = existingMeta.duration_minutes || null
+      }
+    } else {
+      finalDuration = existingMeta.duration_minutes || null
+    }
+
     // Prepare JSON metadata for recording_url column
     const metaPayload = JSON.stringify({
       ...existingMeta,
@@ -77,6 +102,7 @@ export async function POST(request: Request) {
       reason: status || 'present',
       remarks: remarks || '',
       homework: typeof homework === 'string' ? homework.trim() : (existingMeta.homework || null),
+      duration_minutes: finalDuration,
     })
 
     const { error: updateError } = await supabaseAdmin
