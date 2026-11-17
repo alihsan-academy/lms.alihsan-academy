@@ -671,11 +671,6 @@ function AttendanceTab({
                           <Clock className="h-3.5 w-3.5" />
                           <span>{formatUKDateTime(item.scheduled_at)} (UK Time)</span>
                         </div>
-                        {item.remarks && (
-                          <p className="text-xs font-medium bg-muted/60 text-foreground px-2.5 py-1 rounded-lg mt-2 inline-block border border-border/50">
-                            <strong>Note:</strong> {item.remarks}
-                          </p>
-                        )}
                         {item.homework && (
                           <div className="mt-2 text-xs font-medium bg-amber-50 text-amber-900 px-3 py-1.5 rounded-lg border border-amber-200 flex items-start gap-1.5">
                             <BookOpen className="h-3.5 w-3.5 text-amber-700 shrink-0 mt-0.5" />

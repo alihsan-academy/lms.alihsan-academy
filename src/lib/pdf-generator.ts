@@ -225,7 +225,7 @@ export function generateStudentAttendancePDF({
     const durText = c.status === 'present' && c.duration_minutes
       ? (c.duration_minutes < 20 ? `${c.duration_minutes}m (<20m)` : `${c.duration_minutes}m`)
       : '-'
-    const noteText = c.remarks || (c.homework ? `HW: ${c.homework}` : (c.recording_url ? 'Recording Attached' : '-'))
+    const noteText = c.homework ? `HW: ${c.homework}` : '-'
     return [
       index + 1,
       formatUKDateTime(c.scheduled_at),
@@ -240,7 +240,7 @@ export function generateStudentAttendancePDF({
 
   autoTable(doc, {
     startY: subTextY + 4,
-    head: [['#', 'Date & Time (UK)', 'Class / Subject', 'Teacher', 'Status', 'Duration', 'Remarks / Homework', 'Recording']],
+    head: [['#', 'Date & Time (UK)', 'Class / Subject', 'Teacher', 'Status', 'Duration', 'Assigned Homework', 'Recording']],
     body: tableData.length > 0 ? tableData : [['-', 'No classes found in selected period', '-', '-', '-', '-', '-', '-']],
     theme: 'grid',
     styles: {

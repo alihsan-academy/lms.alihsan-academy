@@ -946,7 +946,9 @@ export default function TeacherDashboard() {
                       <Label className="text-foreground font-bold text-xs uppercase tracking-wider">
                         Assigned Homework / Next Task
                       </Label>
-                      <span className="text-[10px] font-semibold text-muted-foreground">Visible to student</span>
+                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                        Visible to Student
+                      </span>
                     </div>
                     <textarea 
                       rows={2}
@@ -959,9 +961,14 @@ export default function TeacherDashboard() {
 
                   {/* Teacher Remarks */}
                   <div className="space-y-1.5">
-                    <Label className="text-foreground font-bold text-xs uppercase tracking-wider">
-                      Teacher Remarks / Lesson Notes
-                    </Label>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-foreground font-bold text-xs uppercase tracking-wider">
+                        Teacher Remarks / Lesson Notes
+                      </Label>
+                      <span className="text-[10px] font-bold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
+                        Private · Educator & Admin Only
+                      </span>
+                    </div>
                     <textarea 
                       rows={2}
                       placeholder="e.g. Excellent progress today! Pronunciation was clear and tajweed rules were well-applied."
@@ -969,20 +976,6 @@ export default function TeacherDashboard() {
                       onChange={(e) => setClassRemarks(e.target.value)}
                       className="w-full rounded-xl border-2 border-border p-3 text-base md:text-sm font-medium placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors resize-none"
                     />
-                  </div>
-
-                  {/* Recording Link (optional) */}
-                  <div className="space-y-1.5">
-                    <Label className="text-foreground font-bold text-xs uppercase tracking-wider">Recording Link (Optional)</Label>
-                    <div className="relative">
-                      <Video className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        placeholder="https://tldv.io/app/meetings/... or Drive link"
-                        value={recordingUrl}
-                        onChange={(e) => setRecordingUrl(e.target.value)}
-                        className="pl-9 h-11 rounded-xl border-2 font-medium text-base md:text-sm"
-                      />
-                    </div>
                   </div>
 
                   {/* Automated Attendance Banner */}
