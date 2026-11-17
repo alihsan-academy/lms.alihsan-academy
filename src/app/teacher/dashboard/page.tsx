@@ -1324,12 +1324,10 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
   const [formData, setFormData] = useState({ 
     studentId: '', 
     title: 'Moral Class Alihsan Academy',
-    meetLink: '', 
     date: '', 
     time: '', 
     repeatWeekly: false 
   })
-  const [showCustomMeetInput, setShowCustomMeetInput] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
@@ -1371,7 +1369,6 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
         body: JSON.stringify({
           studentId: formData.studentId,
           title: sessionTitle,
-          meetLink: formData.meetLink,
           date: formData.date,
           time: formData.time,
           repeatWeekly: formData.repeatWeekly
@@ -1395,7 +1392,6 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
       setFormData(prev => ({
         ...prev,
         title: 'Moral Class Alihsan Academy',
-        meetLink: '',
         date: '',
         time: '',
         repeatWeekly: false
@@ -1438,59 +1434,6 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
               className="pl-10 h-14 rounded-xl border-2 font-medium"
             />
           </div>
-        </div>
-
-        {/* Google Meet Room Section */}
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50/60 to-emerald-50 border-2 border-emerald-200/80 shadow-xs space-y-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                <Video className="h-5 w-5" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-extrabold text-emerald-950">Academy Google Meet</span>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full">
-                    <Sparkles className="h-2.5 w-2.5" /> Auto-Generated
-                  </span>
-                </div>
-                <p className="text-xs text-emerald-800/90 font-medium mt-0.5 leading-snug">
-                  An official Academy room with automated attendance tracking will be created automatically.
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                if (showCustomMeetInput) {
-                  setFormData(prev => ({ ...prev, meetLink: '' }))
-                }
-                setShowCustomMeetInput(!showCustomMeetInput)
-              }}
-              className="text-[11px] font-bold text-emerald-800 hover:text-emerald-950 underline underline-offset-2 shrink-0 pt-0.5 cursor-pointer"
-            >
-              {showCustomMeetInput ? 'Use Auto-Generated' : '+ Custom link'}
-            </button>
-          </div>
-
-          {showCustomMeetInput && (
-            <div className="pt-3 border-t border-emerald-200 space-y-2">
-              <Label className="text-xs font-bold text-emerald-950">Manual Meeting Link (Optional Override)</Label>
-              <div className="relative">
-                <Video className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="https://meet.google.com/..."
-                  value={formData.meetLink}
-                  onChange={(e) => setFormData(prev => ({ ...prev, meetLink: e.target.value }))}
-                  className="pl-9 h-11 rounded-xl border-2 bg-white font-medium text-base md:text-sm"
-                />
-              </div>
-              <p className="text-[11px] text-amber-900 bg-amber-50 p-2.5 rounded-lg border border-amber-200 leading-relaxed font-medium">
-                ⚠️ <strong>Note:</strong> Automated attendance verification and Academy cloud recording are only supported on auto-generated Academy domain links.
-              </p>
-            </div>
-          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
