@@ -31,6 +31,9 @@ interface TeacherPDFProps {
     totalTeacherUnavailable: number
     totalStudentUnavailable: number
     overallPercentage: number
+    totalHoursFormatted?: string
+    underThresholdCount?: number
+    overallDurationRate?: number
   }
   studentsData: Array<{
     registration_number: string
@@ -41,6 +44,9 @@ interface TeacherPDFProps {
     notAttended: number
     remarks: string
     percentage: number
+    hoursFormatted?: string
+    underThresholdCount?: number
+    durationRate?: number
   }>
 }
 
@@ -168,8 +174,32 @@ export function generateStudentAttendancePDF({
   renderKpiBox('Not Attended / Absent', summary.notAttendedCount, 14 + (boxWidth + 4) * 2, [220, 38, 38])
   renderKpiBox('Attendance Rate', `${summary.attendanceRate}%`, 14 + (boxWidth + 4) * 3, [37, 99, 235])
 
+  // Row 2 of KPI Boxes: Total Hours, Completed, Below 20m, Duration %
+  const boxY2 = boxY + boxHeight + 3
+  const renderKpiBox2 = (label: string, value: string | number, x: number, color: [number, number, number]) => {
+    doc.setFillColor(color[0], color[1], color[2])
+    doc.roundedRect(x, boxY2, boxWidth, boxHeight, 2, 2, 'F')
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7)
+    doc.setTextColor(255, 255, 255)
+    doc.text(label.toUpperCase(), x + boxWidth / 2, boxY2 + 5.5, { align: 'center' })
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(11)
+    doc.text(String(value), x + boxWidth / 2, boxY2 + 12.5, { align: 'center' })
+  }
+
+  renderKpiBox2('Total Class Hours', summary.totalClassHoursFormatted || '0m', 14, [13, 148, 136])
+  renderKpiBox2('Completed Classes', `${summary.totalCompletedClasses} / ${summary.totalScheduled}`, 14 + boxWidth + 4, [16, 120, 70])
+  renderKpiBox2(
+    'Under 20m Threshold',
+    summary.underThresholdCount > 0 ? `${summary.underThresholdCount} Short (<20m)` : '0 (All ≥ 20m)',
+    14 + (boxWidth + 4) * 2,
+    summary.underThresholdCount > 0 ? [217, 119, 6] : [71, 85, 105]
+  )
+  renderKpiBox2('Duration Fulfilled', `${summary.durationFulfillmentRate}%`, 14 + (boxWidth + 4) * 3, [99, 102, 241])
+
   // Sub-breakdown line (Teacher Unavailable, Student Unavailable, Break)
-  let subTextY = boxY + boxHeight + 6
+  let subTextY = boxY2 + boxHeight + 5
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(8)
   doc.setTextColor(71, 85, 105)
@@ -192,21 +222,26 @@ export function generateStudentAttendancePDF({
   // Attendance Records Table
   const tableData = summary.filteredClasses.map((c, index) => {
     let statusText = c.statusLabel
+    const durText = c.status === 'present' && c.duration_minutes
+      ? (c.duration_minutes < 20 ? `${c.duration_minutes}m (<20m)` : `${c.duration_minutes}m`)
+      : '-'
+    const noteText = c.remarks || (c.homework ? `HW: ${c.homework}` : (c.recording_url ? 'Recording Attached' : '-'))
     return [
       index + 1,
       formatUKDateTime(c.scheduled_at),
       c.title || 'Live Class',
       c.teacher_name || student.teacher_name || 'Teacher',
       statusText,
-      c.remarks || (c.recording_url ? 'Recording Attached' : '-'),
+      durText,
+      noteText,
       c.recording_url ? 'Available' : 'None',
     ]
   })
 
   autoTable(doc, {
     startY: subTextY + 4,
-    head: [['#', 'Date & Time (UK)', 'Class / Subject', 'Teacher', 'Status', 'Remarks / Reason', 'Recording']],
-    body: tableData.length > 0 ? tableData : [['-', 'No classes found in selected period', '-', '-', '-', '-', '-']],
+    head: [['#', 'Date & Time (UK)', 'Class / Subject', 'Teacher', 'Status', 'Duration', 'Remarks / Homework', 'Recording']],
+    body: tableData.length > 0 ? tableData : [['-', 'No classes found in selected period', '-', '-', '-', '-', '-', '-']],
     theme: 'grid',
     styles: {
       font: 'helvetica',
@@ -224,13 +259,14 @@ export function generateStudentAttendancePDF({
       fillColor: [248, 250, 252],
     },
     columnStyles: {
-      0: { cellWidth: 8, halign: 'center' },
-      1: { cellWidth: 36 },
-      2: { cellWidth: 32 },
-      3: { cellWidth: 28 },
-      4: { cellWidth: 28, fontStyle: 'bold' },
-      5: { cellWidth: 38 },
-      6: { cellWidth: 16, halign: 'center' },
+      0: { cellWidth: 7, halign: 'center' },
+      1: { cellWidth: 32 },
+      2: { cellWidth: 30 },
+      3: { cellWidth: 26 },
+      4: { cellWidth: 22, fontStyle: 'bold' },
+      5: { cellWidth: 20, halign: 'center', fontStyle: 'bold' },
+      6: { cellWidth: 30 },
+      7: { cellWidth: 15, halign: 'center' },
     },
     didParseCell: (data) => {
       if (data.section === 'body' && data.column.index === 4) {
@@ -243,6 +279,14 @@ export function generateStudentAttendancePDF({
           data.cell.styles.textColor = [217, 119, 6]
         } else {
           data.cell.styles.textColor = [37, 99, 235]
+        }
+      }
+      if (data.section === 'body' && data.column.index === 5) {
+        const text = String(data.cell.raw).toLowerCase()
+        if (text.includes('<20m')) {
+          data.cell.styles.textColor = [217, 119, 6] // Amber for under-threshold
+        } else if (text.includes('m') && !text.includes('-')) {
+          data.cell.styles.textColor = [16, 120, 70]
         }
       }
     },
@@ -377,8 +421,32 @@ export function generateTeacherAttendancePDF({
   renderKpiBox('Not Attended / Absent', summaryStats.totalNotAttended, 14 + (boxWidth + 4) * 2, [220, 38, 38])
   renderKpiBox('Average Attendance', `${summaryStats.overallPercentage}%`, 14 + (boxWidth + 4) * 3, [37, 99, 235])
 
+  // Row 2 of KPI Boxes
+  const boxY2 = boxY + boxHeight + 3
+  const renderKpiBox2 = (label: string, value: string | number, x: number, color: [number, number, number]) => {
+    doc.setFillColor(color[0], color[1], color[2])
+    doc.roundedRect(x, boxY2, boxWidth, boxHeight, 2, 2, 'F')
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7)
+    doc.setTextColor(255, 255, 255)
+    doc.text(label.toUpperCase(), x + boxWidth / 2, boxY2 + 5.5, { align: 'center' })
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(11)
+    doc.text(String(value), x + boxWidth / 2, boxY2 + 12.5, { align: 'center' })
+  }
+
+  renderKpiBox2('Total Class Hours', summaryStats.totalHoursFormatted || '0m', 14, [13, 148, 136])
+  renderKpiBox2('Completed Classes', summaryStats.totalAttended, 14 + boxWidth + 4, [16, 120, 70])
+  renderKpiBox2(
+    'Under 20m Threshold',
+    (summaryStats.underThresholdCount || 0) > 0 ? `${summaryStats.underThresholdCount} Short (<20m)` : '0 (All ≥ 20m)',
+    14 + (boxWidth + 4) * 2,
+    (summaryStats.underThresholdCount || 0) > 0 ? [217, 119, 6] : [71, 85, 105]
+  )
+  renderKpiBox2('Overall Duration Rate', `${summaryStats.overallDurationRate || summaryStats.overallPercentage}%`, 14 + (boxWidth + 4) * 3, [99, 102, 241])
+
   // Sub-breakdown line
-  const subTextY = boxY + boxHeight + 6
+  const subTextY = boxY2 + boxHeight + 5
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(8)
   doc.setTextColor(71, 85, 105)
@@ -394,17 +462,17 @@ export function generateTeacherAttendancePDF({
     s.registration_number || 'N/A',
     s.name,
     s.enrolment_status.toUpperCase(),
-    s.scheduled,
-    s.attended,
-    s.notAttended,
-    s.remarks || '-',
+    `${s.attended} / ${s.scheduled}`,
+    s.hoursFormatted || '0m',
+    (s.underThresholdCount || 0) > 0 ? `${s.underThresholdCount} short (<20m)` : '0 (≥20m)',
+    `${s.durationRate || 0}%`,
     `${s.percentage}%`,
   ])
 
   autoTable(doc, {
     startY: subTextY + 4,
-    head: [['#', 'Reg No', 'Student Name', 'Status', 'Scheduled', 'Attended', 'Not Attended', 'Remarks / Issues', 'Rate']],
-    body: tableData.length > 0 ? tableData : [['-', '-', 'No students found', '-', '0', '0', '0', '-', '0%']],
+    head: [['#', 'Reg No', 'Student Name', 'Status', 'Completed', 'Total Hours', '< 20m Short', 'Duration %', 'Att. Rate']],
+    body: tableData.length > 0 ? tableData : [['-', '-', 'No students found', '-', '0', '0m', '0', '0%', '0%']],
     theme: 'grid',
     styles: {
       font: 'helvetica',
@@ -422,15 +490,23 @@ export function generateTeacherAttendancePDF({
       fillColor: [248, 250, 252],
     },
     columnStyles: {
-      0: { cellWidth: 8, halign: 'center' },
-      1: { cellWidth: 20, fontStyle: 'bold' },
-      2: { cellWidth: 40 },
-      3: { cellWidth: 20, halign: 'center' },
-      4: { cellWidth: 18, halign: 'center' },
-      5: { cellWidth: 18, halign: 'center', textColor: [16, 120, 70] },
-      6: { cellWidth: 20, halign: 'center', textColor: [220, 38, 38] },
-      7: { cellWidth: 24 },
-      8: { cellWidth: 14, halign: 'center', fontStyle: 'bold' },
+      0: { cellWidth: 7, halign: 'center' },
+      1: { cellWidth: 18, fontStyle: 'bold' },
+      2: { cellWidth: 38 },
+      3: { cellWidth: 18, halign: 'center' },
+      4: { cellWidth: 20, halign: 'center' },
+      5: { cellWidth: 20, halign: 'center', textColor: [16, 120, 70], fontStyle: 'bold' },
+      6: { cellWidth: 24, halign: 'center' },
+      7: { cellWidth: 18, halign: 'center' },
+      8: { cellWidth: 16, halign: 'center', fontStyle: 'bold' },
+    },
+    didParseCell: (data) => {
+      if (data.section === 'body' && data.column.index === 6) {
+        const text = String(data.cell.raw).toLowerCase()
+        if (text.includes('short') || text.includes('<20m')) {
+          data.cell.styles.textColor = [217, 119, 6] // Amber
+        }
+      }
     },
     margin: { left: 14, right: 14, bottom: 20 },
   })

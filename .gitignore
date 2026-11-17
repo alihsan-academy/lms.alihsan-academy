@@ -48,5 +48,10 @@ scratch/
 screenshots/
 *.log
 find_users.js
+teachers.csv
+teachers_template.csv
+teachers_imported_credentials.json
+scripts/import_teachers.js
+
 reset_superadmin_password.js
 test_results.json

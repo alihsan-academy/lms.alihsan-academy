@@ -31,7 +31,8 @@ import {
   calculateStudentAttendanceSummary, 
   formatUKDateTime, 
   isDateWithinRange, 
-  parseClassMetadata 
+  parseClassMetadata,
+  formatMinutesToHours 
 } from '@/lib/attendance-utils'
 import { generateStudentAttendancePDF, generateTeacherAttendancePDF, generateIntelligenceFilterPDF } from '@/lib/pdf-generator'
 import { toast } from 'sonner'
@@ -285,6 +286,15 @@ export function AdminAttendanceManager({
     if (!currentTeacher) return
     try {
       setIsExportingPDF(true)
+      let totalTeacherMinutes = 0
+      let totalUnderThreshold = 0
+      teacherStudentsBreakdown.forEach((item) => {
+        totalTeacherMinutes += item.summary?.totalClassMinutes || 0
+        totalUnderThreshold += item.summary?.underThresholdCount || 0
+      })
+      const expectedTeacherMins = teacherTotalScheduled * 45
+      const overallDurationRate = expectedTeacherMins > 0 ? Math.min(100, Math.round((totalTeacherMinutes / expectedTeacherMins) * 100)) : 0
+
       generateTeacherAttendancePDF({
         teacher: {
           name: currentTeacher.name,
@@ -300,6 +310,9 @@ export function AdminAttendanceManager({
           totalTeacherUnavailable: teacherTeacherUnavailable,
           totalStudentUnavailable: teacherStudentUnavailable,
           overallPercentage: teacherOverallPercentage,
+          totalHoursFormatted: formatMinutesToHours(totalTeacherMinutes),
+          underThresholdCount: totalUnderThreshold,
+          overallDurationRate: overallDurationRate,
         },
         studentsData: teacherStudentsBreakdown.map((item) => ({
           registration_number: item.registration_number,
@@ -310,6 +323,9 @@ export function AdminAttendanceManager({
           notAttended: item.notAttended,
           remarks: item.remarks,
           percentage: item.percentage,
+          hoursFormatted: item.summary?.totalClassHoursFormatted || '0m',
+          underThresholdCount: item.summary?.underThresholdCount || 0,
+          durationRate: item.summary?.durationFulfillmentRate || 0,
         })),
       })
       toast.success(`PDF downloaded for Teacher ${currentTeacher.name}`)
@@ -626,13 +642,15 @@ export function AdminAttendanceManager({
                   <table className="w-full text-left border-collapse min-w-[850px]">
                     <thead>
                       <tr className="bg-muted border-b-2 border-border text-xs font-black text-foreground uppercase tracking-wider">
-                        <th className="p-4 min-w-[110px]">Reg No</th>
-                        <th className="p-4 min-w-[220px]">Student Details</th>
-                        <th className="p-4 min-w-[170px]">Classes Completed</th>
-                        <th className="p-4 min-w-[150px]">Completion %</th>
-                        <th className="p-4 min-w-[120px]">Status</th>
-                        <th className="p-4 min-w-[160px]">Period Breakdown</th>
-                        <th className="p-4 min-w-[140px]">Remarks</th>
+                        <th className="p-4 min-w-[100px]">Reg No</th>
+                        <th className="p-4 min-w-[200px]">Student Details</th>
+                        <th className="p-4 min-w-[150px]">Classes Completed</th>
+                        <th className="p-4 min-w-[150px]">Total Hours & Duration %</th>
+                        <th className="p-4 min-w-[140px]">Under 20m Threshold</th>
+                        <th className="p-4 min-w-[140px]">Attendance Rate</th>
+                        <th className="p-4 min-w-[110px]">Status</th>
+                        <th className="p-4 min-w-[150px]">Period Breakdown</th>
+                        <th className="p-4 min-w-[130px]">Remarks</th>
                         <th className="p-4 text-right min-w-[130px]">Actions</th>
                       </tr>
                     </thead>
@@ -675,6 +693,34 @@ export function AdminAttendanceManager({
                               <span className="text-[10px] text-muted-foreground block font-medium">
                                 in {dateRange.label}
                               </span>
+                            </td>
+
+                            {/* Total Hours & Duration % */}
+                            <td className="p-4">
+                              <div className="flex items-center gap-1.5 font-black text-sm text-emerald-950">
+                                <Clock className="h-3.5 w-3.5 text-emerald-700" />
+                                <span>{item.summary?.totalClassHoursFormatted || '0m'}</span>
+                              </div>
+                              <span className="text-[11px] font-semibold text-blue-700 block mt-0.5">
+                                {item.summary?.durationFulfillmentRate || 0}% Duration
+                              </span>
+                            </td>
+
+                            {/* Under 20m Threshold */}
+                            <td className="p-4">
+                              {item.summary?.underThresholdCount > 0 ? (
+                                <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-900 bg-amber-50 border border-amber-300 px-2 py-1 rounded-lg">
+                                  <AlertCircle className="h-3 w-3 text-amber-600" />
+                                  <span>{item.summary.underThresholdCount} short (&lt;20m)</span>
+                                </span>
+                              ) : item.attended > 0 ? (
+                                <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg">
+                                  <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                                  <span>0 short (≥20m)</span>
+                                </span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground font-medium">-</span>
+                              )}
                             </td>
 
                             {/* Percentage of Classes Completed in Period */}
@@ -1399,16 +1445,34 @@ export function AdminAttendanceManager({
                     <span className="text-lg font-black text-foreground">{modalStudentData.summary.totalScheduled}</span>
                   </div>
                   <div className="p-2.5 bg-green-50 rounded-xl border border-green-200">
-                    <span className="text-[10px] uppercase font-bold text-green-700 block">Attended</span>
-                    <span className="text-lg font-black text-green-800">{modalStudentData.summary.attendedCount}</span>
+                    <span className="text-[10px] uppercase font-bold text-green-700 block">Completed</span>
+                    <span className="text-lg font-black text-green-800">{modalStudentData.summary.totalCompletedClasses}</span>
                   </div>
                   <div className="p-2.5 bg-red-50 rounded-xl border border-red-200">
                     <span className="text-[10px] uppercase font-bold text-red-700 block">Not Attended</span>
                     <span className="text-lg font-black text-red-800">{modalStudentData.summary.notAttendedCount}</span>
                   </div>
                   <div className="p-2.5 bg-blue-50 rounded-xl border border-blue-200">
-                    <span className="text-[10px] uppercase font-bold text-blue-700 block">Score</span>
+                    <span className="text-[10px] uppercase font-bold text-blue-700 block">Rate</span>
                     <span className="text-lg font-black text-blue-800">{modalStudentData.summary.attendanceRate}%</span>
+                  </div>
+                </div>
+
+                {/* Hours & Duration Ribbon */}
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="p-2 bg-emerald-50/70 rounded-xl border border-emerald-100">
+                    <span className="text-[9px] uppercase font-bold text-emerald-800 block">Total Hours</span>
+                    <span className="text-sm font-black text-emerald-950">{modalStudentData.summary.totalClassHoursFormatted}</span>
+                  </div>
+                  <div className={`p-2 rounded-xl border ${modalStudentData.summary.underThresholdCount > 0 ? 'bg-amber-50 border-amber-200' : 'bg-muted/40 border-border/70'}`}>
+                    <span className="text-[9px] uppercase font-bold text-muted-foreground block">Below 20m</span>
+                    <span className={`text-sm font-black ${modalStudentData.summary.underThresholdCount > 0 ? 'text-amber-800' : 'text-foreground'}`}>
+                      {modalStudentData.summary.underThresholdCount > 0 ? `⚠️ ${modalStudentData.summary.underThresholdCount}` : '✓ 0'}
+                    </span>
+                  </div>
+                  <div className="p-2 bg-blue-50/70 rounded-xl border border-blue-100">
+                    <span className="text-[9px] uppercase font-bold text-blue-800 block">Duration %</span>
+                    <span className="text-sm font-black text-blue-950">{modalStudentData.summary.durationFulfillmentRate}%</span>
                   </div>
                 </div>
 
@@ -1421,13 +1485,21 @@ export function AdminAttendanceManager({
                         <div key={idx} className="p-3 text-xs flex items-center justify-between hover:bg-muted/20">
                           <div>
                             <span className="font-bold text-foreground block">{formatUKDateTime(item.scheduled_at)}</span>
-                            {item.remarks && <span className="text-[11px] text-muted-foreground">{item.remarks}</span>}
+                            {item.remarks && <span className="text-[11px] text-muted-foreground block">{item.remarks}</span>}
+                            {item.homework && <span className="text-[10px] text-amber-800 font-semibold block">HW: {item.homework}</span>}
                           </div>
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
-                            item.status === 'present' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {item.statusLabel}
-                          </span>
+                          <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                            {item.status === 'present' && item.duration_minutes ? (
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${item.duration_minutes < 20 ? 'bg-amber-50 text-amber-800 border-amber-300' : 'bg-emerald-50 text-emerald-800 border-emerald-200'}`}>
+                                {item.duration_minutes < 20 ? `⚠️ ${item.duration_minutes}m (<20m)` : `⏱️ ${item.duration_minutes}m`}
+                              </span>
+                            ) : null}
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
+                              item.status === 'present' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {item.statusLabel}
+                            </span>
+                          </div>
                         </div>
                       ))
                     ) : (

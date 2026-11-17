@@ -563,9 +563,9 @@ function AttendanceTab({
         </AnimatedCard>
 
         <AnimatedCard delay={0.2} className="bg-green-600 border-none text-white p-3.5 sm:p-5 text-center flex flex-col items-center justify-center">
-          <p className="text-green-100 text-[11px] sm:text-xs font-bold tracking-widest uppercase mb-1">Attended</p>
-          <p className="text-2xl sm:text-3xl md:text-5xl font-black">{summary.attendedCount}</p>
-          <span className="text-[9px] sm:text-[10px] text-green-100/80 mt-1">Classes done</span>
+          <p className="text-green-100 text-[11px] sm:text-xs font-bold tracking-widest uppercase mb-1">Completed</p>
+          <p className="text-2xl sm:text-3xl md:text-5xl font-black">{summary.totalCompletedClasses}</p>
+          <span className="text-[9px] sm:text-[10px] text-green-100/80 mt-1">Classes attended</span>
         </AnimatedCard>
 
         <AnimatedCard delay={0.3} className="bg-destructive border-none text-white p-3.5 sm:p-5 text-center flex flex-col items-center justify-center">
@@ -577,8 +577,36 @@ function AttendanceTab({
         <AnimatedCard delay={0.4} className="bg-secondary border-none text-secondary-foreground p-3.5 sm:p-5 text-center flex flex-col items-center justify-center">
           <p className="text-secondary-foreground/70 text-[11px] sm:text-xs font-bold tracking-widest uppercase mb-1">Score</p>
           <p className="text-2xl sm:text-3xl md:text-5xl font-black">{summary.attendanceRate}%</p>
-          <span className="text-[9px] sm:text-[10px] text-secondary-foreground/70 mt-1">Mastery level</span>
+          <span className="text-[9px] sm:text-[10px] text-secondary-foreground/70 mt-1">Attendance rate</span>
         </AnimatedCard>
+      </div>
+
+      {/* Learning Duration & Hours Ribbon */}
+      <div className="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 border-border shadow-xs grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 text-center">
+        <div className="p-2.5 sm:p-3 bg-emerald-50/70 rounded-lg sm:rounded-xl border border-emerald-100">
+          <span className="text-[10px] sm:text-[11px] font-bold text-emerald-800 block uppercase">Total Class Hours</span>
+          <span className="text-lg sm:text-2xl font-black text-emerald-950">{summary.totalClassHoursFormatted}</span>
+          <span className="text-[9px] text-emerald-700/80 block mt-0.5">{summary.totalCompletedClasses} completed</span>
+        </div>
+        <div className="p-2.5 sm:p-3 bg-blue-50/70 rounded-lg sm:rounded-xl border border-blue-100">
+          <span className="text-[10px] sm:text-[11px] font-bold text-blue-800 block uppercase">Duration Fulfilled</span>
+          <span className="text-lg sm:text-2xl font-black text-blue-950">{summary.durationFulfillmentRate}%</span>
+          <span className="text-[9px] text-blue-700/80 block mt-0.5">{summary.totalClassMinutes} of {summary.totalScheduled * 45} mins</span>
+        </div>
+        <div className={`p-2.5 sm:p-3 rounded-lg sm:rounded-xl border ${summary.underThresholdCount > 0 ? 'bg-amber-50 border-amber-200' : 'bg-muted/40 border-border/70'}`}>
+          <span className="text-[10px] sm:text-[11px] font-bold text-muted-foreground block uppercase">Below 20m Threshold</span>
+          <span className={`text-lg sm:text-2xl font-black ${summary.underThresholdCount > 0 ? 'text-amber-800' : 'text-foreground'}`}>
+            {summary.underThresholdCount > 0 ? `⚠️ ${summary.underThresholdCount}` : '✓ 0'}
+          </span>
+          <span className="text-[9px] text-muted-foreground block mt-0.5">
+            {summary.underThresholdCount > 0 ? 'Short sessions (<20m)' : 'All sessions ≥ 20m'}
+          </span>
+        </div>
+        <div className="p-2.5 sm:p-3 bg-purple-50/70 rounded-lg sm:rounded-xl border border-purple-100">
+          <span className="text-[10px] sm:text-[11px] font-bold text-purple-800 block uppercase">Session Quality</span>
+          <span className="text-lg sm:text-2xl font-black text-purple-950">{summary.thresholdComplianceRate}%</span>
+          <span className="text-[9px] text-purple-700/80 block mt-0.5">Full sessions rate</span>
+        </div>
       </div>
 
       {/* Secondary Metrics Breakdown Banner */}
@@ -673,9 +701,16 @@ function AttendanceTab({
 
                       {/* Duration Badge for completed classes */}
                       {item.raw_status === 'completed' && item.duration_minutes ? (
-                        <span className="px-3 py-1.5 bg-emerald-50 text-emerald-800 rounded-xl text-xs font-bold border-2 border-emerald-200 flex items-center gap-1">
-                          <Clock className="h-3.5 w-3.5 text-emerald-700" />
+                        <span className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border-2 flex items-center gap-1.5 ${
+                          item.duration_minutes < 20
+                            ? 'bg-amber-50 text-amber-900 border-amber-300'
+                            : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        }`}>
+                          <Clock className={`h-3.5 w-3.5 ${item.duration_minutes < 20 ? 'text-amber-700' : 'text-emerald-700'}`} />
                           <span>{item.duration_minutes} mins</span>
+                          {item.duration_minutes < 20 && (
+                            <span className="text-[10px] font-black text-amber-800 uppercase bg-amber-100/80 px-1 py-0.5 rounded">(&lt;20m)</span>
+                          )}
                         </span>
                       ) : null}
 

@@ -27,6 +27,7 @@ export interface ParsedClassRecord {
   student_reg?: string
   duration_minutes?: number | null
   homework?: string | null
+  is_under_threshold?: boolean
 }
 
 export interface AttendanceSummary {
@@ -38,6 +39,13 @@ export interface AttendanceSummary {
   breakCount: number
   scheduledUpcomingCount: number
   attendanceRate: number
+  totalCompletedClasses: number
+  totalClassMinutes: number
+  totalClassHoursFormatted: string
+  underThresholdCount: number
+  underThresholdClasses: Array<{ id: string; date: string; duration: number; title: string }>
+  durationFulfillmentRate: number
+  thresholdComplianceRate: number
   filteredClasses: ParsedClassRecord[]
   isOnBreak: boolean
   breakDetails?: {
@@ -247,7 +255,17 @@ export function parseClassMetadata(
     badgeVariant,
     duration_minutes,
     homework,
+    is_under_threshold: isClassCompleted && duration_minutes !== null && duration_minutes < 20,
   }
+}
+
+export function formatMinutesToHours(minutes: number): string {
+  if (!minutes || minutes <= 0) return '0m'
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  if (hours > 0 && mins > 0) return `${hours}h ${mins}m`
+  if (hours > 0) return `${hours}h`
+  return `${mins}m`
 }
 
 export function isDateWithinRange(dateStr: string, range: DateRange): boolean {
@@ -287,12 +305,25 @@ export function calculateStudentAttendanceSummary(
   let studentUnavailableCount = 0
   let breakCount = 0
   let scheduledUpcomingCount = 0
+  let totalClassMinutes = 0
+  const underThresholdClasses: Array<{ id: string; date: string; duration: number; title: string }> = []
 
   parsedList.forEach((item) => {
     switch (item.status) {
-      case 'present':
+      case 'present': {
         attendedCount++
+        const dur = typeof item.duration_minutes === 'number' && item.duration_minutes > 0 ? item.duration_minutes : 45
+        totalClassMinutes += dur
+        if (dur < 20) {
+          underThresholdClasses.push({
+            id: item.id,
+            date: item.scheduled_at,
+            duration: dur,
+            title: item.title,
+          })
+        }
         break
+      }
       case 'teacher_unavailable':
         teacherUnavailableCount++
         break
@@ -323,6 +354,23 @@ export function calculateStudentAttendanceSummary(
       ? Math.round((attendedCount / totalScheduled) * 100)
       : 0
 
+  const totalCompletedClasses = attendedCount
+  const underThresholdCount = underThresholdClasses.length
+  const totalClassHoursFormatted = formatMinutesToHours(totalClassMinutes)
+
+  // Expected duration is 45 minutes per class that was due/scheduled
+  const totalRelevantClasses = completedOrMissed > 0 ? completedOrMissed : totalScheduled
+  const expectedMinutes = totalRelevantClasses * 45
+  const durationFulfillmentRate =
+    expectedMinutes > 0
+      ? Math.min(100, Math.round((totalClassMinutes / expectedMinutes) * 100))
+      : 0
+
+  const thresholdComplianceRate =
+    totalCompletedClasses > 0
+      ? Math.round(((totalCompletedClasses - underThresholdCount) / totalCompletedClasses) * 100)
+      : 100
+
   // Check if student is actively on break or was on break in this interval
   let isOnBreak = studentProfile?.enrolment_status === 'break'
   let breakDetails: { from: string; to: string; reason: string } | undefined
@@ -344,6 +392,13 @@ export function calculateStudentAttendanceSummary(
     breakCount,
     scheduledUpcomingCount,
     attendanceRate,
+    totalCompletedClasses,
+    totalClassMinutes,
+    totalClassHoursFormatted,
+    underThresholdCount,
+    underThresholdClasses,
+    durationFulfillmentRate,
+    thresholdComplianceRate,
     filteredClasses: parsedList,
     isOnBreak,
     breakDetails,

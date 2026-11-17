@@ -17,7 +17,7 @@ import { AnimatedCard } from '@/components/animated-card'
 import { BouncyButton } from '@/components/bouncy-button'
 import { PageTransition } from '@/components/page-transition'
 import { DateRangeFilter } from '@/components/date-range-filter'
-import { DateFilterType, getDateRange, calculateStudentAttendanceSummary, formatUKDateTime, isDateWithinRange, parseClassMetadata } from '@/lib/attendance-utils'
+import { DateFilterType, getDateRange, calculateStudentAttendanceSummary, formatUKDateTime, isDateWithinRange, parseClassMetadata, formatMinutesToHours } from '@/lib/attendance-utils'
 import { generateStudentAttendancePDF, generateTeacherAttendancePDF } from '@/lib/pdf-generator'
 import { ClassDatePicker, ClassTimePicker } from '@/components/class-date-time-picker'
 import { StudentPreviewModal } from '@/components/StudentPreviewModal'
@@ -369,6 +369,15 @@ export default function TeacherDashboard() {
   const handleDownloadTeacherSummaryPDF = () => {
     try {
       setIsExportingSummary(true)
+      let totalTeacherMinutes = 0
+      let totalUnderThreshold = 0
+      studentBreakdownList.forEach((item) => {
+        totalTeacherMinutes += item.summary.totalClassMinutes
+        totalUnderThreshold += item.summary.underThresholdCount
+      })
+      const expectedTeacherMins = overallScheduled * 45
+      const overallDurationRate = expectedTeacherMins > 0 ? Math.min(100, Math.round((totalTeacherMinutes / expectedTeacherMins) * 100)) : 0
+
       generateTeacherAttendancePDF({
         teacher: {
           name: teacherName,
@@ -384,6 +393,9 @@ export default function TeacherDashboard() {
           totalTeacherUnavailable: overallTeacherUnavailable,
           totalStudentUnavailable: overallStudentUnavailable,
           overallPercentage: overallPercentage,
+          totalHoursFormatted: formatMinutesToHours(totalTeacherMinutes),
+          underThresholdCount: totalUnderThreshold,
+          overallDurationRate: overallDurationRate,
         },
         studentsData: studentBreakdownList.map((item) => ({
           registration_number: item.registration_number,
@@ -394,6 +406,9 @@ export default function TeacherDashboard() {
           notAttended: item.notAttended,
           remarks: item.remarks,
           percentage: item.percentage,
+          hoursFormatted: item.summary.totalClassHoursFormatted,
+          underThresholdCount: item.summary.underThresholdCount,
+          durationRate: item.summary.durationFulfillmentRate,
         })),
       })
       toast.success('Teacher summary report downloaded.')
@@ -797,12 +812,29 @@ export default function TeacherDashboard() {
                               <h4 className="font-bold text-foreground text-sm">{item.name}</h4>
                               <StatusBadge status={item.enrolment_status} />
                             </div>
-                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                            <div className="flex flex-wrap items-center gap-2 mt-1.5">
                               <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded font-semibold">
                                 Reg: #{item.registration_number}
                               </span>
-                              <span className="text-xs text-muted-foreground font-medium">
-                                {item.attended} / {item.scheduled} Classes Attended
+                              <span className="text-xs text-muted-foreground font-medium bg-muted/60 px-2 py-0.5 rounded">
+                                {item.attended} / {item.scheduled} Completed
+                              </span>
+                              <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                                <Clock className="h-3 w-3 text-emerald-700" />
+                                {item.summary.totalClassHoursFormatted}
+                              </span>
+                              {item.summary.underThresholdCount > 0 ? (
+                                <span className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                                  <AlertCircle className="h-3 w-3 text-amber-600" />
+                                  {item.summary.underThresholdCount} short (&lt;20m)
+                                </span>
+                              ) : item.attended > 0 ? (
+                                <span className="text-xs font-medium text-emerald-700 bg-emerald-50/50 border border-emerald-100 px-1.5 py-0.5 rounded">
+                                  ✓ All ≥ 20m
+                                </span>
+                              ) : null}
+                              <span className="text-xs font-semibold text-blue-800 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
+                                {item.summary.durationFulfillmentRate}% Duration
                               </span>
                               {item.remarks && (
                                 <span className="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded font-medium">
@@ -1028,8 +1060,8 @@ export default function TeacherDashboard() {
                       <span className="text-base font-bold text-foreground">{viewingStudentDetail.summary.totalScheduled}</span>
                     </div>
                     <div className="p-2 bg-emerald-50 rounded-xl border border-emerald-200">
-                      <span className="text-[10px] uppercase font-bold text-emerald-700 block">Attended</span>
-                      <span className="text-base font-bold text-emerald-800">{viewingStudentDetail.summary.attendedCount}</span>
+                      <span className="text-[10px] uppercase font-bold text-emerald-700 block">Completed</span>
+                      <span className="text-base font-bold text-emerald-800">{viewingStudentDetail.summary.totalCompletedClasses}</span>
                     </div>
                     <div className="p-2 bg-rose-50 rounded-xl border border-rose-200">
                       <span className="text-[10px] uppercase font-bold text-rose-700 block">Absent</span>
@@ -1038,6 +1070,24 @@ export default function TeacherDashboard() {
                     <div className="p-2 bg-blue-50 rounded-xl border border-blue-200">
                       <span className="text-[10px] uppercase font-bold text-blue-700 block">Rate</span>
                       <span className="text-base font-bold text-blue-800">{viewingStudentDetail.summary.attendanceRate}%</span>
+                    </div>
+                  </div>
+
+                  {/* Hours & Duration Ribbon */}
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="p-2 bg-emerald-50/70 rounded-xl border border-emerald-100">
+                      <span className="text-[9px] uppercase font-bold text-emerald-800 block">Total Hours</span>
+                      <span className="text-sm font-black text-emerald-950">{viewingStudentDetail.summary.totalClassHoursFormatted}</span>
+                    </div>
+                    <div className={`p-2 rounded-xl border ${viewingStudentDetail.summary.underThresholdCount > 0 ? 'bg-amber-50 border-amber-200' : 'bg-muted/40 border-border/70'}`}>
+                      <span className="text-[9px] uppercase font-bold text-muted-foreground block">Below 20m</span>
+                      <span className={`text-sm font-black ${viewingStudentDetail.summary.underThresholdCount > 0 ? 'text-amber-800' : 'text-foreground'}`}>
+                        {viewingStudentDetail.summary.underThresholdCount > 0 ? `⚠️ ${viewingStudentDetail.summary.underThresholdCount}` : '✓ 0'}
+                      </span>
+                    </div>
+                    <div className="p-2 bg-blue-50/70 rounded-xl border border-blue-100">
+                      <span className="text-[9px] uppercase font-bold text-blue-800 block">Duration %</span>
+                      <span className="text-sm font-black text-blue-950">{viewingStudentDetail.summary.durationFulfillmentRate}%</span>
                     </div>
                   </div>
 
@@ -1050,13 +1100,21 @@ export default function TeacherDashboard() {
                           <div key={idx} className="p-2.5 text-xs flex items-center justify-between hover:bg-muted/20">
                             <div>
                               <span className="font-bold text-foreground block">{formatUKDateTime(item.scheduled_at)}</span>
-                              {item.remarks && <span className="text-[11px] text-muted-foreground">{item.remarks}</span>}
+                              {item.remarks && <span className="text-[11px] text-muted-foreground block">{item.remarks}</span>}
+                              {item.homework && <span className="text-[10px] text-amber-800 font-semibold block">HW: {item.homework}</span>}
                             </div>
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                              item.status === 'present' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'
-                            }`}>
-                              {item.statusLabel}
-                            </span>
+                            <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                              {item.status === 'present' && item.duration_minutes ? (
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${item.duration_minutes < 20 ? 'bg-amber-50 text-amber-800 border-amber-300' : 'bg-emerald-50 text-emerald-800 border-emerald-200'}`}>
+                                  {item.duration_minutes < 20 ? `⚠️ ${item.duration_minutes}m (<20m)` : `⏱️ ${item.duration_minutes}m`}
+                                </span>
+                              ) : null}
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                                item.status === 'present' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'
+                              }`}>
+                                {item.statusLabel}
+                              </span>
+                            </div>
                           </div>
                         ))
                       ) : (
