@@ -14,20 +14,12 @@ function getAdminClient() {
   })
 }
 
-// Helper to generate a random temporary password if none is provided
-function generateTemporaryPassword(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
-  let result = 'Ihsan@'
-  for (let i = 0; i < 4; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return result
-}
-
-// Helper to generate a unique registration number if none is provided
-function generateRegistrationNumber(): string {
-  const num = Math.floor(10000 + Math.random() * 90000)
-  return String(num)
+// Convert Google Drive view link → direct embeddable image URL
+function getDriveDirectUrl(viewLink?: string | null): string | null {
+  if (!viewLink) return null
+  const match = viewLink.match(/\/d\/([a-zA-Z0-9_-]+)\//)
+  if (match) return `https://drive.google.com/uc?export=view&id=${match[1]}`
+  return viewLink
 }
 
 export async function POST(request: Request) {
@@ -35,17 +27,31 @@ export async function POST(request: Request) {
     const supabaseAdmin = getAdminClient()
     const body = await request.json()
 
-    const email = body.email ? String(body.email).trim().toLowerCase() : ''
-    const fullName = body.name || body.fullName || body.full_name || ''
-    const registrationNumber = body.registrationNumber || body.registration_number || generateRegistrationNumber()
-    const temporaryPassword = body.password || body.temporaryPassword || generateTemporaryPassword()
-    const year = body.year || body.class_name || body.className || 'Year 1'
-    const rawTerm = body.term || 'Term 01'
-    const term = String(rawTerm).trim().toLowerCase().includes('2') ? 'Term 02' : 'Term 01'
-    const dob = body.dob || body.date_of_birth || null
-    const guardianName = body.guardianName || body.guardian_name || null
-    const guardianMobile = body.guardianMobile || body.guardian_mobile || body.mobile || null
-    const address = body.address || null
+    // ── Core fields ──────────────────────────────────────────────────────────
+    const email           = body.email ? String(body.email).trim().toLowerCase() : ''
+    const fullName        = body.name || body.fullName || body.full_name || ''
+    const registrationNumber = body.registrationNumber || body.registration_number || ''
+    const year            = body.year || body.class_name || body.className || 'Year 1'
+    const rawTerm         = body.term || 'Term 01'
+    const term            = String(rawTerm).trim().toLowerCase().includes('2') ? 'Term 02' : 'Term 01'
+    const dob             = body.dob || body.date_of_birth || null
+    const guardianName    = body.guardianName || body.guardian_name || null
+    const guardianMobile  = body.guardianMobile || body.guardian_mobile || body.whatsapp || null
+    const address         = body.address || null
+    const gender          = body.gender || null
+    const classType       = body.classType || body.class_type || null
+    const photoUrl        = getDriveDirectUrl(body.photoUrl || body.photo_url || null)
+
+    // ── Stripe payment fields ─────────────────────────────────────────────────
+    const stripeSessionId    = body.stripeSessionId || body.stripe_session_id || null
+    const stripePaymentIntent = body.stripePaymentIntent || body.stripe_payment_intent || null
+    const amountPaid         = body.amountPaid || body.amount_paid || null
+    const admissionDate      = body.admissionDate || new Date().toISOString()
+
+    // ── Password: Alihsan@{registrationNumber} format (from admission site) ──
+    // If not provided, fall back to a generated password
+    const temporaryPassword  = body.temporaryPassword || body.password ||
+      (registrationNumber ? `Alihsan@${registrationNumber}` : `Alihsan@${Date.now()}`)
 
     if (!email || !email.includes('@')) {
       return NextResponse.json({ error: 'Valid email address is required' }, { status: 400 })
@@ -55,7 +61,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Student full name is required' }, { status: 400 })
     }
 
-    // 1. Create or resolve Supabase Auth user
+    // ── STEP 1: Create or resolve Supabase Auth user ─────────────────────────
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password: temporaryPassword,
@@ -68,7 +74,7 @@ export async function POST(request: Request) {
         year,
         term,
         class_name: year,
-        teacher_id: null // Teacher Unassigned pipeline
+        teacher_id: null
       }
     })
 
@@ -112,28 +118,29 @@ export async function POST(request: Request) {
       throw new Error('Failed to resolve student user id')
     }
 
-    // 2. Insert into profiles table
+    // ── STEP 2: Insert into profiles table ───────────────────────────────────
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .upsert({ id: userId, email, role: 'student' }, { onConflict: 'id' })
 
     if (profileError) throw profileError
 
-    // 3. Insert into student_profiles table (Teacher Unassigned pipeline: teacher_id = null)
+    // ── STEP 3: Insert into student_profiles (teacher_id = null → unassigned) ─
     const baseStudentPayload: any = {
-      user_id: userId,
-      name: fullName,
-      registration_number: registrationNumber,
-      teacher_id: null, // Unassigned until admin assigns to teacher
-      class_name: year,
-      dob: dob ? new Date(dob).toISOString() : null,
-      date_of_birth: dob ? new Date(dob).toISOString() : null,
-      guardian_name: guardianName,
-      guardian_mobile: guardianMobile,
+      user_id:              userId,
+      name:                 fullName,
+      registration_number:  registrationNumber,
+      teacher_id:           null,
+      class_name:           year,
+      dob:                  dob ? new Date(dob).toISOString() : null,
+      date_of_birth:        dob ? new Date(dob).toISOString() : null,
+      guardian_name:        guardianName,
+      guardian_mobile:      guardianMobile,
       address,
-      academy_joined_date: new Date().toISOString(),
-      joined_date: new Date().toISOString().split('T')[0],
-      enrolment_status: 'ongoing'
+      academy_joined_date:  new Date().toISOString(),
+      joined_date:          new Date().toISOString().split('T')[0],
+      enrolment_status:     'ongoing',
+      ...(photoUrl && { profile_photo: photoUrl }),
     }
 
     let { error: spError } = await supabaseAdmin
@@ -141,14 +148,45 @@ export async function POST(request: Request) {
       .upsert({ ...baseStudentPayload, year, term }, { onConflict: 'user_id' })
 
     if (spError) {
-      // Fallback without year/term columns if schema cache does not have them
       const { error: retryError } = await supabaseAdmin
         .from('student_profiles')
         .upsert(baseStudentPayload, { onConflict: 'user_id' })
       if (retryError) throw retryError
     }
 
-    // 4. Automatically send welcome credentials email via Resend
+    // ── STEP 4: Insert into admission_applications (full record) ─────────────
+    // This is the central admission record — mirrors the Google Sheet
+    const { error: admissionError } = await supabaseAdmin
+      .from('admission_applications')
+      .upsert({
+        admission_number:       registrationNumber,
+        student_name:           fullName,
+        gender,
+        date_of_birth:          dob,
+        guardian_name:          guardianName,
+        email,
+        postal_address:         address,
+        whatsapp_number:        guardianMobile,
+        class_admitted:         year,
+        class_type:             classType,
+        student_photo_url:      photoUrl,
+        stripe_session_id:      stripeSessionId,
+        stripe_payment_intent:  stripePaymentIntent,
+        amount_paid:            amountPaid ? parseFloat(String(amountPaid)) : null,
+        payment_status:         'paid',
+        lms_user_id:            userId,
+        lms_account_created:    true,
+        application_status:     'active',
+        admission_date:         admissionDate,
+      }, { onConflict: 'admission_number', ignoreDuplicates: false })
+
+    if (admissionError) {
+      // Non-fatal: log but don't fail the whole request
+      // Profiles are already created — student can still log in
+      console.error('[Admissions API] admission_applications insert error:', admissionError.message)
+    }
+
+    // ── STEP 5: Send welcome credentials email via Resend ────────────────────
     let emailResult: { success: boolean; id?: string; skipped?: boolean; error?: string } = { success: false, skipped: true }
     try {
       emailResult = await sendWelcomeCredentialsEmail({
@@ -170,18 +208,19 @@ export async function POST(request: Request) {
       message: 'Student admitted and profile successfully provisioned.',
       student: {
         userId,
-        name: fullName,
+        name:               fullName,
         email,
         registrationNumber,
         year,
         term,
-        teacherAssigned: false, // In Teacher Unassigned queue
-        temporaryPassword
+        teacherAssigned:    false,
+        temporaryPassword,
+        photoUrl:           photoUrl || null,
       },
       emailNotification: {
-        sent: emailResult.success,
+        sent:    emailResult.success,
         skipped: emailResult.skipped,
-        error: emailResult.error
+        error:   emailResult.error
       }
     })
 
