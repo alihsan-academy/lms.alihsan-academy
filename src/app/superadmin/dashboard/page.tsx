@@ -57,6 +57,7 @@ export default function SuperAdminDashboard() {
   const [studentStatusFilter, setStudentStatusFilter] = useState('all')
   const [studentYearFilter, setStudentYearFilter] = useState('all')
   const [studentTermFilter, setStudentTermFilter] = useState('all')
+  const [studentGenderFilter, setStudentGenderFilter] = useState('all')
   const [removeAccessSearchQuery, setRemoveAccessSearchQuery] = useState('')
   const [removeAccessRoleFilter, setRemoveAccessRoleFilter] = useState('all')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -716,6 +717,7 @@ export default function SuperAdminDashboard() {
           teacher_id: sp.teacher_id || null,
           registration_number: sp.registration_number || 'N/A',
           profile_photo: sp.profile_photo || null,
+          gender: sp.gender || s.gender || null,
           academy_joined_date: sp.joined_date || s.created_at,
           created_at: sp.joined_date || s.created_at,
           enrolment_status: sp.enrolment_status || 'ongoing',
@@ -941,7 +943,10 @@ export default function SuperAdminDashboard() {
     const studentTerm = normalizeTerm(s.term);
     const matchesTerm = studentTermFilter === 'all' || studentTerm === studentTermFilter;
 
-    return matchesSearch && matchesStatus && matchesYear && matchesTerm;
+    const studentGender = safeLower(s.gender);
+    const matchesGender = studentGenderFilter === 'all' || studentGender === safeLower(studentGenderFilter);
+
+    return matchesSearch && matchesStatus && matchesYear && matchesTerm && matchesGender;
   })
 
   const filteredTeachers = teachers.filter(t => 
@@ -1327,14 +1332,29 @@ export default function SuperAdminDashboard() {
                     <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                   </div>
 
+                  {/* Gender Filter */}
+                  <div className="relative min-w-[130px]">
+                    <select
+                      className="w-full p-2.5 pr-7 border-2 border-border rounded-xl bg-white font-bold text-foreground focus:ring-2 focus:ring-primary/20 outline-none h-11 appearance-none cursor-pointer text-xs"
+                      value={studentGenderFilter}
+                      onChange={(e) => setStudentGenderFilter(e.target.value)}
+                    >
+                      <option value="all">All Genders</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                    </select>
+                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                  </div>
+
                   {/* Reset Filters */}
-                  {(studentStatusFilter !== 'all' || studentYearFilter !== 'all' || studentTermFilter !== 'all' || searchQuery) && (
+                  {(studentStatusFilter !== 'all' || studentYearFilter !== 'all' || studentTermFilter !== 'all' || studentGenderFilter !== 'all' || searchQuery) && (
                     <button
                       type="button"
                       onClick={() => {
                         setStudentStatusFilter('all')
                         setStudentYearFilter('all')
                         setStudentTermFilter('all')
+                        setStudentGenderFilter('all')
                         setSearchQuery('')
                       }}
                       className="text-xs font-bold text-muted-foreground hover:text-foreground px-3 py-2 rounded-xl border border-border bg-muted/40 hover:bg-muted transition-colors cursor-pointer h-11 flex items-center"
