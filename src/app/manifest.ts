@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Al-Ihsan Academy of Moral Education - Interactive Learning Management System',
     start_url: '/',
     display: 'standalone',
-    background_color: '#0D4A47',
+    background_color: '#FFFFFF',
     theme_color: '#0D4A47',
     orientation: 'portrait-primary',
     scope: '/',
