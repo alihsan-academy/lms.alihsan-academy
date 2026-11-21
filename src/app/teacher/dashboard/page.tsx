@@ -1205,13 +1205,17 @@ export default function TeacherDashboard() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-muted/20 rounded-xl border border-border/70">
                     <div className="space-y-1.5">
                       <Label htmlFor="teacher-student-year" className="text-foreground font-bold text-xs uppercase tracking-wider">Class / Year</Label>
-                      <Input
+                      <select
                         id="teacher-student-year"
-                        placeholder="e.g. Year 1, Class 4"
                         value={statusFormData.year}
                         onChange={e => setStatusFormData(prev => ({ ...prev, year: e.target.value }))}
-                        className="h-10 text-sm font-medium bg-white"
-                      />
+                        className="w-full rounded-md border border-input bg-white px-3 py-2 text-sm font-medium h-10 cursor-pointer text-foreground"
+                      >
+                        <option value="">Select Year</option>
+                        {Array.from({ length: 10 }, (_, i) => `Year ${i + 1}`).map(yr => (
+                          <option key={yr} value={yr}>{yr}</option>
+                        ))}
+                      </select>
                     </div>
                     <div className="space-y-1.5">
                       <Label htmlFor="teacher-student-term" className="text-foreground font-bold text-xs uppercase tracking-wider">Term</Label>

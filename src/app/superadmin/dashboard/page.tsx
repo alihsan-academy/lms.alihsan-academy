@@ -1735,12 +1735,16 @@ export default function SuperAdminDashboard() {
 
                           <div className="space-y-1">
                             <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Class / Year</label>
-                            <Input 
-                              placeholder="e.g. 1, Year 1, Tahfeez Grade 1" 
+                            <select
                               value={newUser.year || ''}
                               onChange={e => setNewUser({...newUser, year: e.target.value})}
-                              className="bg-white h-7.5 text-xs font-medium"
-                            />
+                              className="w-full rounded-md border border-border bg-white px-2 py-1 text-xs font-medium h-7.5 cursor-pointer text-foreground focus:border-primary outline-none"
+                            >
+                              <option value="">Select Year</option>
+                              {Array.from({ length: 10 }, (_, i) => `Year ${i + 1}`).map(yr => (
+                                <option key={yr} value={yr}>{yr}</option>
+                              ))}
+                            </select>
                           </div>
                         </div>
 
@@ -2285,12 +2289,16 @@ export default function SuperAdminDashboard() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div className="space-y-1">
                             <Label className="text-[11px] font-bold text-foreground uppercase tracking-wider">Class / Year</Label>
-                            <Input
-                              placeholder="e.g. Year 1, Year 2, Tahfeez Grade 1"
+                            <select
                               value={inlineYear}
                               onChange={(e) => setInlineYear(e.target.value)}
-                              className="h-9 text-xs bg-white font-medium"
-                            />
+                              className="w-full rounded-md border border-input bg-white px-2.5 py-1 text-xs font-semibold h-9 cursor-pointer text-foreground"
+                            >
+                              <option value="">Select Year</option>
+                              {Array.from({ length: 10 }, (_, i) => `Year ${i + 1}`).map(yr => (
+                                <option key={yr} value={yr}>{yr}</option>
+                              ))}
+                            </select>
                           </div>
                           <div className="space-y-1">
                             <Label className="text-[11px] font-bold text-foreground uppercase tracking-wider">Term</Label>
