@@ -97,8 +97,10 @@ async function runLiveProductionAudit() {
   logTest('Teacher Login Portal Switcher is NOT present (Rule #3)', !teacherLoginRes.data.includes('Need a different portal'));
 
   const adminLoginRes = await request('/admin/login');
-  logTest('Admin Portal Login loads or redirects to /portal-superadmin/login',
-    adminLoginRes.status === 200 || (adminLoginRes.status === 307 && adminLoginRes.location?.includes('portal-superadmin')));
+  logTest('Obfuscated /admin/login rejected with 404 (Security Rule)', adminLoginRes.status === 404);
+
+  const realAdminLoginRes = await request('/portal-superadmin/login');
+  logTest('Dedicated Superadmin Login loads (200 OK)', realAdminLoginRes.status === 200);
 
   const studentDashLoggedOut = await request('/student/dashboard');
   logTest('Unauthenticated /student/dashboard protected (redirect/blocked)',

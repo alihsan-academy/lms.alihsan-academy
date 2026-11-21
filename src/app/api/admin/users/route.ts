@@ -236,18 +236,41 @@ export async function POST(request: Request) {
         enrolment_status: enrolmentStatus || 'ongoing'
       }
 
-      // Try with year and term in case columns exist in database schema
-      let { error: spError } = await supabaseAdmin
+      // Check if student profile already exists
+      const { data: existingSp } = await supabaseAdmin
         .from('student_profiles')
-        .upsert({ ...baseStudentPayload, year: effectiveYear, term: cleanTerm }, { onConflict: 'user_id' })
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle()
 
-      if (spError) {
-        // Fallback without year & term columns if schema cache does not have them
-        const { error: retryError } = await supabaseAdmin
+      const fullPayload = { ...baseStudentPayload, year: effectiveYear, term: cleanTerm }
+
+      if (existingSp) {
+        let { error: updateError } = await supabaseAdmin
           .from('student_profiles')
-          .upsert(baseStudentPayload, { onConflict: 'user_id' })
+          .update(fullPayload)
+          .eq('id', existingSp.id)
 
-        if (retryError) throw retryError
+        if (updateError) {
+          // Fallback without year & term columns if schema cache does not have them
+          const { error: retryError } = await supabaseAdmin
+            .from('student_profiles')
+            .update(baseStudentPayload)
+            .eq('id', existingSp.id)
+          if (retryError) throw retryError
+        }
+      } else {
+        let { error: insertError } = await supabaseAdmin
+          .from('student_profiles')
+          .insert(fullPayload)
+
+        if (insertError) {
+          // Fallback without year & term columns if schema cache does not have them
+          const { error: retryError } = await supabaseAdmin
+            .from('student_profiles')
+            .insert(baseStudentPayload)
+          if (retryError) throw retryError
+        }
       }
 
       // Ensure Supabase Auth user metadata holds year and term so it is universally available
@@ -281,11 +304,25 @@ export async function POST(request: Request) {
         state: currentState || null
       }
 
-      const { error: tpError } = await supabaseAdmin
+      // Check if teacher profile already exists
+      const { data: existingTp } = await supabaseAdmin
         .from('teacher_profiles')
-        .upsert(teacherPayload, { onConflict: 'user_id' })
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle()
 
-      if (tpError) throw tpError
+      if (existingTp) {
+        const { error: tpError } = await supabaseAdmin
+          .from('teacher_profiles')
+          .update(teacherPayload)
+          .eq('id', existingTp.id)
+        if (tpError) throw tpError
+      } else {
+        const { error: tpError } = await supabaseAdmin
+          .from('teacher_profiles')
+          .insert(teacherPayload)
+        if (tpError) throw tpError
+      }
     }
 
     const loginPath = role === 'student' ? '/student/login' : role === 'teacher' ? '/teacher/login' : '/portal-superadmin/login'

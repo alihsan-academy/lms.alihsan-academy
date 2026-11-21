@@ -143,15 +143,38 @@ export async function POST(request: Request) {
       ...(photoUrl && { profile_photo: photoUrl }),
     }
 
-    let { error: spError } = await supabaseAdmin
+    const { data: existingSp } = await supabaseAdmin
       .from('student_profiles')
-      .upsert({ ...baseStudentPayload, year, term }, { onConflict: 'user_id' })
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle()
 
-    if (spError) {
-      const { error: retryError } = await supabaseAdmin
+    const fullStudentPayload = { ...baseStudentPayload, year, term }
+
+    if (existingSp) {
+      let { error: updateError } = await supabaseAdmin
         .from('student_profiles')
-        .upsert(baseStudentPayload, { onConflict: 'user_id' })
-      if (retryError) throw retryError
+        .update(fullStudentPayload)
+        .eq('id', existingSp.id)
+
+      if (updateError) {
+        const { error: retryError } = await supabaseAdmin
+          .from('student_profiles')
+          .update(baseStudentPayload)
+          .eq('id', existingSp.id)
+        if (retryError) throw retryError
+      }
+    } else {
+      let { error: insertError } = await supabaseAdmin
+        .from('student_profiles')
+        .insert(fullStudentPayload)
+
+      if (insertError) {
+        const { error: retryError } = await supabaseAdmin
+          .from('student_profiles')
+          .insert(baseStudentPayload)
+        if (retryError) throw retryError
+      }
     }
 
     // ── STEP 4: Insert into admission_applications (full record) ─────────────
