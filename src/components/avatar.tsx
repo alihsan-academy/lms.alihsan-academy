@@ -1,4 +1,6 @@
-import React from 'react'
+'use client'
+
+import React, { useState } from 'react'
 import { cn } from "@/lib/utils"
 
 interface AvatarProps {
@@ -8,7 +10,20 @@ interface AvatarProps {
   className?: string
 }
 
+function normalizePhotoUrl(url?: string | null): string | null {
+  if (!url) return null
+  // Convert Google Drive view or uc link to high-performance direct thumbnail CDN
+  const driveMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/)
+  if (driveMatch && driveMatch[1]) {
+    return `https://lh3.googleusercontent.com/d/${driveMatch[1]}`
+  }
+  return url
+}
+
 export function Avatar({ photoUrl, name, size = 'md', className = '' }: AvatarProps) {
+  const [imageError, setImageError] = useState(false)
+  const resolvedUrl = normalizePhotoUrl(photoUrl)
+
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
   }
@@ -28,14 +43,20 @@ export function Avatar({ photoUrl, name, size = 'md', className = '' }: AvatarPr
     lg: 'w-[96px] h-[96px] text-3xl border-4'
   }
 
-  if (photoUrl) {
+  if (resolvedUrl && !imageError) {
     return (
       <div className={cn(
-        "rounded-full overflow-hidden flex-shrink-0 border-white shadow-sm bg-white",
+        "rounded-full overflow-hidden flex-shrink-0 border-white shadow-sm bg-muted",
         sizeClasses[size],
         className
       )}>
-        <img src={photoUrl} alt={name || 'User'} className="w-full h-full object-cover" />
+        <img
+          src={resolvedUrl}
+          alt={name || 'User'}
+          referrerPolicy="no-referrer"
+          onError={() => setImageError(true)}
+          className="w-full h-full object-cover"
+        />
       </div>
     )
   }
@@ -52,3 +73,4 @@ export function Avatar({ photoUrl, name, size = 'md', className = '' }: AvatarPr
     </div>
   )
 }
+
