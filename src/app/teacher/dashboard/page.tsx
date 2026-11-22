@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
 import { AcademyHeader } from '@/components/academy-header'
-import { Calendar, Plus, BarChart3, Loader2, Video, CheckCircle, Clock, User, Globe, AlertCircle, ChevronDown, Users, Copy, Sparkles, Pencil, X, Download, FileText, CheckCircle2, XCircle, Search, BookOpen, Eye } from 'lucide-react'
+import { Calendar, Plus, BarChart3, Loader2, Video, CheckCircle, Clock, User, Globe, AlertCircle, ChevronDown, Users, Copy, Sparkles, Pencil, X, Download, FileText, CheckCircle2, XCircle, Search, BookOpen, Eye, ChevronLeft, ChevronRight } from 'lucide-react'
 import { format, parseISO, addWeeks, isAfter, startOfToday } from 'date-fns'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -43,6 +43,7 @@ export default function TeacherDashboard() {
 
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<Tab>('classes')
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [teacherId, setTeacherId] = useState<string | null>(null)
   const [teacherName, setTeacherName] = useState<string>('')
@@ -478,53 +479,150 @@ export default function TeacherDashboard() {
         <LogoutButton />
       </header>
 
-      {/* Desktop Navigation */}
-      <div className="hidden md:block bg-white border-b border-border px-8 shrink-0 z-40">
-        <nav className="flex space-x-1.5 max-w-5xl mx-auto py-2">
-          <button 
-            onClick={() => setActiveTab('classes')} 
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 border active:scale-[0.98] cursor-pointer ${
-              activeTab === 'classes' 
-                ? 'bg-[#1A6B4A] text-white border-[#1A6B4A] shadow-xs' 
-                : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
-            }`}
-          >
-            <Calendar className="h-4 w-4" /> Schedule
-          </button>
-          <button 
-            onClick={() => setActiveTab('create')} 
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 border active:scale-[0.98] cursor-pointer ${
-              activeTab === 'create' 
-                ? 'bg-[#1A6B4A] text-white border-[#1A6B4A] shadow-xs' 
-                : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
-            }`}
-          >
-            <Plus className="h-4 w-4" /> New Class
-          </button>
-          <button 
-            onClick={() => setActiveTab('stats')} 
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 border active:scale-[0.98] cursor-pointer ${
-              activeTab === 'stats' 
-                ? 'bg-[#1A6B4A] text-white border-[#1A6B4A] shadow-xs' 
-                : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
-            }`}
-          >
-            <BarChart3 className="h-4 w-4" /> Attendance & Stats
-          </button>
-          <button 
-            onClick={() => setActiveTab('profile')} 
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 border active:scale-[0.98] cursor-pointer ${
-              activeTab === 'profile' 
-                ? 'bg-[#1A6B4A] text-white border-[#1A6B4A] shadow-xs' 
-                : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
-            }`}
-          >
-            <User className="h-4 w-4" /> Profile
-          </button>
-        </nav>
-      </div>
+      {/* Main Container with 15% Collapsible Left Rail (FROZEN IN PLACE) */}
+      <div className="flex-1 flex flex-col md:flex-row md:overflow-hidden min-h-0 w-full">
+        {/* Desktop 15% Collapsible Left Rail */}
+        <aside className={`hidden md:flex flex-col bg-[#0A1F18] text-slate-300 border-r border-emerald-950/60 transition-all duration-200 shrink-0 h-full z-30 select-none ${
+          isSidebarCollapsed ? 'w-[64px] min-w-[64px]' : 'w-[15%] min-w-[195px] max-w-[230px]'
+        }`}>
+          {/* Rail Header with In-Sidebar Collapse Toggle */}
+          <div className={`p-2.5 sm:p-3 border-b border-emerald-900/30 flex ${isSidebarCollapsed ? 'flex-col items-center gap-2' : 'items-center justify-between'} shrink-0`}>
+            {!isSidebarCollapsed ? (
+              <div className="flex items-center gap-2 overflow-hidden truncate">
+                <div className="w-7 h-7 rounded-lg bg-emerald-950/70 border border-emerald-500/30 p-1 flex items-center justify-center shrink-0">
+                  <img
+                    src="/alihsan-emblem-transparent.png"
+                    alt="Al-Ihsan Logo"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <div className="truncate">
+                  <p className="text-xs font-bold text-white leading-tight truncate">AL IHSAN</p>
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-400">Educator Portal</p>
+                </div>
+              </div>
+            ) : (
+              <div className="w-7 h-7 rounded-lg bg-emerald-950/70 border border-emerald-500/30 p-1 flex items-center justify-center shrink-0" title="Al-Ihsan Educator">
+                <img
+                  src="/alihsan-emblem-transparent.png"
+                  alt="Al-Ihsan Logo"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className="p-1.5 rounded-md text-emerald-400/80 hover:text-white hover:bg-emerald-900/40 transition-colors cursor-pointer"
+              title={isSidebarCollapsed ? "Expand Sidebar (15%)" : "Collapse Sidebar (64px)"}
+            >
+              {isSidebarCollapsed ? (
+                <ChevronRight className="h-4 w-4" />
+              ) : (
+                <ChevronLeft className="h-4 w-4" />
+              )}
+            </button>
+          </div>
 
-      <main className="flex-1 w-full max-w-5xl mx-auto p-4 md:p-8 md:overflow-y-auto md:h-full custom-scrollbar">
+          {/* Navigation Items */}
+          <div className="flex-1 py-3 px-2 space-y-1 overflow-y-auto custom-scrollbar text-xs">
+            {!isSidebarCollapsed && (
+              <span className="px-2 mb-1.5 text-[9px] font-bold uppercase tracking-wider text-emerald-500/70 block">
+                Teaching Workspace
+              </span>
+            )}
+            <nav className="space-y-1">
+              <button
+                type="button"
+                onClick={() => setActiveTab('classes')}
+                title="Schedule"
+                className={`w-full text-left px-2.5 py-2 rounded-lg font-semibold text-xs flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                  isSidebarCollapsed ? 'justify-center' : 'justify-between'
+                } ${
+                  activeTab === 'classes'
+                    ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
+                    : 'text-slate-400 hover:text-white hover:bg-emerald-950/60'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 truncate">
+                  <Calendar className="h-4 w-4 shrink-0" />
+                  {!isSidebarCollapsed && <span className="truncate">Schedule</span>}
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('create')}
+                title="New Class"
+                className={`w-full text-left px-2.5 py-2 rounded-lg font-semibold text-xs flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                  isSidebarCollapsed ? 'justify-center' : 'justify-between'
+                } ${
+                  activeTab === 'create'
+                    ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
+                    : 'text-slate-400 hover:text-white hover:bg-emerald-950/60'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 truncate">
+                  <Plus className="h-4 w-4 shrink-0" />
+                  {!isSidebarCollapsed && <span className="truncate">New Class</span>}
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('stats')}
+                title="Attendance & Stats"
+                className={`w-full text-left px-2.5 py-2 rounded-lg font-semibold text-xs flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                  isSidebarCollapsed ? 'justify-center' : 'justify-between'
+                } ${
+                  activeTab === 'stats'
+                    ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
+                    : 'text-slate-400 hover:text-white hover:bg-emerald-950/60'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 truncate">
+                  <BarChart3 className="h-4 w-4 shrink-0" />
+                  {!isSidebarCollapsed && <span className="truncate">Attendance & Stats</span>}
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('profile')}
+                title="Profile"
+                className={`w-full text-left px-2.5 py-2 rounded-lg font-semibold text-xs flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                  isSidebarCollapsed ? 'justify-center' : 'justify-between'
+                } ${
+                  activeTab === 'profile'
+                    ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
+                    : 'text-slate-400 hover:text-white hover:bg-emerald-950/60'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 truncate">
+                  <User className="h-4 w-4 shrink-0" />
+                  {!isSidebarCollapsed && <span className="truncate">Profile</span>}
+                </div>
+              </button>
+            </nav>
+          </div>
+
+          {/* Compact User Footer */}
+          <div className="p-2.5 border-t border-emerald-900/40 bg-[#061510] shrink-0">
+            <div className={`flex items-center gap-2 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
+              <div className="w-7 h-7 rounded-full bg-emerald-800 text-white flex items-center justify-center font-bold text-xs shrink-0 border border-emerald-600/40">
+                {teacherName ? teacherName.slice(0, 2).toUpperCase() : 'ED'}
+              </div>
+              {!isSidebarCollapsed && (
+                <div className="truncate">
+                  <p className="text-xs font-bold text-white leading-tight truncate">{teacherName || 'Educator'}</p>
+                  <p className="text-[9px] text-emerald-400/80 truncate">Al-Ihsan Educator</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </aside>
+
+        <main className="flex-1 w-full min-w-0 p-4 md:p-6 lg:p-8 md:overflow-y-auto md:h-full custom-scrollbar">
         <AnimatePresence mode="wait">
           {activeTab === 'classes' && (
             <PageTransition key="classes" className="space-y-6">
@@ -1314,6 +1412,7 @@ export default function TeacherDashboard() {
           )}
         </AnimatePresence>
       </main>
+      </div>
 
       {/* Mobile Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-border flex justify-around p-3 z-50 md:hidden pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.08)] rounded-t-3xl">

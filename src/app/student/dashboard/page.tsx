@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
 import { AcademyHeader } from '@/components/academy-header'
-import { Home, BarChart3, User, Loader2, Calendar, Clock, Video, Award, Zap, Star, Trophy, Download, AlertCircle, FileText, CheckCircle2, XCircle, BookOpen } from 'lucide-react'
+import { Home, BarChart3, User, Loader2, Calendar, Clock, Video, Award, Zap, Star, Trophy, Download, AlertCircle, FileText, CheckCircle2, XCircle, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { Avatar } from '@/components/avatar'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -23,6 +23,7 @@ import StudentProfilePage from '@/app/student/profile/page'
 export default function StudentDashboard() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<'home' | 'attendance' | 'profile'>('home')
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [studentName, setStudentName] = useState<string>('')
   const [registrationNumber, setRegistrationNumber] = useState<string>('')
@@ -183,43 +184,132 @@ export default function StudentDashboard() {
         </div>
       </header>
 
-      {/* Desktop Navigation */}
-      <div className="hidden md:block bg-white border-b border-border px-8 shrink-0 z-40">
-        <nav className="flex space-x-1.5 max-w-5xl mx-auto py-2">
-          <button 
-            onClick={() => setActiveTab('home')} 
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1.5 border ${
-              activeTab === 'home' 
-                ? 'bg-[#1A6B4A] text-white border-[#1A6B4A] shadow-xs' 
-                : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
-            }`}
-          >
-            <Home className="h-4 w-4" /> Home
-          </button>
-          <button 
-            onClick={() => setActiveTab('attendance')} 
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1.5 border ${
-              activeTab === 'attendance' 
-                ? 'bg-[#1A6B4A] text-white border-[#1A6B4A] shadow-xs' 
-                : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
-            }`}
-          >
-            <BarChart3 className="h-4 w-4" /> Attendance
-          </button>
-          <button 
-            onClick={() => setActiveTab('profile')} 
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1.5 border ${
-              activeTab === 'profile' 
-                ? 'bg-[#1A6B4A] text-white border-[#1A6B4A] shadow-xs' 
-                : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
-            }`}
-          >
-            <User className="h-4 w-4" /> Profile
-          </button>
-        </nav>
-      </div>
+      {/* Main Container with 15% Collapsible Left Rail (FROZEN IN PLACE) */}
+      <div className="flex-1 flex flex-col md:flex-row md:overflow-hidden min-h-0 w-full">
+        {/* Desktop 15% Collapsible Left Rail */}
+        <aside className={`hidden md:flex flex-col bg-[#071F1B] text-slate-300 border-r border-teal-950/60 transition-all duration-200 shrink-0 h-full z-30 select-none ${
+          isSidebarCollapsed ? 'w-[64px] min-w-[64px]' : 'w-[15%] min-w-[195px] max-w-[230px]'
+        }`}>
+          {/* Rail Header with In-Sidebar Collapse Toggle */}
+          <div className={`p-2.5 sm:p-3 border-b border-teal-900/30 flex ${isSidebarCollapsed ? 'flex-col items-center gap-2' : 'items-center justify-between'} shrink-0`}>
+            {!isSidebarCollapsed ? (
+              <div className="flex items-center gap-2 overflow-hidden truncate">
+                <div className="w-7 h-7 rounded-lg bg-teal-950/70 border border-teal-500/30 p-1 flex items-center justify-center shrink-0">
+                  <img
+                    src="/alihsan-emblem-transparent.png"
+                    alt="Al-Ihsan Logo"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <div className="truncate">
+                  <p className="text-xs font-bold text-white leading-tight truncate">AL IHSAN</p>
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-teal-400">Student Portal</p>
+                </div>
+              </div>
+            ) : (
+              <div className="w-7 h-7 rounded-lg bg-teal-950/70 border border-teal-500/30 p-1 flex items-center justify-center shrink-0" title="Al-Ihsan Student">
+                <img
+                  src="/alihsan-emblem-transparent.png"
+                  alt="Al-Ihsan Logo"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className="p-1.5 rounded-md text-teal-400/80 hover:text-white hover:bg-teal-900/40 transition-colors cursor-pointer"
+              title={isSidebarCollapsed ? "Expand Sidebar (15%)" : "Collapse Sidebar (64px)"}
+            >
+              {isSidebarCollapsed ? (
+                <ChevronRight className="h-4 w-4" />
+              ) : (
+                <ChevronLeft className="h-4 w-4" />
+              )}
+            </button>
+          </div>
 
-      <main className="flex-1 w-full max-w-5xl mx-auto p-4 md:p-8 md:overflow-y-auto md:h-full custom-scrollbar">
+          {/* Navigation Items */}
+          <div className="flex-1 py-3 px-2 space-y-1 overflow-y-auto custom-scrollbar text-xs">
+            {!isSidebarCollapsed && (
+              <span className="px-2 mb-1.5 text-[9px] font-bold uppercase tracking-wider text-teal-400/70 block">
+                Student Learning
+              </span>
+            )}
+            <nav className="space-y-1">
+              <button
+                type="button"
+                onClick={() => setActiveTab('home')}
+                title="Home & Classes"
+                className={`w-full text-left px-2.5 py-2 rounded-lg font-semibold text-xs flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                  isSidebarCollapsed ? 'justify-center' : 'justify-between'
+                } ${
+                  activeTab === 'home'
+                    ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
+                    : 'text-slate-400 hover:text-white hover:bg-teal-950/60'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 truncate">
+                  <Home className="h-4 w-4 shrink-0" />
+                  {!isSidebarCollapsed && <span className="truncate">Home & Classes</span>}
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('attendance')}
+                title="Attendance"
+                className={`w-full text-left px-2.5 py-2 rounded-lg font-semibold text-xs flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                  isSidebarCollapsed ? 'justify-center' : 'justify-between'
+                } ${
+                  activeTab === 'attendance'
+                    ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
+                    : 'text-slate-400 hover:text-white hover:bg-teal-950/60'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 truncate">
+                  <BarChart3 className="h-4 w-4 shrink-0" />
+                  {!isSidebarCollapsed && <span className="truncate">Attendance</span>}
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('profile')}
+                title="Profile"
+                className={`w-full text-left px-2.5 py-2 rounded-lg font-semibold text-xs flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                  isSidebarCollapsed ? 'justify-center' : 'justify-between'
+                } ${
+                  activeTab === 'profile'
+                    ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
+                    : 'text-slate-400 hover:text-white hover:bg-teal-950/60'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 truncate">
+                  <User className="h-4 w-4 shrink-0" />
+                  {!isSidebarCollapsed && <span className="truncate">Profile</span>}
+                </div>
+              </button>
+            </nav>
+          </div>
+
+          {/* Compact User Footer */}
+          <div className="p-2.5 border-t border-teal-900/40 bg-[#041512] shrink-0">
+            <div className={`flex items-center gap-2 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
+              <div className="w-7 h-7 rounded-full bg-teal-800 text-white flex items-center justify-center font-bold text-xs shrink-0 border border-teal-600/40">
+                {studentName ? studentName.slice(0, 2).toUpperCase() : 'ST'}
+              </div>
+              {!isSidebarCollapsed && (
+                <div className="truncate">
+                  <p className="text-xs font-bold text-white leading-tight truncate">{studentName || 'Student'}</p>
+                  <p className="text-[9px] text-teal-400/80 truncate font-mono">#{registrationNumber || 'N/A'}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </aside>
+
+        <main className="flex-1 w-full min-w-0 p-4 md:p-6 lg:p-8 md:overflow-y-auto md:h-full custom-scrollbar">
         <AnimatePresence mode="wait">
           {activeTab === 'home' && (
             <PageTransition key="home">
@@ -245,6 +335,7 @@ export default function StudentDashboard() {
           )}
         </AnimatePresence>
       </main>
+      </div>
 
       {/* Bottom Navigation for Mobile */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-border flex justify-around p-1 sm:p-2 z-50 md:hidden pb-safe shadow-md">
