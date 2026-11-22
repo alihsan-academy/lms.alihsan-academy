@@ -133,6 +133,31 @@ export default async function proxy(request: NextRequest) {
       }
     }
 
+    // Role-Aware Root Router for unauthenticated visitors & PWA app launches
+    if (!user && request.nextUrl.pathname === '/') {
+      const isBrowseMode = request.nextUrl.searchParams.has('browse')
+      const isPwa = request.nextUrl.searchParams.get('source') === 'pwa'
+      const preferredPortal = request.cookies.get('alihsan_portal')?.value
+
+      if (!isBrowseMode) {
+        if (preferredPortal === 'teacher') {
+          const redirectUrl = request.nextUrl.clone()
+          redirectUrl.pathname = '/teacher/login'
+          return NextResponse.redirect(redirectUrl)
+        }
+        if (preferredPortal === 'admin' || preferredPortal === 'superadmin') {
+          const redirectUrl = request.nextUrl.clone()
+          redirectUrl.pathname = '/portal-superadmin/login'
+          return NextResponse.redirect(redirectUrl)
+        }
+        if (isPwa && preferredPortal === 'student') {
+          const redirectUrl = request.nextUrl.clone()
+          redirectUrl.pathname = '/student/login'
+          return NextResponse.redirect(redirectUrl)
+        }
+      }
+    }
+
     // Redirect unauthenticated users away from protected routes to their specific login page
     if (!user && isProtectedRoute) {
       const redirectUrl = request.nextUrl.clone()

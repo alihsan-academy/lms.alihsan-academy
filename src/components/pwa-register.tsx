@@ -17,6 +17,20 @@ export function PwaRegister() {
   useEffect(() => {
     setMounted(true)
 
+    // Tag portal preference on active route
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname
+      let portalRole: string | null = null
+      if (path.startsWith('/teacher')) portalRole = 'teacher'
+      else if (path.startsWith('/student')) portalRole = 'student'
+      else if (path.startsWith('/portal-superadmin') || path.startsWith('/admin') || path.startsWith('/superadmin')) portalRole = 'admin'
+
+      if (portalRole) {
+        localStorage.setItem('alihsan_preferred_portal', portalRole)
+        document.cookie = `alihsan_portal=${portalRole}; path=/; max-age=31536000; SameSite=Lax`
+      }
+    }
+
     // 1. Register Service Worker
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -114,6 +128,18 @@ export function PwaRegister() {
   }
 
   const handleInstallClick = async () => {
+    // Ensure active portal preference is tagged prior to install
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname
+      let portalRole = localStorage.getItem('alihsan_preferred_portal') || 'student'
+      if (path.startsWith('/teacher')) portalRole = 'teacher'
+      else if (path.startsWith('/student')) portalRole = 'student'
+      else if (path.startsWith('/portal-superadmin') || path.startsWith('/admin') || path.startsWith('/superadmin')) portalRole = 'admin'
+
+      localStorage.setItem('alihsan_preferred_portal', portalRole)
+      document.cookie = `alihsan_portal=${portalRole}; path=/; max-age=31536000; SameSite=Lax`
+    }
+
     // If native prompt is available (Chrome Android, Edge, Desktop Chrome)
     if (deferredPrompt) {
       try {
@@ -407,7 +433,7 @@ export function PwaRegister() {
                       <p className="text-[11px] text-[#4A5D53] mt-0.5 leading-snug">
                         Click the computer/download icon{' '}
                         <Download className="inline h-3.5 w-3.5 text-emerald-700 mx-0.5 align-text-bottom" /> with the
-                        label &quot;Install Al-Ihsan Academy LMS&quot;.
+                        label &quot;Install Al IHSAN Learnings&quot;.
                       </p>
                     </div>
                   </div>

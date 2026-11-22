@@ -1,9 +1,37 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 
 export default function HomePage() {
+  // Smart Portal Redirection: Automatically route to preferred portal or standalone login
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.has('browse')) return
+
+      const preferred = localStorage.getItem('alihsan_preferred_portal')
+      const isStandalone = 
+        window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as any).standalone === true ||
+        document.referrer.includes('android-app://')
+
+      if (preferred === 'teacher') {
+        window.location.replace('/teacher/login')
+        return
+      }
+      if (preferred === 'admin' || preferred === 'superadmin') {
+        window.location.replace('/portal-superadmin/login')
+        return
+      }
+      if (isStandalone && (preferred === 'student' || !preferred)) {
+        window.location.replace('/student/login')
+        return
+      }
+    }
+  }, [])
+
   const studentFeatures = [
     'Live interactive classrooms & session links',
     'Weekly class timetable & academic schedules',
@@ -52,15 +80,24 @@ export default function HomePage() {
           </div>
         </div>
 
-        <a 
-          href="https://www.alihsanacademy.uk" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#DDE4E0] text-xs text-[#5C7066] font-medium shadow-xs hover:border-[#1A6B4A] transition-colors"
-        >
-          <span className="w-2 h-2 rounded-full bg-[#1A6B4A]" />
-          <span>alihsanacademy.uk</span>
-        </a>
+        <div className="flex items-center gap-2.5">
+          <Link 
+            href="/teacher/login"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-[#DDE4E0] text-xs font-bold text-[#1E293B] shadow-xs hover:border-[#1E293B] hover:bg-[#F1F5F9] transition-colors"
+          >
+            <span>Tutor Portal</span>
+            <span>→</span>
+          </Link>
+          <a 
+            href="https://www.alihsanacademy.uk" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#DDE4E0] text-xs text-[#5C7066] font-medium shadow-xs hover:border-[#1A6B4A] transition-colors"
+          >
+            <span className="w-2 h-2 rounded-full bg-[#1A6B4A]" />
+            <span>alihsanacademy.uk</span>
+          </a>
+        </div>
       </header>
 
       {/* Main Content Area */}
@@ -160,11 +197,17 @@ export default function HomePage() {
       <footer className="relative z-10 max-w-5xl mx-auto w-full py-5 border-t border-[#DDE4E0] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#5C7066]">
         <p>© 2026 Al Ihsan Academy of Moral Education. All rights reserved.</p>
         <div className="flex items-center gap-4">
-          <a href="https://www.alihsanacademy.uk" target="_blank" rel="noopener noreferrer" className="text-[#1A6B4A] font-semibold hover:underline">
+          <Link href="/student/login" className="text-[#1A6B4A] font-semibold hover:underline">
+            Student Portal
+          </Link>
+          <span>•</span>
+          <Link href="/teacher/login" className="text-[#1E293B] font-semibold hover:underline">
+            Tutor Portal
+          </Link>
+          <span>•</span>
+          <a href="https://www.alihsanacademy.uk" target="_blank" rel="noopener noreferrer" className="text-[#5C7066] hover:underline">
             alihsanacademy.uk
           </a>
-          <span>•</span>
-          <span>Student Learning Portal Gateway</span>
         </div>
       </footer>
     </div>

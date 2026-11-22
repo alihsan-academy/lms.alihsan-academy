@@ -41,7 +41,7 @@ export default function StudentDashboard() {
     setIsLoading(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
+      if (!user) { router.push('/student/login'); return }
 
       const response = await fetch('/api/student/dashboard-data')
       const data = await response.json()

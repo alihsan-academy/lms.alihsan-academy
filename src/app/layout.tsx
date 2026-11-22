@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Al-Ihsan LMS",
+    title: "Al IHSAN Learnings",
   },
   icons: {
     icon: [

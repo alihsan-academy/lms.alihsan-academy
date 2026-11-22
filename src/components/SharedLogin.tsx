@@ -61,6 +61,16 @@ export default function SharedLogin({
         if (data?.quote) setCurrentQuote(data.quote)
       })
       .catch((err) => console.error('Failed to load daily quote:', err))
+
+    // Persist portal preference so future PWA launches & root visits route here
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('alihsan_preferred_portal', portalType)
+        document.cookie = `alihsan_portal=${portalType}; path=/; max-age=31536000; SameSite=Lax`
+      } catch (e) {
+        console.warn('Failed to persist portal preference:', e)
+      }
+    }
   }, [portalType])
 
   useEffect(() => {

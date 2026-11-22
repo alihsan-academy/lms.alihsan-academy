@@ -122,7 +122,7 @@ export default function TeacherDashboard() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         setIsLoading(false)
-        router.push('/login')
+        router.push('/teacher/login')
         return
       }
       setTeacherId(user.id)
