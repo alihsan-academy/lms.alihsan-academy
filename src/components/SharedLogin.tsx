@@ -295,14 +295,14 @@ export default function SharedLogin({
 
   return (
     <div
-      className="flex flex-col lg:flex-row min-h-screen w-full bg-[#F8F9FA] text-[#112221] overflow-x-hidden font-sans m-0 box-border"
+      className="flex flex-col lg:flex-row min-h-screen lg:h-screen lg:max-h-screen w-full bg-[#F8F9FA] text-[#112221] overflow-x-hidden lg:overflow-hidden font-sans m-0 box-border"
       style={{
         fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif",
       }}
     >
       {/* LOWER HALF ON MOBILE / LEFT SIDE ON DESKTOP: BRANDING & ARABIC QUOTE PANEL */}
       <div
-        className="order-2 lg:order-1 w-full lg:w-[45%] lg:min-w-[380px] p-6 sm:p-8 lg:p-12 flex flex-col justify-between relative overflow-hidden text-white box-border shrink-0"
+        className="order-2 lg:order-1 w-full lg:w-[45%] lg:min-w-[380px] lg:h-full p-6 sm:p-8 lg:p-12 flex flex-col justify-between relative overflow-hidden lg:overflow-y-auto text-white box-border shrink-0 select-none"
         style={{
           backgroundColor: themeColor,
         }}
@@ -454,7 +454,7 @@ export default function SharedLogin({
       </div>
 
       {/* UPPER HALF ON MOBILE / RIGHT SIDE ON DESKTOP: CREDENTIALS CARD */}
-      <div className="order-1 lg:order-2 flex-1 flex items-center justify-center p-3.5 sm:p-8 lg:p-12 bg-[#F8F9FA] box-border w-full">
+      <div className="order-1 lg:order-2 flex-1 flex items-center justify-center p-3.5 sm:p-8 lg:p-12 bg-[#F8F9FA] box-border w-full lg:h-full lg:overflow-y-auto">
         <div className="bg-white rounded-2xl border border-[#DDE4E0] p-5 sm:p-8 w-full max-w-[420px] shadow-sm relative z-10 box-border">
           {/* Mobile Top Brand Bar (Visible on mobile screens before credentials) */}
           <div className="flex items-center justify-between mb-4 lg:hidden pb-3 border-b border-[#DDE4E0]">

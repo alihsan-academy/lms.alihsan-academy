@@ -464,8 +464,8 @@ export default function TeacherDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-24 md:pb-0 font-sans selection:bg-primary/20">
-      <header className="bg-white border-b-2 border-border p-3 md:p-4 flex justify-between items-center sticky top-0 z-50 shadow-sm backdrop-blur-md bg-white/90">
+    <div className="min-h-screen md:h-screen md:max-h-screen bg-background flex flex-col pb-24 md:pb-0 font-sans selection:bg-primary/20 md:overflow-hidden">
+      <header className="bg-white border-b-2 border-border p-3 md:p-4 flex justify-between items-center shrink-0 z-50 shadow-xs">
         <div className="flex items-center gap-3">
           <AcademyHeader size="sm" showTagline={false} />
           {teacherName && (
@@ -479,7 +479,7 @@ export default function TeacherDashboard() {
       </header>
 
       {/* Desktop Navigation */}
-      <div className="hidden md:block bg-white border-b border-border px-8">
+      <div className="hidden md:block bg-white border-b border-border px-8 shrink-0 z-40">
         <nav className="flex space-x-1.5 max-w-5xl mx-auto py-2">
           <button 
             onClick={() => setActiveTab('classes')} 
@@ -524,7 +524,7 @@ export default function TeacherDashboard() {
         </nav>
       </div>
 
-      <main className="flex-1 w-full max-w-5xl mx-auto p-4 md:p-8">
+      <main className="flex-1 w-full max-w-5xl mx-auto p-4 md:p-8 md:overflow-y-auto md:h-full custom-scrollbar">
         <AnimatePresence mode="wait">
           {activeTab === 'classes' && (
             <PageTransition key="classes" className="space-y-6">

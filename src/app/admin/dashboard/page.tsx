@@ -104,9 +104,9 @@ export default function AdminDashboard() {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-background flex flex-col font-sans selection:bg-primary/20"
+      className="min-h-screen md:h-screen md:max-h-screen bg-background flex flex-col font-sans selection:bg-primary/20 md:overflow-hidden"
     >
-      <header className="bg-white border-b-2 border-border p-3 md:p-4 flex justify-between items-center sticky top-0 z-50 shadow-sm backdrop-blur-md bg-white/90">
+      <header className="bg-white border-b-2 border-border p-3 md:p-4 flex justify-between items-center shrink-0 z-50 shadow-xs">
         <div className="flex items-center gap-3">
           <AcademyHeader size="sm" showTagline={false} />
           <div className="flex items-center gap-2 border-l-2 border-border pl-3 ml-2 hidden sm:flex">
@@ -122,7 +122,7 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-6xl mx-auto p-4 md:p-8">
+      <main className="flex-1 w-full max-w-6xl mx-auto p-4 md:p-8 md:overflow-y-auto md:h-full custom-scrollbar">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center p-20 gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />

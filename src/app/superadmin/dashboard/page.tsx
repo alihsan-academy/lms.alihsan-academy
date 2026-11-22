@@ -1016,8 +1016,8 @@ export default function SuperAdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-24 md:pb-0 font-sans selection:bg-primary/20">
-      <header className="bg-white border-b-2 border-border p-3 md:p-4 flex justify-between items-center sticky top-0 z-40 shadow-sm backdrop-blur-md bg-white/90">
+    <div className="min-h-screen md:h-screen md:max-h-screen bg-background flex flex-col pb-24 md:pb-0 font-sans selection:bg-primary/20 md:overflow-hidden">
+      <header className="bg-white border-b-2 border-border p-3 md:p-4 flex justify-between items-center sticky top-0 z-40 shadow-sm backdrop-blur-md bg-white/90 shrink-0">
         <div className="flex items-center gap-3">
           <AcademyHeader size="sm" showTagline={true} />
           <div className="hidden sm:flex items-center gap-2 border-l-2 border-border pl-4 ml-2">
@@ -1043,14 +1043,14 @@ export default function SuperAdminDashboard() {
         </div>
       </header>
 
-      {/* Main Container with 15% Collapsible Left Rail */}
-      <div className="flex-1 flex flex-col md:flex-row min-h-[calc(100vh-65px)]">
+      {/* Main Container with 15% Collapsible Left Rail (FROZEN IN PLACE) */}
+      <div className="flex-1 flex flex-col md:flex-row md:overflow-hidden min-h-0 w-full">
         {/* Desktop 15% Collapsible Left Rail */}
-        <aside className={`hidden md:flex flex-col bg-[#0B1320] text-slate-300 border-r border-slate-800 transition-all duration-200 shrink-0 sticky top-[65px] h-[calc(100vh-65px)] z-30 ${
+        <aside className={`hidden md:flex flex-col bg-[#0B1320] text-slate-300 border-r border-slate-800 transition-all duration-200 shrink-0 h-full z-30 select-none ${
           isSidebarCollapsed ? 'w-[64px] min-w-[64px]' : 'w-[15%] min-w-[195px] max-w-[230px]'
         }`}>
           {/* Rail Header with In-Sidebar Collapse Toggle */}
-          <div className={`p-2.5 sm:p-3 border-b border-slate-800/80 flex ${isSidebarCollapsed ? 'flex-col items-center gap-2' : 'items-center justify-between'}`}>
+          <div className={`p-2.5 sm:p-3 border-b border-slate-800/80 flex ${isSidebarCollapsed ? 'flex-col items-center gap-2' : 'items-center justify-between'} shrink-0`}>
             {!isSidebarCollapsed ? (
               <div className="flex items-center gap-2 overflow-hidden truncate">
                 <div className="w-7 h-7 rounded-lg bg-emerald-950/70 border border-emerald-500/30 p-1 flex items-center justify-center shrink-0">
@@ -1219,7 +1219,7 @@ export default function SuperAdminDashboard() {
           </div>
 
           {/* Compact User Footer */}
-          <div className="p-2.5 border-t border-slate-800/80 bg-[#070D18]">
+          <div className="p-2.5 border-t border-slate-800/80 bg-[#070D18] shrink-0">
             <div className={`flex items-center gap-2 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
               <div className="w-6 h-6 rounded-full bg-emerald-800 text-white flex items-center justify-center font-bold text-[10px] shrink-0 border border-emerald-600/40">
                 SA
@@ -1234,7 +1234,7 @@ export default function SuperAdminDashboard() {
           </div>
         </aside>
 
-        <main className="flex-1 w-full min-w-0 p-4 md:p-6 lg:p-8 overflow-y-auto">
+        <main className="flex-1 w-full min-w-0 p-4 md:p-6 lg:p-8 md:overflow-y-auto md:h-full custom-scrollbar">
         <AnimatePresence mode="wait">
           {activeTab === 'statistics' && (
             <PageTransition key="statistics" className="space-y-8">
