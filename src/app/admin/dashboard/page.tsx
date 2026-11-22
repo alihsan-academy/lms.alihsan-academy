@@ -3,17 +3,15 @@
 import { useState, useEffect } from 'react'
 import { LogoutButton } from '@/components/logout-button'
 import { AcademyHeader } from '@/components/academy-header'
-import { ShieldCheck, Loader2, KeyRound } from 'lucide-react'
+import { ShieldCheck, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { AdminAttendanceManager } from '@/components/admin-attendance-manager'
-import { PasswordResetModal } from '@/components/password-reset-modal'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
 export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [adminEmail, setAdminEmail] = useState('')
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
   const [students, setStudents] = useState<any[]>([])
   const [teachers, setTeachers] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
@@ -120,17 +118,6 @@ export default function AdminDashboard() {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          {adminEmail && (
-            <button
-              type="button"
-              onClick={() => setIsPasswordModalOpen(true)}
-              className="h-8.5 px-3 rounded-lg border border-border bg-white hover:bg-muted font-bold text-xs text-foreground transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
-            >
-              <KeyRound className="h-3.5 w-3.5 text-primary" />
-              <span className="hidden sm:inline">Change Password</span>
-              <span className="sm:hidden">Password</span>
-            </button>
-          )}
           <LogoutButton />
         </div>
       </header>
@@ -152,13 +139,6 @@ export default function AdminDashboard() {
           />
         )}
       </main>
-
-      <PasswordResetModal
-        isOpen={isPasswordModalOpen}
-        onClose={() => setIsPasswordModalOpen(false)}
-        userEmail={adminEmail}
-        role="admin"
-      />
     </motion.div>
   )
 }

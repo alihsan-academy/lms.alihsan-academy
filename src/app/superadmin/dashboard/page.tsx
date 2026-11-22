@@ -23,7 +23,6 @@ import { AcademicDistributionCard, normalizeTerm, normalizeYear } from '@/compon
 import { UnifiedAdminAnalyticsWidget } from '@/components/unified-admin-analytics-widget'
 import { DateFilterType, getDateRange, isDateWithinRange, parseClassMetadata } from '@/lib/attendance-utils'
 import { SecurityPasswordCard } from '@/components/security-password-card'
-import { PasswordResetModal } from '@/components/password-reset-modal'
 
 type Tab = 'statistics' | 'students' | 'teachers' | 'attendance' | 'manage'
 
@@ -106,7 +105,7 @@ export default function SuperAdminDashboard() {
 
   // Security & Password Reset states
   const [adminEmail, setAdminEmail] = useState('')
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
+  const [isPasswordSectionOpen, setIsPasswordSectionOpen] = useState(false)
   const [adminTargetEmail, setAdminTargetEmail] = useState('')
   const [adminTargetNewPassword, setAdminTargetNewPassword] = useState('')
   const [isUpdatingCredentials, setIsUpdatingCredentials] = useState(false)
@@ -1029,18 +1028,6 @@ export default function SuperAdminDashboard() {
           </span>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
-          {adminEmail && (
-            <button
-              type="button"
-              onClick={() => setIsPasswordModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-border bg-white text-xs font-bold text-foreground hover:bg-muted/40 transition-colors shadow-xs cursor-pointer min-h-[36px]"
-              title="Change Password via Email Verification"
-            >
-              <Key className="h-3.5 w-3.5 text-primary" />
-              <span className="hidden sm:inline">Change Password</span>
-              <span className="sm:hidden">Password</span>
-            </button>
-          )}
           <BouncyButton 
             variant="outline"
             size="sm"
@@ -2213,9 +2200,43 @@ export default function SuperAdminDashboard() {
                 </form>
               </AnimatedCard>
 
-              {/* Super Admin Password Management */}
+              {/* Super Admin Password Management - Minimal Space & Collapsible */}
               {adminEmail && (
-                <SecurityPasswordCard userEmail={adminEmail} role="superadmin" />
+                <div className="bg-white rounded-xl border border-border shadow-xs overflow-hidden">
+                  <div className="p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-muted/10">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0 border border-emerald-200">
+                        <Key className="h-4 w-4 text-emerald-700" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-xs sm:text-sm font-black text-foreground">Account Security & Password</h4>
+                          <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">
+                            Super Admin
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground font-medium truncate">
+                          Update master password or send verification link ({adminEmail})
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsPasswordSectionOpen(!isPasswordSectionOpen)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-border bg-white hover:bg-muted font-bold text-xs text-foreground transition-colors shadow-xs cursor-pointer shrink-0 self-start sm:self-auto min-h-[36px]"
+                    >
+                      <Key className="h-3.5 w-3.5 text-primary" />
+                      <span>{isPasswordSectionOpen ? 'Hide Password Settings' : 'Change Password'}</span>
+                      <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${isPasswordSectionOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                  </div>
+
+                  {isPasswordSectionOpen && (
+                    <div className="border-t border-border p-3.5 sm:p-5 bg-white">
+                      <SecurityPasswordCard userEmail={adminEmail} role="superadmin" className="border-0 shadow-none p-0" />
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* Danger Zone: Remove Access - Compact */}
@@ -3016,14 +3037,6 @@ export default function SuperAdminDashboard() {
         <NavBtn active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={<CheckCircle className="size-4" />} label="Attendance" />
         <NavBtn active={activeTab === 'manage'} onClick={() => setActiveTab('manage')} icon={<Users className="size-4" />} label="Users" />
       </nav>
-
-      {/* Super Admin Password Reset Modal */}
-      <PasswordResetModal
-        isOpen={isPasswordModalOpen}
-        onClose={() => setIsPasswordModalOpen(false)}
-        userEmail={adminEmail}
-        role="superadmin"
-      />
     </div>
   )
 }

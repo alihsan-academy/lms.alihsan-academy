@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { KeyRound, Mail, CheckCircle2, Loader2, ShieldCheck, Lock, Eye, EyeOff, Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
 interface SecurityPasswordCardProps {
   userEmail: string
@@ -148,7 +149,7 @@ export function SecurityPasswordCard({
   const isInternalPlaceholderEmail = Boolean(userEmail && userEmail.includes('@student.alihsanacademy.uk'))
 
   return (
-    <div className={`bg-white rounded-xl sm:rounded-2xl border-2 border-border shadow-xs overflow-hidden ${className}`}>
+    <div className={cn("bg-white rounded-xl sm:rounded-2xl border-2 border-border shadow-xs overflow-hidden", className)}>
       {/* Header */}
       <div className="p-3.5 sm:p-4.5 border-b border-border/70 bg-muted/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
