@@ -58,6 +58,7 @@ export default function SuperAdminDashboard() {
   const [studentYearFilter, setStudentYearFilter] = useState('all')
   const [studentTermFilter, setStudentTermFilter] = useState('all')
   const [studentGenderFilter, setStudentGenderFilter] = useState('all')
+  const [studentTeacherFilter, setStudentTeacherFilter] = useState('all')
   const [removeAccessSearchQuery, setRemoveAccessSearchQuery] = useState('')
   const [removeAccessRoleFilter, setRemoveAccessRoleFilter] = useState('all')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -114,6 +115,7 @@ export default function SuperAdminDashboard() {
   const [inlineStatus, setInlineStatus] = useState<'ongoing' | 'break' | 'stopped'>('ongoing')
   const [inlineYear, setInlineYear] = useState('')
   const [inlineTerm, setInlineTerm] = useState('')
+  const [inlineGender, setInlineGender] = useState('')
   const [inlineBreakFrom, setInlineBreakFrom] = useState('')
   const [inlineBreakTo, setInlineBreakTo] = useState('')
   const [inlineBreakReason, setInlineBreakReason] = useState('')
@@ -351,6 +353,7 @@ export default function SuperAdminDashboard() {
       setInlineBreakReason(selectedProfile.break_reason || '')
       setInlineStoppedDate(selectedProfile.last_class_date || '')
       setInlineStoppedReason(selectedProfile.stopped_reason || '')
+      setInlineGender(selectedProfile.gender || '')
     }
   }, [selectedProfile])
 
@@ -413,11 +416,24 @@ export default function SuperAdminDashboard() {
         throw new Error(data.error || 'Failed to update student status')
       }
 
+      if (inlineGender && inlineGender !== selectedProfile.gender) {
+        try {
+          await fetch('/api/admin/users', {
+            method: 'PATCH',
+            headers,
+            body: JSON.stringify({ userId: studentIdentifier, gender: inlineGender })
+          })
+        } catch (err) {
+          console.warn('Could not update gender:', err)
+        }
+      }
+
       const updatedRecord = {
         ...selectedProfile,
         year: inlineYear,
         class_name: inlineYear,
         term: inlineTerm,
+        gender: inlineGender || selectedProfile.gender || null,
         enrolment_status: inlineStatus,
         break_from_date: inlineStatus === 'break' ? inlineBreakFrom : null,
         break_to_date: inlineStatus === 'break' ? inlineBreakTo : null,
@@ -438,6 +454,7 @@ export default function SuperAdminDashboard() {
           year: inlineYear,
           class_name: inlineYear,
           term: inlineTerm,
+          gender: inlineGender || s.gender || null,
           enrolment_status: inlineStatus,
           break_from_date: inlineStatus === 'break' ? inlineBreakFrom : null,
           break_to_date: inlineStatus === 'break' ? inlineBreakTo : null,
@@ -944,10 +961,29 @@ export default function SuperAdminDashboard() {
     const matchesTerm = studentTermFilter === 'all' || studentTerm === studentTermFilter;
 
     const studentGender = safeLower(s.gender);
-    const matchesGender = studentGenderFilter === 'all' || studentGender === safeLower(studentGenderFilter);
+    const matchesGender =
+      studentGenderFilter === 'all' ||
+      (studentGenderFilter === 'unspecified'
+        ? (!studentGender || studentGender === 'null' || studentGender === 'n/a' || studentGender === '')
+        : studentGender === safeLower(studentGenderFilter));
 
-    return matchesSearch && matchesStatus && matchesYear && matchesTerm && matchesGender;
+    let matchesTeacher = true;
+    if (studentTeacherFilter === 'all') {
+      matchesTeacher = true;
+    } else if (studentTeacherFilter === 'unassigned') {
+      matchesTeacher = !s.teacher_id || s.teacher_id === '' || s.teacher_id === 'null';
+    } else if (studentTeacherFilter === 'assigned') {
+      matchesTeacher = Boolean(s.teacher_id && s.teacher_id !== '' && s.teacher_id !== 'null');
+    } else {
+      matchesTeacher = s.teacher_id === studentTeacherFilter;
+    }
+
+    return matchesSearch && matchesStatus && matchesYear && matchesTerm && matchesGender && matchesTeacher;
   })
+
+  const unassignedStudentsCount = useMemo(() => {
+    return students.filter(s => !s.teacher_id || s.teacher_id === '' || s.teacher_id === 'null').length;
+  }, [students]);
 
   const filteredTeachers = teachers.filter(t => 
     safeLower(t.name).includes(safeLower(searchQuery)) || 
@@ -1342,12 +1378,37 @@ export default function SuperAdminDashboard() {
                       <option value="all">All Genders</option>
                       <option value="male">Male</option>
                       <option value="female">Female</option>
+                      <option value="unspecified">Not Specified</option>
+                    </select>
+                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                  </div>
+
+                  {/* Teacher Assignment Filter */}
+                  <div className="relative min-w-[160px]">
+                    <select
+                      className={`w-full p-2.5 pr-7 border-2 rounded-xl bg-white font-bold text-foreground focus:ring-2 focus:ring-primary/20 outline-none h-11 appearance-none cursor-pointer text-xs ${
+                        studentTeacherFilter === 'unassigned' ? 'border-amber-400 bg-amber-50/60 text-amber-950 ring-2 ring-amber-300/40' : 'border-border'
+                      }`}
+                      value={studentTeacherFilter}
+                      onChange={(e) => setStudentTeacherFilter(e.target.value)}
+                    >
+                      <option value="all">All Teachers</option>
+                      <option value="unassigned" className="font-extrabold text-amber-700 bg-amber-50">
+                        ⚠️ Unassigned ({unassignedStudentsCount})
+                      </option>
+                      <option value="assigned">Assigned (Has Teacher)</option>
+                      <option disabled value="">──────────</option>
+                      {teachers.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name}
+                        </option>
+                      ))}
                     </select>
                     <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                   </div>
 
                   {/* Reset Filters */}
-                  {(studentStatusFilter !== 'all' || studentYearFilter !== 'all' || studentTermFilter !== 'all' || studentGenderFilter !== 'all' || searchQuery) && (
+                  {(studentStatusFilter !== 'all' || studentYearFilter !== 'all' || studentTermFilter !== 'all' || studentGenderFilter !== 'all' || studentTeacherFilter !== 'all' || searchQuery) && (
                     <button
                       type="button"
                       onClick={() => {
@@ -1355,6 +1416,7 @@ export default function SuperAdminDashboard() {
                         setStudentYearFilter('all')
                         setStudentTermFilter('all')
                         setStudentGenderFilter('all')
+                        setStudentTeacherFilter('all')
                         setSearchQuery('')
                       }}
                       className="text-xs font-bold text-muted-foreground hover:text-foreground px-3 py-2 rounded-xl border border-border bg-muted/40 hover:bg-muted transition-colors cursor-pointer h-11 flex items-center"
@@ -1364,6 +1426,36 @@ export default function SuperAdminDashboard() {
                   )}
                 </div>
               </div>
+
+              {/* Unassigned Students Alert Banner */}
+              {unassignedStudentsCount > 0 && studentTeacherFilter !== 'unassigned' && (
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border-2 border-amber-300 rounded-2xl text-amber-950 shadow-sm animate-in fade-in">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-200 text-amber-900 flex items-center justify-center shrink-0 shadow-2xs">
+                      <AlertCircle className="w-5 h-5 text-amber-800" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-amber-950 flex items-center gap-2">
+                        <span>{unassignedStudentsCount} {unassignedStudentsCount === 1 ? 'Student' : 'Students'} Awaiting Teacher Assignment</span>
+                        <span className="px-2 py-0.5 text-[10px] font-black uppercase rounded bg-amber-200 text-amber-900 border border-amber-300">
+                          Action Required
+                        </span>
+                      </p>
+                      <p className="text-xs text-amber-800 font-medium mt-0.5">
+                        These students came through the admission portal and require a teacher to be assigned manually.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setStudentTeacherFilter('unassigned')}
+                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white rounded-xl text-xs font-black transition-all shrink-0 shadow-xs cursor-pointer flex items-center gap-1.5"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    View Unassigned ({unassignedStudentsCount})
+                  </button>
+                </div>
+              )}
 
               <AnimatedCard delay={0.1} className="p-0 overflow-hidden border-2 border-border">
                 <div className="overflow-x-auto">
@@ -1387,7 +1479,19 @@ export default function SuperAdminDashboard() {
                             <div className="flex items-center gap-3">
                               <Avatar photoUrl={s.profile_photo} name={s.name} size="sm" />
                               <div>
-                                <p className="font-bold text-foreground text-sm leading-tight">{s.name}</p>
+                                <div className="flex items-center gap-2">
+                                  <p className="font-bold text-foreground text-sm leading-tight">{s.name}</p>
+                                  {s.gender === 'female' && (
+                                    <span className="px-1.5 py-0.2 text-[9px] font-black uppercase rounded bg-rose-50 text-rose-700 border border-rose-200">
+                                      Female
+                                    </span>
+                                  )}
+                                  {s.gender === 'male' && (
+                                    <span className="px-1.5 py-0.2 text-[9px] font-black uppercase rounded bg-blue-50 text-blue-700 border border-blue-200">
+                                      Male
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </td>
@@ -1462,21 +1566,43 @@ export default function SuperAdminDashboard() {
                                 </button>
                               </div>
                             ) : (
-                              <div className="flex items-center gap-3">
-                                <span className="font-bold text-foreground text-sm min-w-[130px] truncate">
-                                  {teachers.find(t => t.id === s.teacher_id)?.name || 'Unassigned'}
-                                </span>
-                                <button
-                                  type="button"
-                                  className="px-2.5 py-1 text-xs font-bold rounded-lg border-2 border-border hover:border-primary/40 hover:bg-primary/10 hover:text-primary transition-all flex items-center gap-1 text-muted-foreground shrink-0 shadow-2xs"
-                                  onClick={() => {
-                                    setEditingStudentId(s.id)
-                                    setSelectedTeacherId(s.teacher_id || '')
-                                  }}
-                                >
-                                  <Pencil className="h-3 w-3" />
-                                  Change
-                                </button>
+                              <div className="flex items-center gap-2.5">
+                                {s.teacher_id && teachers.find(t => t.id === s.teacher_id) ? (
+                                  <>
+                                    <span className="font-bold text-foreground text-sm min-w-[130px] truncate">
+                                      {teachers.find(t => t.id === s.teacher_id)?.name}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      className="px-2.5 py-1 text-xs font-bold rounded-lg border-2 border-border hover:border-primary/40 hover:bg-primary/10 hover:text-primary transition-all flex items-center gap-1 text-muted-foreground shrink-0 shadow-2xs cursor-pointer"
+                                      onClick={() => {
+                                        setEditingStudentId(s.id)
+                                        setSelectedTeacherId(s.teacher_id || '')
+                                      }}
+                                    >
+                                      <Pencil className="h-3 w-3" />
+                                      Change
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="px-2.5 py-1 text-xs font-black rounded-lg bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 shrink-0 shadow-2xs animate-pulse">
+                                      <AlertCircle className="h-3.5 w-3.5 text-amber-700" />
+                                      Needs Teacher
+                                    </span>
+                                    <button
+                                      type="button"
+                                      className="px-2.5 py-1 text-xs font-black rounded-lg bg-primary text-white hover:bg-primary/90 active:scale-95 transition-all flex items-center gap-1 shadow-xs shrink-0 cursor-pointer"
+                                      onClick={() => {
+                                        setEditingStudentId(s.id)
+                                        setSelectedTeacherId('')
+                                      }}
+                                    >
+                                      <UserPlus className="h-3 w-3" />
+                                      Assign Teacher
+                                    </button>
+                                  </>
+                                )}
                               </div>
                             )}
                           </td>
@@ -2281,6 +2407,7 @@ export default function SuperAdminDashboard() {
                   <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-muted/15 rounded-xl border border-border/50">
                       <ProfileItem label="Assigned Teacher" value={teachers.find(t => t.id === selectedProfile.teacher_id)?.name || 'Unassigned'} />
+                      <ProfileItem label="Gender" value={selectedProfile.gender ? (selectedProfile.gender.charAt(0).toUpperCase() + selectedProfile.gender.slice(1).toLowerCase()) : 'Not Specified'} />
                       <ProfileItem label="Class / Year" value={normalizeYear(selectedProfile.year, selectedProfile.class_name)} />
                       <ProfileItem label="Term" value={normalizeTerm(selectedProfile.term)} />
                       <ProfileItem label="Date of Birth" value={selectedProfile.dob ? format(parseISO(selectedProfile.dob), 'MMM d, yyyy') : 'N/A'} />
@@ -2306,7 +2433,7 @@ export default function SuperAdminDashboard() {
 
                       {/* Year & Term Editable Inputs with Quick Progression */}
                       <div className="p-3 bg-muted/20 rounded-xl border border-border/70 space-y-2.5">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                           <div className="space-y-1">
                             <Label className="text-[11px] font-bold text-foreground uppercase tracking-wider">Class / Year</Label>
                             <select
@@ -2330,6 +2457,18 @@ export default function SuperAdminDashboard() {
                               <option value="">Select term</option>
                               <option value="Term 01">Term 01</option>
                               <option value="Term 02">Term 02</option>
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[11px] font-bold text-foreground uppercase tracking-wider">Gender</Label>
+                            <select
+                              value={inlineGender ? inlineGender.toLowerCase() : ''}
+                              onChange={(e) => setInlineGender(e.target.value)}
+                              className="w-full rounded-md border border-input bg-white px-2.5 py-1 text-xs font-semibold h-9 cursor-pointer text-foreground"
+                            >
+                              <option value="">Select Gender</option>
+                              <option value="male">Male</option>
+                              <option value="female">Female</option>
                             </select>
                           </div>
                         </div>

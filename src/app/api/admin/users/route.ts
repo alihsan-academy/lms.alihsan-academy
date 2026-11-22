@@ -461,6 +461,7 @@ export async function PATCH(request: Request) {
     const newTeacherId = body.teacherId !== undefined ? body.teacherId : (body.newTeacherId !== undefined ? body.newTeacherId : undefined)
     const newEmail = body.newEmail || (body.email && body.email !== body.currentEmail ? body.email : undefined)
     const newPassword = body.newPassword
+    const newGender = body.gender !== undefined ? (body.gender ? String(body.gender).trim().toLowerCase() : null) : undefined
 
     if (!targetUserId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
@@ -530,6 +531,19 @@ export async function PATCH(request: Request) {
 
         if (deleteClassesError) throw deleteClassesError
       }
+    }
+
+    // 4. Update Gender if requested
+    if (newGender !== undefined) {
+      const { data: userRecord } = await supabaseAdmin.auth.admin.getUserById(targetUserId)
+      const currentMeta = userRecord?.user?.user_metadata || {}
+      const { error: metaError } = await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
+        user_metadata: {
+          ...currentMeta,
+          gender: newGender
+        }
+      })
+      if (metaError) throw metaError
     }
 
     return NextResponse.json({ success: true })

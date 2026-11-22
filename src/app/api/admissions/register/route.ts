@@ -74,6 +74,7 @@ export async function POST(request: Request) {
         year,
         term,
         class_name: year,
+        gender: gender ? String(gender).trim().toLowerCase() : null,
         teacher_id: null
       }
     })
@@ -106,6 +107,7 @@ export async function POST(request: Request) {
             year,
             term,
             class_name: year,
+            gender: gender ? String(gender).trim().toLowerCase() : null,
             teacher_id: null
           }
         })

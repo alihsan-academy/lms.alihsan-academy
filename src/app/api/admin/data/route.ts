@@ -128,12 +128,14 @@ export async function GET(request: Request) {
       const resolvedYear = sp.year || sp.class_name || meta.year || meta.class_name || null
       const resolvedTerm = sp.term || meta.term || null
       const resolvedClass = sp.class_name || meta.class_name || resolvedYear || null
+      const resolvedGender = (meta.gender || sp.gender || s.gender || null) ? String(meta.gender || sp.gender || s.gender).trim().toLowerCase() : null
 
       return {
         ...s,
         year: resolvedYear,
         term: resolvedTerm,
         class_name: resolvedClass,
+        gender: resolvedGender,
         login_revoked: loginRevoked,
         stopped_by: stoppedBy,
         student_profiles: spList.map((p: any) => ({
@@ -141,6 +143,7 @@ export async function GET(request: Request) {
           year: p.year || p.class_name || resolvedYear,
           term: p.term || resolvedTerm,
           class_name: p.class_name || resolvedClass,
+          gender: p.gender || resolvedGender,
           login_revoked: loginRevoked,
           stopped_by: stoppedBy
         }))
