@@ -193,23 +193,20 @@ export default function StudentDashboard() {
           {/* Rail Header with In-Sidebar Collapse Toggle */}
           <div className={`p-2.5 sm:p-3 border-b border-teal-900/30 flex ${isSidebarCollapsed ? 'flex-col items-center gap-2' : 'items-center justify-between'} shrink-0`}>
             {!isSidebarCollapsed ? (
-              <div className="flex items-center gap-2 overflow-hidden truncate">
-                <div className="w-7 h-7 rounded-lg bg-teal-950/70 border border-teal-500/30 p-1 flex items-center justify-center shrink-0">
+              <div className="flex flex-col gap-1 overflow-hidden truncate">
+                <div className="bg-white rounded-lg p-1.5 flex items-center justify-center shadow-xs border border-white/20 max-w-[150px]">
                   <img
-                    src="/alihsan-emblem-transparent.png"
-                    alt="Al-Ihsan Logo"
-                    className="w-full h-full object-contain"
+                    src="/alihsan-official-logo.png"
+                    alt="Al-Ihsan Academy"
+                    className="h-6 w-auto object-contain"
                   />
                 </div>
-                <div className="truncate">
-                  <p className="text-xs font-bold text-white leading-tight truncate">AL IHSAN</p>
-                  <p className="text-[9px] font-bold uppercase tracking-wider text-teal-400">Student Portal</p>
-                </div>
+                <p className="text-[9px] font-extrabold uppercase tracking-wider text-teal-400 pl-1">Student Portal</p>
               </div>
             ) : (
-              <div className="w-7 h-7 rounded-lg bg-teal-950/70 border border-teal-500/30 p-1 flex items-center justify-center shrink-0" title="Al-Ihsan Student">
+              <div className="w-8 h-8 rounded-lg bg-white p-1 flex items-center justify-center shrink-0 shadow-xs border border-white/20" title="Al-Ihsan Student">
                 <img
-                  src="/alihsan-emblem-transparent.png"
+                  src="/alihsan-emblem.png"
                   alt="Al-Ihsan Logo"
                   className="w-full h-full object-contain"
                 />
