@@ -55,30 +55,15 @@ export default function HomePage() {
         }}
       />
 
-      {/* Navigation / Header with Direction B Official Minaret Vector Logo */}
-      <header className="relative z-10 max-w-5xl mx-auto w-full flex items-center justify-between py-4 border-b border-[#DDE4E0]">
-        <div className="flex items-center gap-3">
-          <svg
-            style={{ width: '36px', height: '42px', flexShrink: 0 }}
-            viewBox="0 0 100 120"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path d="M50 5 L65 30 L35 30 Z" fill="#E8A020" />
-            <path d="M30 35 C55 33, 70 38, 75 42 L72 50 C55 46, 40 45, 27 48 Z" fill="#1A6B4A" />
-            <path d="M24 53 C55 50, 75 55, 80 60 L77 68 C55 64, 38 63, 21 66 Z" fill="#1A6B4A" />
-            <path d="M18 71 C55 67, 80 73, 85 78 L81 86 C55 81, 35 80, 15 84 Z" fill="#1A6B4A" />
-            <rect x="25" y="90" width="8" height="8" fill="#E8A020" />
-          </svg>
-          <div>
-            <div className="text-lg md:text-xl font-bold tracking-tight text-[#1A6B4A] leading-tight">
-              AL IHSAN Academy
-            </div>
-            <div className="text-[10px] text-[#5C7066] uppercase tracking-[0.12em] font-bold">
-              Moral Education
-            </div>
-          </div>
-        </div>
+      {/* Navigation / Header with Official Brand Logo */}
+      <header className="relative z-10 max-w-5xl mx-auto w-full flex items-center justify-between py-3.5 border-b border-[#DDE4E0]">
+        <Link href="/" className="flex items-center group">
+          <img
+            src="/alihsan-official-logo.png"
+            alt="AL IHSAN Academy"
+            className="h-10 sm:h-11 w-auto object-contain transition-transform duration-150 group-hover:scale-[1.02]"
+          />
+        </Link>
 
         <div className="flex items-center gap-2.5">
           <Link 

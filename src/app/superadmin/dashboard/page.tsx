@@ -1050,24 +1050,34 @@ export default function SuperAdminDashboard() {
           isSidebarCollapsed ? 'w-[64px] min-w-[64px]' : 'w-[15%] min-w-[195px] max-w-[230px]'
         }`}>
           {/* Rail Header with In-Sidebar Collapse Toggle */}
-          <div className="p-3 border-b border-slate-800/80 flex items-center justify-between">
-            {!isSidebarCollapsed && (
+          <div className={`p-2.5 sm:p-3 border-b border-slate-800/80 flex ${isSidebarCollapsed ? 'flex-col items-center gap-2' : 'items-center justify-between'}`}>
+            {!isSidebarCollapsed ? (
               <div className="flex items-center gap-2 overflow-hidden truncate">
-                <div className="w-6 h-6 rounded-md bg-[#1A6B4A] text-white flex items-center justify-center font-bold text-xs shrink-0">
-                  AI
+                <div className="w-7 h-7 rounded-lg bg-emerald-950/70 border border-emerald-500/30 p-1 flex items-center justify-center shrink-0">
+                  <img
+                    src="/alihsan-emblem-transparent.png"
+                    alt="Al-Ihsan Logo"
+                    className="w-full h-full object-contain"
+                  />
                 </div>
                 <div className="truncate">
                   <p className="text-xs font-bold text-white leading-tight truncate">AL IHSAN</p>
                   <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-400">Super Admin OS</p>
                 </div>
               </div>
+            ) : (
+              <div className="w-7 h-7 rounded-lg bg-emerald-950/70 border border-emerald-500/30 p-1 flex items-center justify-center shrink-0" title="Al-Ihsan Super Admin">
+                <img
+                  src="/alihsan-emblem-transparent.png"
+                  alt="Al-Ihsan Logo"
+                  className="w-full h-full object-contain"
+                />
+              </div>
             )}
             <button
               type="button"
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className={`p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer ${
-                isSidebarCollapsed ? 'mx-auto' : ''
-              }`}
+              className="p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
               title={isSidebarCollapsed ? "Expand Sidebar (15%)" : "Collapse Sidebar (64px)"}
             >
               {isSidebarCollapsed ? (

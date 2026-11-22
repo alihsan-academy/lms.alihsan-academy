@@ -323,53 +323,29 @@ export default function SharedLogin({
           }}
         />
 
-        {/* Top Header & Branding with Official Minaret Vector */}
+        {/* Top Header & Branding with Official Logo */}
         <div style={{ position: 'relative', zIndex: 2 }}>
           <div
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '14px',
               marginBottom: '28px',
+              backgroundColor: 'rgba(255, 255, 255, 0.98)',
+              padding: '8px 16px',
+              borderRadius: '14px',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)',
             }}
           >
-            <svg
-              style={{ width: '44px', height: '48px', flexShrink: 0 }}
-              viewBox="0 0 100 120"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path d="M50 5 L65 30 L35 30 Z" fill={minaretAccentColor} />
-              <path d="M30 35 C55 33, 70 38, 75 42 L72 50 C55 46, 40 45, 27 48 Z" fill="#FFFFFF" />
-              <path d="M24 53 C55 50, 75 55, 80 60 L77 68 C55 64, 38 63, 21 66 Z" fill="#FFFFFF" />
-              <path d="M18 71 C55 67, 80 73, 85 78 L81 86 C55 81, 35 80, 15 84 Z" fill="#FFFFFF" />
-              <rect x="25" y="90" width="8" height="8" fill={minaretAccentColor} />
-            </svg>
-            <div>
-              <div
-                style={{
-                  fontSize: '24px',
-                  fontWeight: 700,
-                  color: '#FFFFFF',
-                  letterSpacing: '-0.02em',
-                  lineHeight: 1.1,
-                }}
-              >
-                AL IHSAN Academy <span style={{ fontSize: '14px', fontWeight: 500, opacity: 0.85 }}>of Moral Education</span>
-              </div>
-              <div
-                style={{
-                  fontSize: '10px',
-                  color: 'rgba(255,255,255,0.7)',
-                  fontWeight: 600,
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  marginTop: '3px',
-                }}
-              >
-                Building a generation for tomorrow
-              </div>
-            </div>
+            <img
+              src="/alihsan-official-logo.png"
+              alt="AL IHSAN Academy"
+              style={{
+                height: '46px',
+                width: 'auto',
+                objectFit: 'contain',
+                display: 'block',
+              }}
+            />
           </div>
 
           <div
@@ -481,27 +457,12 @@ export default function SharedLogin({
       <div className="order-1 lg:order-2 flex-1 flex items-center justify-center p-3.5 sm:p-8 lg:p-12 bg-[#F8F9FA] box-border w-full">
         <div className="bg-white rounded-2xl border border-[#DDE4E0] p-5 sm:p-8 w-full max-w-[420px] shadow-sm relative z-10 box-border">
           {/* Mobile Top Brand Bar (Visible on mobile screens before credentials) */}
-          <div className="flex items-center gap-3 mb-4 lg:hidden pb-3.5 border-b border-[#DDE4E0]">
-            <svg
-              className="w-8 h-9 shrink-0"
-              viewBox="0 0 100 120"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path d="M50 5 L65 30 L35 30 Z" fill={minaretAccentColor} />
-              <path d="M30 35 C55 33, 70 38, 75 42 L72 50 C55 46, 40 45, 27 48 Z" fill={themeColor} />
-              <path d="M24 53 C55 50, 75 55, 80 60 L77 68 C55 64, 38 63, 21 66 Z" fill={themeColor} />
-              <path d="M18 71 C55 67, 80 73, 85 78 L81 86 C55 81, 35 80, 15 84 Z" fill={themeColor} />
-              <rect x="25" y="90" width="8" height="8" fill={minaretAccentColor} />
-            </svg>
-            <div>
-              <div className="text-sm font-bold tracking-tight text-[#112221] leading-tight">
-                AL IHSAN Academy
-              </div>
-              <div className="text-[10px] text-[#5C7066] font-semibold uppercase tracking-wider">
-                Moral Education
-              </div>
-            </div>
+          <div className="flex items-center justify-between mb-4 lg:hidden pb-3 border-b border-[#DDE4E0]">
+            <img
+              src="/alihsan-official-logo.png"
+              alt="AL IHSAN Academy"
+              className="h-9 w-auto object-contain"
+            />
           </div>
 
           {/* Portal Pill Badge */}
