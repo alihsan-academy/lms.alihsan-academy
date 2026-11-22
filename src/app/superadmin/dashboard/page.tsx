@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
 import { AcademyHeader } from '@/components/academy-header'
-import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, CheckCircle2, Search, AlertCircle, X, RefreshCw, Trash, Pencil, Save, ChevronDown, UserCheck, Clock, XCircle, Lock, Key, Calendar, Filter, Copy, Mail } from 'lucide-react'
+import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, CheckCircle2, Search, AlertCircle, X, RefreshCw, Trash, Pencil, Save, ChevronDown, UserCheck, Clock, XCircle, Lock, Key, Calendar, Filter, Copy, Mail, ChevronLeft, ChevronRight } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -40,6 +40,7 @@ export default function SuperAdminDashboard() {
   }
 
   const [activeTab, setActiveTab] = useState<Tab>('statistics')
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const supabase = createClient()
 
@@ -1042,18 +1043,188 @@ export default function SuperAdminDashboard() {
         </div>
       </header>
 
-      {/* Navigation: Responsive - Scrollable on Mobile, Centered on Desktop */}
-      <div className="bg-white border-b border-border px-3 md:px-8 overflow-x-auto scrollbar-none">
-        <nav className="flex space-x-1.5 max-w-6xl mx-auto py-2 shrink-0 min-w-max md:min-w-0">
-          <NavTab active={activeTab === 'statistics'} onClick={() => setActiveTab('statistics')} icon={<BarChart3 />} label="Statistics" />
-          <NavTab active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<GraduationCap />} label="Students" />
-          <NavTab active={activeTab === 'teachers'} onClick={() => setActiveTab('teachers')} icon={<BookOpen />} label="Teachers" />
-          <NavTab active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={<CheckCircle />} label="Attendance" />
-          <NavTab active={activeTab === 'manage'} onClick={() => setActiveTab('manage')} icon={<Users />} label="Manage Users" />
-        </nav>
-      </div>
+      {/* Main Container with 15% Collapsible Left Rail */}
+      <div className="flex-1 flex flex-col md:flex-row min-h-[calc(100vh-65px)]">
+        {/* Desktop 15% Collapsible Left Rail */}
+        <aside className={`hidden md:flex flex-col bg-[#0B1320] text-slate-300 border-r border-slate-800 transition-all duration-200 shrink-0 sticky top-[65px] h-[calc(100vh-65px)] z-30 ${
+          isSidebarCollapsed ? 'w-[64px] min-w-[64px]' : 'w-[15%] min-w-[195px] max-w-[230px]'
+        }`}>
+          {/* Rail Header with In-Sidebar Collapse Toggle */}
+          <div className="p-3 border-b border-slate-800/80 flex items-center justify-between">
+            {!isSidebarCollapsed && (
+              <div className="flex items-center gap-2 overflow-hidden truncate">
+                <div className="w-6 h-6 rounded-md bg-[#1A6B4A] text-white flex items-center justify-center font-bold text-xs shrink-0">
+                  AI
+                </div>
+                <div className="truncate">
+                  <p className="text-xs font-bold text-white leading-tight truncate">AL IHSAN</p>
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-400">Super Admin OS</p>
+                </div>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className={`p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer ${
+                isSidebarCollapsed ? 'mx-auto' : ''
+              }`}
+              title={isSidebarCollapsed ? "Expand Sidebar (15%)" : "Collapse Sidebar (64px)"}
+            >
+              {isSidebarCollapsed ? (
+                <ChevronRight className="h-4 w-4" />
+              ) : (
+                <ChevronLeft className="h-4 w-4" />
+              )}
+            </button>
+          </div>
 
-      <main className="flex-1 w-full max-w-6xl mx-auto p-4 md:p-8">
+          {/* Navigation Sections */}
+          <div className="flex-1 py-3 px-2 space-y-4 overflow-y-auto custom-scrollbar text-xs">
+            <div>
+              {!isSidebarCollapsed && (
+                <span className="px-2 mb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 block">
+                  Analytics
+                </span>
+              )}
+              <nav className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('statistics')}
+                  title="Statistics"
+                  className={`w-full text-left px-2.5 py-2 rounded-lg font-medium text-xs flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                    isSidebarCollapsed ? 'justify-center' : 'justify-between'
+                  } ${
+                    activeTab === 'statistics'
+                      ? 'bg-[#1A6B4A] text-white font-semibold shadow-xs'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 truncate">
+                    <BarChart3 className="h-4 w-4 shrink-0" />
+                    {!isSidebarCollapsed && <span className="truncate">Statistics</span>}
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('attendance')}
+                  title="Attendance Log"
+                  className={`w-full text-left px-2.5 py-2 rounded-lg font-medium text-xs flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                    isSidebarCollapsed ? 'justify-center' : 'justify-between'
+                  } ${
+                    activeTab === 'attendance'
+                      ? 'bg-[#1A6B4A] text-white font-semibold shadow-xs'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 truncate">
+                    <CheckCircle className="h-4 w-4 shrink-0" />
+                    {!isSidebarCollapsed && <span className="truncate">Attendance</span>}
+                  </div>
+                </button>
+              </nav>
+            </div>
+
+            <div>
+              {!isSidebarCollapsed && (
+                <span className="px-2 mb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 block">
+                  Academic Rosters
+                </span>
+              )}
+              <nav className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('students')}
+                  title={`Students (${students.length})`}
+                  className={`w-full text-left px-2.5 py-2 rounded-lg font-medium text-xs flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                    isSidebarCollapsed ? 'justify-center' : 'justify-between'
+                  } ${
+                    activeTab === 'students'
+                      ? 'bg-[#1A6B4A] text-white font-semibold shadow-xs'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 truncate">
+                    <GraduationCap className="h-4 w-4 shrink-0" />
+                    {!isSidebarCollapsed && <span className="truncate">Students</span>}
+                  </div>
+                  {!isSidebarCollapsed && students.length > 0 && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-900 text-slate-300 font-mono">
+                      {students.length}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('teachers')}
+                  title={`Educator (${teachers.length})`}
+                  className={`w-full text-left px-2.5 py-2 rounded-lg font-medium text-xs flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                    isSidebarCollapsed ? 'justify-center' : 'justify-between'
+                  } ${
+                    activeTab === 'teachers'
+                      ? 'bg-[#1A6B4A] text-white font-semibold shadow-xs'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 truncate">
+                    <BookOpen className="h-4 w-4 shrink-0" />
+                    {!isSidebarCollapsed && <span className="truncate">Educator</span>}
+                  </div>
+                  {!isSidebarCollapsed && teachers.length > 0 && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-900 text-slate-300 font-mono">
+                      {teachers.length}
+                    </span>
+                  )}
+                </button>
+              </nav>
+            </div>
+
+            <div>
+              {!isSidebarCollapsed && (
+                <span className="px-2 mb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 block">
+                  Governance
+                </span>
+              )}
+              <nav className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('manage')}
+                  title="Manage Users"
+                  className={`w-full text-left px-2.5 py-2 rounded-lg font-medium text-xs flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                    isSidebarCollapsed ? 'justify-center' : 'justify-between'
+                  } ${
+                    activeTab === 'manage'
+                      ? 'bg-[#1A6B4A] text-white font-semibold shadow-xs'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 truncate">
+                    <Users className="h-4 w-4 shrink-0" />
+                    {!isSidebarCollapsed && <span className="truncate">Manage Users</span>}
+                  </div>
+                </button>
+              </nav>
+            </div>
+          </div>
+
+          {/* Compact User Footer */}
+          <div className="p-2.5 border-t border-slate-800/80 bg-[#070D18]">
+            <div className={`flex items-center gap-2 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
+              <div className="w-6 h-6 rounded-full bg-emerald-800 text-white flex items-center justify-center font-bold text-[10px] shrink-0 border border-emerald-600/40">
+                SA
+              </div>
+              {!isSidebarCollapsed && (
+                <div className="truncate">
+                  <p className="text-[11px] font-semibold text-white leading-tight truncate">Super Admin</p>
+                  <p className="text-[9px] text-slate-400 truncate">Al-Ihsan Academy</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </aside>
+
+        <main className="flex-1 w-full min-w-0 p-4 md:p-6 lg:p-8 overflow-y-auto">
         <AnimatePresence mode="wait">
           {activeTab === 'statistics' && (
             <PageTransition key="statistics" className="space-y-8">
@@ -2353,15 +2524,7 @@ export default function SuperAdminDashboard() {
           )}
         </AnimatePresence>
       </main>
-
-      {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-border flex justify-around p-3 z-50 md:hidden pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.08)] rounded-t-3xl overflow-x-auto">
-        <NavBtn active={activeTab === 'statistics'} onClick={() => setActiveTab('statistics')} icon={<BarChart3 className={activeTab === 'statistics' ? 'fill-primary/20' : ''} />} label="Stats" />
-        <NavBtn active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<GraduationCap className={activeTab === 'students' ? 'fill-primary/20' : ''} />} label="Students" />
-        <NavBtn active={activeTab === 'teachers'} onClick={() => setActiveTab('teachers')} icon={<BookOpen className={activeTab === 'teachers' ? 'fill-primary/20' : ''} />} label="Teachers" />
-        <NavBtn active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={<CheckCircle className={activeTab === 'attendance' ? 'fill-primary/20' : ''} />} label="Attendance" />
-        <NavBtn active={activeTab === 'manage'} onClick={() => setActiveTab('manage')} icon={<Users className={activeTab === 'manage' ? 'fill-primary/20' : ''} />} label="Manage" />
-      </nav>
+      </div>
 
       {/* Profile Modal */}
       <AnimatePresence>
@@ -3033,7 +3196,7 @@ export default function SuperAdminDashboard() {
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-border flex justify-around p-1 z-40 md:hidden pb-safe shadow-lg">
         <NavBtn active={activeTab === 'statistics'} onClick={() => setActiveTab('statistics')} icon={<BarChart3 className="size-4" />} label="Stats" />
         <NavBtn active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<GraduationCap className="size-4" />} label="Students" />
-        <NavBtn active={activeTab === 'teachers'} onClick={() => setActiveTab('teachers')} icon={<BookOpen className="size-4" />} label="Teachers" />
+        <NavBtn active={activeTab === 'teachers'} onClick={() => setActiveTab('teachers')} icon={<BookOpen className="size-4" />} label="Educator" />
         <NavBtn active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={<CheckCircle className="size-4" />} label="Attendance" />
         <NavBtn active={activeTab === 'manage'} onClick={() => setActiveTab('manage')} icon={<Users className="size-4" />} label="Users" />
       </nav>
@@ -3099,9 +3262,9 @@ function NavTab({ active, onClick, icon, label }: { active: boolean, onClick: ()
   return (
     <button 
       onClick={onClick} 
-      className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 border shrink-0 whitespace-nowrap min-h-[36px] ${
+      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 border shrink-0 whitespace-nowrap min-h-[36px] active:scale-[0.98] cursor-pointer ${
         active 
-          ? 'bg-[#6B1E2E] text-white border-[#6B1E2E] shadow-sm' 
+          ? 'bg-[#1A6B4A] text-white border-[#1A6B4A] shadow-xs' 
           : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
       }`}
     >
@@ -3115,9 +3278,9 @@ function NavBtn({ active, onClick, icon, label }: { active: boolean, onClick: ()
   return (
     <button 
       onClick={onClick} 
-      className={`flex flex-col items-center justify-center min-h-[48px] py-1 px-1 w-full transition-colors ${active ? 'text-primary font-bold' : 'text-muted-foreground'}`}
+      className={`flex flex-col items-center justify-center min-h-[48px] py-1 px-1 w-full transition-all active:scale-[0.97] cursor-pointer ${active ? 'text-[#1A6B4A] font-bold' : 'text-muted-foreground'}`}
     >
-      <div className={`p-1 rounded-md mb-0.5 ${active ? 'bg-primary/10' : ''}`}>
+      <div className={`p-1 rounded-md mb-0.5 ${active ? 'bg-[#1A6B4A]/10 text-[#1A6B4A]' : ''}`}>
         {icon}
       </div>
       <span className="text-[10px] whitespace-nowrap">{label}</span>

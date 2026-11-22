@@ -483,9 +483,9 @@ export default function TeacherDashboard() {
         <nav className="flex space-x-1.5 max-w-5xl mx-auto py-2">
           <button 
             onClick={() => setActiveTab('classes')} 
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 border ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 border active:scale-[0.98] cursor-pointer ${
               activeTab === 'classes' 
-                ? 'bg-[#1E293B] text-white border-[#1E293B] shadow-sm' 
+                ? 'bg-[#1A6B4A] text-white border-[#1A6B4A] shadow-xs' 
                 : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
             }`}
           >
@@ -493,9 +493,9 @@ export default function TeacherDashboard() {
           </button>
           <button 
             onClick={() => setActiveTab('create')} 
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 border ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 border active:scale-[0.98] cursor-pointer ${
               activeTab === 'create' 
-                ? 'bg-[#1E293B] text-white border-[#1E293B] shadow-sm' 
+                ? 'bg-[#1A6B4A] text-white border-[#1A6B4A] shadow-xs' 
                 : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
             }`}
           >
@@ -503,9 +503,9 @@ export default function TeacherDashboard() {
           </button>
           <button 
             onClick={() => setActiveTab('stats')} 
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 border ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 border active:scale-[0.98] cursor-pointer ${
               activeTab === 'stats' 
-                ? 'bg-[#1E293B] text-white border-[#1E293B] shadow-sm' 
+                ? 'bg-[#1A6B4A] text-white border-[#1A6B4A] shadow-xs' 
                 : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
             }`}
           >
@@ -513,9 +513,9 @@ export default function TeacherDashboard() {
           </button>
           <button 
             onClick={() => setActiveTab('profile')} 
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 border ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 border active:scale-[0.98] cursor-pointer ${
               activeTab === 'profile' 
-                ? 'bg-[#1E293B] text-white border-[#1E293B] shadow-sm' 
+                ? 'bg-[#1A6B4A] text-white border-[#1A6B4A] shadow-xs' 
                 : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
             }`}
           >

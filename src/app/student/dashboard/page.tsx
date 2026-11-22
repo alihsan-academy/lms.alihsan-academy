@@ -188,9 +188,9 @@ export default function StudentDashboard() {
         <nav className="flex space-x-1.5 max-w-5xl mx-auto py-2">
           <button 
             onClick={() => setActiveTab('home')} 
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 border ${
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1.5 border ${
               activeTab === 'home' 
-                ? 'bg-[#0D4A47] text-white border-[#0D4A47] shadow-sm' 
+                ? 'bg-[#1A6B4A] text-white border-[#1A6B4A] shadow-xs' 
                 : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
             }`}
           >
@@ -198,9 +198,9 @@ export default function StudentDashboard() {
           </button>
           <button 
             onClick={() => setActiveTab('attendance')} 
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 border ${
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1.5 border ${
               activeTab === 'attendance' 
-                ? 'bg-[#0D4A47] text-white border-[#0D4A47] shadow-sm' 
+                ? 'bg-[#1A6B4A] text-white border-[#1A6B4A] shadow-xs' 
                 : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
             }`}
           >
@@ -208,9 +208,9 @@ export default function StudentDashboard() {
           </button>
           <button 
             onClick={() => setActiveTab('profile')} 
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 border ${
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1.5 border ${
               activeTab === 'profile' 
-                ? 'bg-[#0D4A47] text-white border-[#0D4A47] shadow-sm' 
+                ? 'bg-[#1A6B4A] text-white border-[#1A6B4A] shadow-xs' 
                 : 'text-muted-foreground hover:text-foreground border-transparent hover:bg-muted'
             }`}
           >

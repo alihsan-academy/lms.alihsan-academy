@@ -439,24 +439,24 @@ export function AdminAttendanceManager({
           </p>
         </div>
 
-        <div className="flex bg-muted p-1 rounded-lg gap-1 self-start md:self-auto border border-border overflow-x-auto max-w-full">
+        <div className="flex bg-muted p-1 rounded-xl gap-1 self-start md:self-auto border border-border overflow-x-auto max-w-full">
           <button
             onClick={() => setSearchMode('teacher')}
-            className={`whitespace-nowrap px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 shrink-0 ${
+            className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0 active:scale-[0.98] cursor-pointer ${
               searchMode === 'teacher'
-                ? 'bg-[#1A6B4A] text-white shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-[#1A6B4A] text-white shadow-xs'
+                : 'text-muted-foreground hover:text-foreground hover:bg-white/60'
             }`}
           >
-            <UserCheck className="h-3.5 w-3.5" /> By Teacher
+            <UserCheck className="h-3.5 w-3.5" /> By Educator
           </button>
 
           <button
             onClick={() => setSearchMode('student')}
-            className={`whitespace-nowrap px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 shrink-0 ${
+            className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0 active:scale-[0.98] cursor-pointer ${
               searchMode === 'student'
-                ? 'bg-[#1A6B4A] text-white shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-[#1A6B4A] text-white shadow-xs'
+                : 'text-muted-foreground hover:text-foreground hover:bg-white/60'
             }`}
           >
             <GraduationCap className="h-3.5 w-3.5" /> By Student
@@ -464,10 +464,10 @@ export function AdminAttendanceManager({
 
           <button
             onClick={() => setSearchMode('all')}
-            className={`whitespace-nowrap px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 shrink-0 ${
+            className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0 active:scale-[0.98] cursor-pointer ${
               searchMode === 'all'
-                ? 'bg-[#1A6B4A] text-white shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-[#1A6B4A] text-white shadow-xs'
+                : 'text-muted-foreground hover:text-foreground hover:bg-white/60'
             }`}
           >
             <Clock className="h-3.5 w-3.5" /> Academy Log
@@ -475,10 +475,10 @@ export function AdminAttendanceManager({
 
           <button
             onClick={() => setSearchMode('filter')}
-            className={`whitespace-nowrap px-3 py-1.5 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 shrink-0 ${
+            className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0 active:scale-[0.98] cursor-pointer ${
               searchMode === 'filter'
-                ? 'bg-[#D97706] text-white shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-[#D97706] text-white shadow-xs'
+                : 'text-muted-foreground hover:text-foreground hover:bg-white/60'
             }`}
           >
             <Sparkles className="h-3.5 w-3.5" /> Smart Filter
