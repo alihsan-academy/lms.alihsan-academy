@@ -25,7 +25,7 @@ import { StudentSelectDropdown } from '@/components/student-select-dropdown'
 
 import TeacherProfilePage from '@/app/teacher/profile/page'
 
-type Tab = 'classes' | 'create' | 'stats' | 'profile'
+type Tab = 'classes' | 'create' | 'groups' | 'stats' | 'profile'
 
 export default function TeacherDashboard() {
   const formatUKTime = (scheduledAt: string) => {
@@ -57,6 +57,13 @@ export default function TeacherDashboard() {
   const [allTeacherClasses, setAllTeacherClasses] = useState<any[]>([])
   const [allAttendance, setAllAttendance] = useState<any[]>([])
   const [currentTime, setCurrentTime] = useState<number>(() => Date.now())
+
+  // Permanent Student Groups state
+  const [groups, setGroups] = useState<any[]>([])
+  const [isGroupsLoading, setIsGroupsLoading] = useState(false)
+  const [preselectedGroupId, setPreselectedGroupId] = useState<string | null>(null)
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false)
+  const [editingGroup, setEditingGroup] = useState<any | null>(null)
 
   // Student preview modal state
   const [previewStudent, setPreviewStudent] = useState<any>(null)
@@ -145,10 +152,73 @@ export default function TeacherDashboard() {
         setSelectedStudentId(mappedStudents[0].id)
       }
       await fetchAllTeacherData()
+      await fetchGroups()
       setIsLoading(false)
     }
     init()
   }, [])
+
+  const fetchGroups = async () => {
+    try {
+      setIsGroupsLoading(true)
+      const res = await fetch('/api/teacher/groups')
+      if (res.ok) {
+        const data = await res.json()
+        setGroups(data.groups || [])
+      }
+    } catch (err) {
+      console.error('Failed to load student groups:', err)
+    } finally {
+      setIsGroupsLoading(false)
+    }
+  }
+
+  const handleSaveGroup = async (groupData: { id?: string; name: string; studentIds: string[] }) => {
+    try {
+      const isEdit = !!groupData.id
+      const res = await fetch('/api/teacher/groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: isEdit ? 'update' : 'create',
+          group: groupData
+        })
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || 'Failed to save group')
+
+      toast.success(isEdit ? 'Group updated successfully!' : 'Permanent group created successfully!')
+      setGroups(result.groups || [])
+      setIsGroupModalOpen(false)
+      setEditingGroup(null)
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save group')
+    }
+  }
+
+  const handleDeleteGroup = async (groupId: string, groupName: string) => {
+    if (!window.confirm(`Are you sure you want to delete the group "${groupName}"? Students will remain assigned to you, but the group will be removed.`)) {
+      return
+    }
+    try {
+      const res = await fetch('/api/teacher/groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete',
+          groupId
+        })
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || 'Failed to delete group')
+
+      toast.success(`Group "${groupName}" deleted.`)
+      setGroups(result.groups || [])
+      if (preselectedGroupId === groupId) setPreselectedGroupId(null)
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete group')
+    }
+  }
 
   useEffect(() => {
     if (teacherId && selectedStudentId) {
@@ -522,9 +592,9 @@ export default function TeacherDashboard() {
           </div>
 
           {/* Navigation Items */}
-          <div className="flex-1 py-3 px-2 space-y-1 overflow-y-auto custom-scrollbar text-xs">
+          <div className="flex-1 py-3 px-2 space-y-1.5 overflow-y-auto custom-scrollbar text-sm">
             {!isSidebarCollapsed && (
-              <span className="px-2 mb-1.5 text-[9px] font-bold uppercase tracking-wider text-emerald-500/70 block">
+              <span className="px-2.5 mb-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-400/80 block">
                 Teaching Workspace
               </span>
             )}
@@ -533,35 +603,65 @@ export default function TeacherDashboard() {
                 type="button"
                 onClick={() => setActiveTab('classes')}
                 title="Schedule"
-                className={`w-full text-left px-2.5 py-2 rounded-lg font-semibold text-xs flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                className={`w-full text-left px-3 py-2.5 rounded-xl font-semibold text-sm flex items-center transition-all active:scale-[0.98] cursor-pointer ${
                   isSidebarCollapsed ? 'justify-center' : 'justify-between'
                 } ${
                   activeTab === 'classes'
                     ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
-                    : 'text-slate-400 hover:text-white hover:bg-emerald-950/60'
+                    : 'text-slate-300 hover:text-white hover:bg-emerald-950/60'
                 }`}
               >
-                <div className="flex items-center gap-2.5 truncate">
-                  <Calendar className="h-4 w-4 shrink-0" />
+                <div className="flex items-center gap-3 truncate">
+                  <Calendar className="h-4.5 w-4.5 shrink-0" />
                   {!isSidebarCollapsed && <span className="truncate">Schedule</span>}
                 </div>
               </button>
 
               <button
                 type="button"
-                onClick={() => setActiveTab('create')}
+                onClick={() => {
+                  setPreselectedGroupId(null)
+                  setActiveTab('create')
+                }}
                 title="New Class"
-                className={`w-full text-left px-2.5 py-2 rounded-lg font-semibold text-xs flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                className={`w-full text-left px-3 py-2.5 rounded-xl font-semibold text-sm flex items-center transition-all active:scale-[0.98] cursor-pointer ${
                   isSidebarCollapsed ? 'justify-center' : 'justify-between'
                 } ${
                   activeTab === 'create'
                     ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
-                    : 'text-slate-400 hover:text-white hover:bg-emerald-950/60'
+                    : 'text-slate-300 hover:text-white hover:bg-emerald-950/60'
                 }`}
               >
-                <div className="flex items-center gap-2.5 truncate">
-                  <Plus className="h-4 w-4 shrink-0" />
+                <div className="flex items-center gap-3 truncate">
+                  <Plus className="h-4.5 w-4.5 shrink-0" />
                   {!isSidebarCollapsed && <span className="truncate">New Class</span>}
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('groups')}
+                title="Permanent Student Groups"
+                className={`w-full text-left px-3 py-2.5 rounded-xl font-semibold text-sm flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                  isSidebarCollapsed ? 'justify-center' : 'justify-between'
+                } ${
+                  activeTab === 'groups'
+                    ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
+                    : 'text-slate-300 hover:text-white hover:bg-emerald-950/60'
+                }`}
+              >
+                <div className="flex items-center gap-3 truncate w-full">
+                  <Users className="h-4.5 w-4.5 shrink-0" />
+                  {!isSidebarCollapsed && (
+                    <div className="flex items-center justify-between w-full">
+                      <span className="truncate">Groups / Batches</span>
+                      {groups.length > 0 && (
+                        <span className="ml-1.5 px-1.5 py-0.2 bg-emerald-800 text-emerald-200 text-[10px] font-bold rounded-full border border-emerald-600/50">
+                          {groups.length}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </button>
 
@@ -569,16 +669,16 @@ export default function TeacherDashboard() {
                 type="button"
                 onClick={() => setActiveTab('stats')}
                 title="Attendance & Stats"
-                className={`w-full text-left px-2.5 py-2 rounded-lg font-semibold text-xs flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                className={`w-full text-left px-3 py-2.5 rounded-xl font-semibold text-sm flex items-center transition-all active:scale-[0.98] cursor-pointer ${
                   isSidebarCollapsed ? 'justify-center' : 'justify-between'
                 } ${
                   activeTab === 'stats'
                     ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
-                    : 'text-slate-400 hover:text-white hover:bg-emerald-950/60'
+                    : 'text-slate-300 hover:text-white hover:bg-emerald-950/60'
                 }`}
               >
-                <div className="flex items-center gap-2.5 truncate">
-                  <BarChart3 className="h-4 w-4 shrink-0" />
+                <div className="flex items-center gap-3 truncate">
+                  <BarChart3 className="h-4.5 w-4.5 shrink-0" />
                   {!isSidebarCollapsed && <span className="truncate">Attendance & Stats</span>}
                 </div>
               </button>
@@ -587,16 +687,16 @@ export default function TeacherDashboard() {
                 type="button"
                 onClick={() => setActiveTab('profile')}
                 title="Profile"
-                className={`w-full text-left px-2.5 py-2 rounded-lg font-semibold text-xs flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                className={`w-full text-left px-3 py-2.5 rounded-xl font-semibold text-sm flex items-center transition-all active:scale-[0.98] cursor-pointer ${
                   isSidebarCollapsed ? 'justify-center' : 'justify-between'
                 } ${
                   activeTab === 'profile'
                     ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
-                    : 'text-slate-400 hover:text-white hover:bg-emerald-950/60'
+                    : 'text-slate-300 hover:text-white hover:bg-emerald-950/60'
                 }`}
               >
-                <div className="flex items-center gap-2.5 truncate">
-                  <User className="h-4 w-4 shrink-0" />
+                <div className="flex items-center gap-3 truncate">
+                  <User className="h-4.5 w-4.5 shrink-0" />
                   {!isSidebarCollapsed && <span className="truncate">Profile</span>}
                 </div>
               </button>
@@ -604,15 +704,15 @@ export default function TeacherDashboard() {
           </div>
 
           {/* Compact User Footer */}
-          <div className="p-2.5 border-t border-emerald-900/40 bg-[#061510] shrink-0">
-            <div className={`flex items-center gap-2 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-              <div className="w-7 h-7 rounded-full bg-emerald-800 text-white flex items-center justify-center font-bold text-xs shrink-0 border border-emerald-600/40">
+          <div className="p-3 border-t border-emerald-900/40 bg-[#061510] shrink-0">
+            <div className={`flex items-center gap-2.5 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
+              <div className="w-8 h-8 rounded-full bg-emerald-800 text-white flex items-center justify-center font-bold text-xs shrink-0 border border-emerald-600/40">
                 {teacherName ? teacherName.slice(0, 2).toUpperCase() : 'ED'}
               </div>
               {!isSidebarCollapsed && (
                 <div className="truncate">
-                  <p className="text-xs font-bold text-white leading-tight truncate">{teacherName || 'Educator'}</p>
-                  <p className="text-[9px] text-emerald-400/80 truncate">Al-Ihsan Educator</p>
+                  <p className="text-sm font-bold text-white leading-tight truncate">{teacherName || 'Educator'}</p>
+                  <p className="text-[10px] text-emerald-400/80 truncate">Al-Ihsan Educator</p>
                 </div>
               )}
             </div>
@@ -720,6 +820,14 @@ export default function TeacherDashboard() {
                                 {parsed.statusLabel}
                               </span>
 
+                              {/* Group Class Badge */}
+                              {parsed.is_group && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-800 bg-purple-50 border border-purple-200 px-2.5 py-0.5 rounded-full">
+                                  <Users className="h-3 w-3 text-purple-700" />
+                                  <span>{parsed.group_name || 'Group Class'}</span>
+                                </span>
+                              )}
+
                               {/* Duration Badge for completed classes */}
                               {c.status === 'completed' && parsed.duration_minutes ? (
                                 <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
@@ -794,11 +902,41 @@ export default function TeacherDashboard() {
               <CreateClassForm
                 students={students}
                 teacherId={teacherId}
+                groups={groups}
+                preselectedGroupId={preselectedGroupId}
+                onOpenGroupManager={() => {
+                  setEditingGroup(null)
+                  setIsGroupModalOpen(true)
+                }}
                 onCreated={(studentId) => {
                   setSelectedStudentId(studentId)
+                  setPreselectedGroupId(null)
                   setActiveTab('classes')
                   fetchClasses(studentId)
                   fetchAllTeacherData()
+                }}
+              />
+            </PageTransition>
+          )}
+
+          {activeTab === 'groups' && (
+            <PageTransition key="groups">
+              <GroupsManager
+                groups={groups}
+                students={students}
+                isLoading={isGroupsLoading}
+                onOpenCreate={() => {
+                  setEditingGroup(null)
+                  setIsGroupModalOpen(true)
+                }}
+                onOpenEdit={(group) => {
+                  setEditingGroup(group)
+                  setIsGroupModalOpen(true)
+                }}
+                onDeleteGroup={(id, name) => handleDeleteGroup(id, name)}
+                onScheduleGroup={(groupId) => {
+                  setPreselectedGroupId(groupId)
+                  setActiveTab('create')
                 }}
               />
             </PageTransition>
@@ -1412,9 +1550,10 @@ export default function TeacherDashboard() {
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-border flex justify-around p-3 z-50 md:hidden pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.08)] rounded-t-3xl">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-border flex justify-around p-2.5 z-50 md:hidden pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.08)] rounded-t-3xl">
         <NavBtn active={activeTab === 'classes'} onClick={() => setActiveTab('classes')} icon={<Calendar className={activeTab === 'classes' ? 'fill-primary/20' : ''} />} label="Schedule" />
-        <NavBtn active={activeTab === 'create'} onClick={() => setActiveTab('create')} icon={<Plus className={activeTab === 'create' ? 'fill-primary/20' : ''} />} label="Create" />
+        <NavBtn active={activeTab === 'create'} onClick={() => { setPreselectedGroupId(null); setActiveTab('create') }} icon={<Plus className={activeTab === 'create' ? 'fill-primary/20' : ''} />} label="Create" />
+        <NavBtn active={activeTab === 'groups'} onClick={() => setActiveTab('groups')} icon={<Users className={activeTab === 'groups' ? 'fill-primary/20' : ''} />} label="Groups" />
         <NavBtn active={activeTab === 'stats'} onClick={() => setActiveTab('stats')} icon={<BarChart3 className={activeTab === 'stats' ? 'fill-primary/20' : ''} />} label="Stats" />
         <NavBtn active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<User className={activeTab === 'profile' ? 'fill-primary/20' : ''} />} label="Profile" />
       </nav>
@@ -1425,6 +1564,18 @@ export default function TeacherDashboard() {
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
         onEdit={(s) => openStatusEdit(s)}
+      />
+
+      {/* Permanent Student Group Modal */}
+      <GroupModal
+        isOpen={isGroupModalOpen}
+        onClose={() => {
+          setIsGroupModalOpen(false)
+          setEditingGroup(null)
+        }}
+        group={editingGroup}
+        students={students}
+        onSave={handleSaveGroup}
       />
     </div>
   )
@@ -1454,7 +1605,25 @@ function NavBtn({ active, onClick, icon, label }: { active: boolean, onClick: ()
   )
 }
 
-function CreateClassForm({ students, teacherId, onCreated }: { students: any[], teacherId: string | null, onCreated: (studentId: string) => void }) {
+function CreateClassForm({ 
+  students, 
+  teacherId, 
+  groups,
+  preselectedGroupId,
+  onOpenGroupManager,
+  onCreated 
+}: { 
+  students: any[], 
+  teacherId: string | null, 
+  groups: any[],
+  preselectedGroupId?: string | null,
+  onOpenGroupManager: () => void,
+  onCreated: (studentId: string) => void 
+}) {
+  const [scheduleMode, setScheduleMode] = useState<'individual' | 'group'>(
+    preselectedGroupId ? 'group' : 'individual'
+  )
+  const [selectedGroupId, setSelectedGroupId] = useState<string>(preselectedGroupId || (groups[0]?.id || ''))
   const [formData, setFormData] = useState({ 
     studentId: '', 
     title: 'Moral Class Alihsan Academy',
@@ -1465,16 +1634,47 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
-    if (students.length > 0) setFormData(prev => ({ ...prev, studentId: students[0].id }))
+    if (preselectedGroupId) {
+      setScheduleMode('group')
+      setSelectedGroupId(preselectedGroupId)
+    }
+  }, [preselectedGroupId])
+
+  useEffect(() => {
+    if (students.length > 0 && !formData.studentId) {
+      setFormData(prev => ({ ...prev, studentId: students[0].id }))
+    }
   }, [students])
+
+  useEffect(() => {
+    if (groups.length > 0 && !selectedGroupId) {
+      setSelectedGroupId(groups[0].id)
+    }
+  }, [groups])
+
+  const selectedGroup = groups.find(g => g.id === selectedGroupId)
+  const selectedGroupStudents = students.filter(s => selectedGroup?.student_ids?.includes(s.id))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!teacherId) return
-    if (!formData.studentId) {
-      toast.error('Please select a student')
-      return
+
+    if (scheduleMode === 'individual') {
+      if (!formData.studentId) {
+        toast.error('Please select a student')
+        return
+      }
+    } else {
+      if (!selectedGroup) {
+        toast.error('Please select a group, or create one first')
+        return
+      }
+      if (!selectedGroup.student_ids || selectedGroup.student_ids.length === 0) {
+        toast.error('This group has no students. Please edit the group to add students.')
+        return
+      }
     }
+
     if (!formData.date) {
       toast.error('Please select a class date')
       return
@@ -1497,16 +1697,26 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
 
       const sessionTitle = formData.title.trim() || 'Moral Class Alihsan Academy'
 
+      const payload = scheduleMode === 'group' ? {
+        studentIds: selectedGroup?.student_ids,
+        groupId: selectedGroup?.id,
+        groupName: selectedGroup?.name,
+        title: sessionTitle,
+        date: formData.date,
+        time: formData.time,
+        repeatWeekly: formData.repeatWeekly
+      } : {
+        studentId: formData.studentId,
+        title: sessionTitle,
+        date: formData.date,
+        time: formData.time,
+        repeatWeekly: formData.repeatWeekly
+      }
+
       const response = await fetch('/api/classes/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          studentId: formData.studentId,
-          title: sessionTitle,
-          date: formData.date,
-          time: formData.time,
-          repeatWeekly: formData.repeatWeekly
-        })
+        body: JSON.stringify(payload)
       })
 
       const result = await response.json()
@@ -1521,7 +1731,12 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
         minute: '2-digit',
         hour12: true
       })
-      toast.success(`"${sessionTitle}" scheduled for ${ukDisplay} UK time.`)
+
+      if (scheduleMode === 'group') {
+        toast.success(`Group Class "${sessionTitle}" scheduled for ${selectedGroup?.name} (${selectedGroupStudents.length} students) for ${ukDisplay} UK time.`)
+      } else {
+        toast.success(`"${sessionTitle}" scheduled for ${ukDisplay} UK time.`)
+      }
 
       setFormData(prev => ({
         ...prev,
@@ -1530,7 +1745,9 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
         time: '',
         repeatWeekly: false
       }))
-      onCreated(formData.studentId)
+
+      const targetId = scheduleMode === 'group' ? (selectedGroup?.student_ids?.[0] || formData.studentId) : formData.studentId
+      onCreated(targetId)
     } catch (error: any) {
       toast.error(error.message)
     } finally {
@@ -1539,82 +1756,555 @@ function CreateClassForm({ students, teacherId, onCreated }: { students: any[], 
   }
 
   return (
-    <AnimatedCard className="max-w-2xl mx-auto p-6 md:p-8 border-t-8 border-t-primary">
-      <h3 className="text-2xl font-black text-foreground mb-8 flex items-center gap-3">
-        <span className="bg-primary/20 p-2 rounded-xl text-primary"><Plus className="h-6 w-6" /></span>
-        Schedule New Class
-      </h3>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-2">
-          <Label className="text-foreground font-bold">Select Student</Label>
-          <StudentSelectDropdown
-            students={students}
-            selectedStudentId={formData.studentId}
-            onSelect={(id) => setFormData(prev => ({ ...prev, studentId: id }))}
-          />
+    <AnimatedCard className="max-w-xl mx-auto p-4 sm:p-6 rounded-2xl bg-white border border-border shadow-xs">
+      {/* Sleek Compact Header */}
+      <div className="flex items-center justify-between pb-3.5 mb-3.5 border-b border-border/80">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0 border border-emerald-200">
+            <Plus className="h-4.5 w-4.5 text-emerald-700" />
+          </div>
+          <div>
+            <h3 className="text-base sm:text-lg font-black text-foreground">Schedule Class</h3>
+            <p className="text-[11px] text-muted-foreground font-medium">UK Timezone (GMT/BST) • Auto Google Meet</p>
+          </div>
         </div>
 
-        <div className="space-y-2">
+        {/* Mode Toggle: 1-on-1 vs Group */}
+        <div className="flex items-center bg-muted/60 p-1 rounded-xl border border-border/70 shrink-0">
+          <button
+            type="button"
+            onClick={() => setScheduleMode('individual')}
+            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer min-h-[30px] flex items-center gap-1.5 ${
+              scheduleMode === 'individual'
+                ? 'bg-white text-emerald-900 shadow-xs'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <User className="h-3.5 w-3.5" />
+            <span>Individual</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setScheduleMode('group')}
+            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer min-h-[30px] flex items-center gap-1.5 ${
+              scheduleMode === 'group'
+                ? 'bg-white text-emerald-900 shadow-xs'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Users className="h-3.5 w-3.5" />
+            <span>Group Batch</span>
+            {groups.length > 0 && (
+              <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 font-bold">
+                {groups.length}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {scheduleMode === 'individual' ? (
+          <div className="space-y-1.5">
+            <Label className="text-foreground font-bold text-xs">Select Student</Label>
+            <StudentSelectDropdown
+              students={students}
+              selectedStudentId={formData.studentId}
+              onSelect={(id) => setFormData(prev => ({ ...prev, studentId: id }))}
+            />
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-foreground font-bold text-xs">Select Permanent Group</Label>
+              <button
+                type="button"
+                onClick={onOpenGroupManager}
+                className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <Plus className="h-3 w-3" />
+                <span>New Group</span>
+              </button>
+            </div>
+
+            {groups.length === 0 ? (
+              <div className="p-3.5 rounded-xl border border-dashed border-emerald-300 bg-emerald-50/50 text-center">
+                <p className="text-xs font-bold text-emerald-950">No groups created yet</p>
+                <p className="text-[11px] text-emerald-800/80 mt-0.5 mb-2.5">
+                  Create a permanent student group to schedule a single class for multiple students together.
+                </p>
+                <button
+                  type="button"
+                  onClick={onOpenGroupManager}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1A6B4A] text-white text-xs font-bold rounded-lg shadow-xs hover:bg-[#14553A] cursor-pointer"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Create Permanent Group</span>
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <select
+                  value={selectedGroupId}
+                  onChange={(e) => setSelectedGroupId(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl border border-border bg-white text-xs sm:text-sm font-semibold text-foreground focus:border-emerald-700 outline-none"
+                >
+                  {groups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name} ({g.student_ids?.length || 0} students)
+                    </option>
+                  ))}
+                </select>
+
+                {selectedGroup && (
+                  <div className="p-2.5 rounded-xl bg-muted/40 border border-border/80">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground mb-1.5">
+                      <span>Group Members ({selectedGroupStudents.length} Students):</span>
+                      <span className="text-emerald-700 font-semibold">1 Google Meet Room</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto custom-scrollbar">
+                      {selectedGroupStudents.map((s) => (
+                        <span
+                          key={s.id}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-border text-[11px] font-medium text-foreground"
+                        >
+                          <Avatar photoUrl={s.profile_photo} name={s.name} size="sm" />
+                          <span className="truncate max-w-[120px]">{s.name}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <Label className="text-foreground font-bold">Session Title</Label>
-            <span className="text-[11px] font-semibold text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md">Default: Moral Class Alihsan Academy</span>
+            <Label className="text-foreground font-bold text-xs">Session Title</Label>
+            <span className="text-[10px] text-muted-foreground font-medium">Default: Moral Class Alihsan Academy</span>
           </div>
           <div className="relative">
-            <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
               placeholder="Moral Class Alihsan Academy"
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              className="pl-10 h-14 rounded-xl border-2 font-medium"
+              className="pl-9 h-10 text-xs sm:text-sm rounded-xl border font-medium bg-white"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <ClassDatePicker
             value={formData.date}
             onChange={(dateStr) => setFormData(prev => ({ ...prev, date: dateStr }))}
           />
-          <div className="space-y-3">
+          <div className="space-y-2">
             <ClassTimePicker
               value={formData.time}
               onChange={(timeStr) => setFormData(prev => ({ ...prev, time: timeStr }))}
             />
-            <div className="bg-primary/10 border-2 border-primary/20 rounded-xl p-3">
-              <p className="text-xs sm:text-sm text-primary font-bold flex items-center gap-1.5">
-                <Globe className="h-4 w-4 shrink-0" /> Schedule in UK Time!
-              </p>
-              <p className="text-[11px] sm:text-xs text-primary/80 mt-0.5 font-medium leading-relaxed">
-                All classes are scheduled in UK timezone (GMT/BST).
+            <div className="bg-emerald-50/70 border border-emerald-200/60 rounded-xl p-2.5 flex items-start gap-1.5">
+              <Globe className="h-3.5 w-3.5 text-emerald-700 shrink-0 mt-0.5" />
+              <p className="text-[11px] text-emerald-950 font-medium leading-snug">
+                Scheduled in UK Time (GMT/BST). Google Meet will be auto-generated.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center space-x-3 bg-secondary/10 p-4 rounded-xl border-2 border-secondary/20">
-          <div className="relative flex items-center justify-center">
-            <input 
-              type="checkbox"
-              id="repeat"
-              className="w-6 h-6 rounded-md border-2 border-secondary appearance-none checked:bg-secondary cursor-pointer transition-colors"
-              checked={formData.repeatWeekly}
-              onChange={(e) => setFormData(prev => ({ ...prev, repeatWeekly: e.target.checked }))}
-            />
-            {formData.repeatWeekly && <CheckCircle className="absolute h-4 w-4 text-white pointer-events-none" />}
-          </div>
-          <Label htmlFor="repeat" className="text-secondary-foreground font-bold cursor-pointer text-base">Repeat this class every week (for 4 weeks)</Label>
+        <div className="flex items-center space-x-2.5 bg-muted/30 p-2.5 rounded-xl border border-border/80">
+          <input 
+            type="checkbox"
+            id="repeat"
+            className="w-4 h-4 rounded border-border text-emerald-700 focus:ring-emerald-700 cursor-pointer"
+            checked={formData.repeatWeekly}
+            onChange={(e) => setFormData(prev => ({ ...prev, repeatWeekly: e.target.checked }))}
+          />
+          <Label htmlFor="repeat" className="text-foreground font-bold cursor-pointer text-xs">
+            Repeat this class every week (for 4 weeks)
+          </Label>
         </div>
 
-        <BouncyButton 
+        <button
           type="submit" 
-          disabled={isSubmitting} 
-          className="w-full h-16 text-xl shadow-[0_6px_0_oklch(0.5_0.19_255)] hover:shadow-[0_2px_0_oklch(0.5_0.19_255)] active:shadow-none bg-primary hover:bg-primary/90 text-white rounded-2xl active:translate-y-1 hover:translate-y-1"
+          disabled={isSubmitting || (scheduleMode === 'group' && (!selectedGroup || selectedGroup.student_ids.length === 0))}
+          className="w-full h-10.5 sm:h-11 text-xs sm:text-sm font-bold bg-[#1A6B4A] hover:bg-[#14553A] text-white rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed min-h-[44px]"
         >
-          {isSubmitting ? <Loader2 className="animate-spin mr-2 h-6 w-6" /> : <Calendar className="h-6 w-6 mr-2" />}
-          {isSubmitting ? "Creating..." : "Schedule Class"}
-        </BouncyButton>
+          {isSubmitting ? (
+            <>
+              <Loader2 className="animate-spin h-4 w-4" />
+              <span>Scheduling Class...</span>
+            </>
+          ) : (
+            <>
+              <Calendar className="h-4 w-4" />
+              <span>
+                {scheduleMode === 'group'
+                  ? `Schedule Group Class (${selectedGroupStudents.length} Students)`
+                  : 'Schedule Class'}
+              </span>
+            </>
+          )}
+        </button>
       </form>
     </AnimatedCard>
+  )
+}
+
+function GroupsManager({
+  groups,
+  students,
+  isLoading,
+  onOpenCreate,
+  onOpenEdit,
+  onDeleteGroup,
+  onScheduleGroup,
+}: {
+  groups: any[]
+  students: any[]
+  isLoading: boolean
+  onOpenCreate: () => void
+  onOpenEdit: (group: any) => void
+  onDeleteGroup: (id: string, name: string) => void
+  onScheduleGroup: (groupId: string) => void
+}) {
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-border shadow-xs">
+        <div>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center border border-emerald-200">
+              <Users className="h-4.5 w-4.5 text-emerald-700" />
+            </div>
+            <h3 className="font-black text-foreground text-lg sm:text-xl">Permanent Student Groups</h3>
+          </div>
+          <p className="text-xs sm:text-sm text-muted-foreground font-medium mt-1">
+            Create permanent batches of students for 1-click group scheduling with automated Google Meet tracking.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onOpenCreate}
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1A6B4A] hover:bg-[#14553A] text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-colors shrink-0 cursor-pointer min-h-[40px]"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Create New Group</span>
+        </button>
+      </div>
+
+      {/* Groups Grid */}
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-border">
+          <Loader2 className="h-7 w-7 animate-spin text-primary mb-2" />
+          <p className="text-xs font-bold text-muted-foreground">Loading student groups...</p>
+        </div>
+      ) : groups.length === 0 ? (
+        <div className="flex flex-col items-center justify-center text-center p-8 sm:p-12 bg-white rounded-2xl border border-dashed border-border">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-800 flex items-center justify-center mb-3 border border-emerald-200/60">
+            <Users className="h-7 w-7 text-emerald-700" />
+          </div>
+          <h4 className="font-bold text-foreground text-base">No Groups Created Yet</h4>
+          <p className="text-xs sm:text-sm text-muted-foreground max-w-md mt-1 mb-4 leading-relaxed">
+            Organize your students into permanent batches (e.g., 2 to 5 students). Groups stay saved permanently and let you schedule 1 joint class with a shared Google Meet room in a single click.
+          </p>
+          <button
+            type="button"
+            onClick={onOpenCreate}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1A6B4A] hover:bg-[#14553A] text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-colors cursor-pointer min-h-[40px]"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Create Your First Group</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {groups.map((group) => {
+            const groupStudents = students.filter((s) => group.student_ids?.includes(s.id))
+            return (
+              <div
+                key={group.id}
+                className="bg-white rounded-2xl border border-border p-4 sm:p-5 shadow-xs hover:border-primary/40 transition-all flex flex-col justify-between gap-4"
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-2 mb-2.5">
+                    <div>
+                      <h4 className="font-bold text-foreground text-base sm:text-lg flex items-center gap-2">
+                        <span>{group.name}</span>
+                      </h4>
+                      <p className="text-[11px] text-muted-foreground font-medium mt-0.5">
+                        Created {new Date(group.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </p>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 shrink-0">
+                      {group.student_ids?.length || 0} Students
+                    </span>
+                  </div>
+
+                  {/* Student Chips */}
+                  <div className="space-y-1.5 pt-2 border-t border-border/60">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                      Enrolled Students
+                    </span>
+                    <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto custom-scrollbar">
+                      {groupStudents.length > 0 ? (
+                        groupStudents.map((s) => (
+                          <span
+                            key={s.id}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-muted/50 border border-border/80 text-xs font-semibold text-foreground"
+                          >
+                            <Avatar photoUrl={s.profile_photo} name={s.name} size="sm" />
+                            <span className="truncate max-w-[140px]">{s.name}</span>
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">
+                          No active students currently matched
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-between gap-2 pt-3 border-t border-border/60">
+                  <button
+                    type="button"
+                    onClick={() => onScheduleGroup(group.id)}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-[#1A6B4A] hover:bg-[#14553A] text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer min-h-[38px]"
+                  >
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>Schedule Class</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onOpenEdit(group)}
+                    className="px-3 py-2 border border-border bg-white hover:bg-muted/60 text-foreground text-xs font-bold rounded-xl transition-colors cursor-pointer min-h-[38px] flex items-center gap-1"
+                    title="Edit group name or members"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Edit</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDeleteGroup(group.id, group.name)}
+                    className="p-2 border border-rose-200 bg-rose-50/60 hover:bg-rose-100/80 text-rose-700 text-xs font-bold rounded-xl transition-colors cursor-pointer min-h-[38px] flex items-center justify-center"
+                    title="Delete group"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function GroupModal({
+  isOpen,
+  onClose,
+  group,
+  students,
+  onSave,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  group: any | null
+  students: any[]
+  onSave: (data: { id?: string; name: string; studentIds: string[] }) => Promise<void>
+}) {
+  const [name, setName] = useState('')
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [search, setSearch] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (group) {
+      setName(group.name || '')
+      setSelectedIds(group.student_ids || [])
+    } else {
+      setName('')
+      setSelectedIds([])
+    }
+    setSearch('')
+  }, [group, isOpen])
+
+  if (!isOpen) return null
+
+  const filteredStudents = students.filter(
+    (s) =>
+      s.name?.toLowerCase().includes(search.toLowerCase()) ||
+      s.registration_number?.toLowerCase().includes(search.toLowerCase())
+  )
+
+  const toggleStudent = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    )
+  }
+
+  const handleSelectAll = () => {
+    if (selectedIds.length === filteredStudents.length) {
+      setSelectedIds([])
+    } else {
+      setSelectedIds(filteredStudents.map((s) => s.id))
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!name.trim()) {
+      toast.error('Please enter a group name')
+      return
+    }
+    if (selectedIds.length === 0) {
+      toast.error('Please select at least 1 student for the group')
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      await onSave({
+        id: group?.id,
+        name: name.trim(),
+        studentIds: selectedIds,
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-xl border border-border/80 overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-150">
+        <div className="p-4 sm:p-5 border-b border-border flex items-center justify-between bg-muted/20">
+          <div>
+            <h4 className="font-black text-foreground text-base sm:text-lg">
+              {group ? 'Edit Student Group' : 'Create Permanent Student Group'}
+            </h4>
+            <p className="text-[11px] sm:text-xs text-muted-foreground font-medium mt-0.5">
+              This group will be saved permanently ready for daily 1-click scheduling.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4">
+          <div>
+            <Label className="text-foreground font-bold text-xs">Group Name</Label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Tajweed Batch A, Grade 3 Moral Studies"
+              className="mt-1 h-10 text-xs sm:text-sm bg-white"
+              required
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <Label className="text-foreground font-bold text-xs">
+                Select Students ({selectedIds.length} of {students.length} selected)
+              </Label>
+              {filteredStudents.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleSelectAll}
+                  className="text-[11px] font-bold text-primary hover:underline cursor-pointer"
+                >
+                  {selectedIds.length === filteredStudents.length ? 'Deselect All' : 'Select All'}
+                </button>
+              )}
+            </div>
+
+            {/* Search */}
+            <div className="relative mb-2">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search assigned students..."
+                className="pl-8 h-8 text-xs bg-white"
+              />
+            </div>
+
+            {/* Student Checklist */}
+            <div className="max-h-56 overflow-y-auto custom-scrollbar border border-border rounded-xl p-1.5 space-y-1 bg-muted/10">
+              {filteredStudents.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">No matching students found.</p>
+              ) : (
+                filteredStudents.map((s) => {
+                  const isChecked = selectedIds.includes(s.id)
+                  return (
+                    <label
+                      key={s.id}
+                      className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${
+                        isChecked ? 'bg-emerald-50 border border-emerald-200' : 'hover:bg-muted/40 border border-transparent'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => toggleStudent(s.id)}
+                          className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                        />
+                        <Avatar photoUrl={s.profile_photo} name={s.name} size="sm" />
+                        <div className="truncate">
+                          <p className="text-xs font-bold text-foreground truncate">{s.name}</p>
+                          <p className="text-[10px] text-muted-foreground truncate">
+                            {s.registration_number ? `#${s.registration_number}` : ''} {s.year ? `• Year ${s.year}` : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <StatusBadge status={s.enrolment_status || 'ongoing'} />
+                    </label>
+                  )
+                })
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="px-4 py-2 border border-border bg-white hover:bg-muted/50 text-foreground text-xs font-bold rounded-xl transition-colors cursor-pointer min-h-[38px]"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#1A6B4A] hover:bg-[#14553A] text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer min-h-[38px] disabled:opacity-50"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>Saving Group...</span>
+                </>
+              ) : (
+                <span>{group ? 'Save Changes' : 'Create Group'}</span>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   )
 }
 

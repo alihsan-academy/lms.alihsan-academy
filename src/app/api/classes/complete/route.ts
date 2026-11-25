@@ -118,36 +118,73 @@ export async function POST(request: Request) {
     // Postgres check constraint on attendance only allows 'present' or 'absent'
     const dbAttendanceStatus = status === 'present' ? 'present' : 'absent'
 
-    // Check if attendance already exists
-    const { data: existingAttendance } = await supabaseAdmin
-      .from('attendance')
-      .select('id')
-      .eq('class_id', classId)
-      .maybeSingle()
+    // Identify target classes: single class or all sibling classes in the same group session
+    const targetClasses: { id: string; student_id: string }[] = [{ id: classId, student_id: studentId }]
 
-    if (existingAttendance) {
-      const { error: attUpdateErr } = await supabaseAdmin
+    if (existingMeta.is_group && existingMeta.group_id) {
+      const { data: siblingClasses } = await supabaseAdmin
+        .from('classes')
+        .select('id, student_id, recording_url')
+        .eq('teacher_id', classRecord.teacher_id)
+        .eq('scheduled_at', classRecord.scheduled_at)
+        .neq('id', classId)
+
+      if (siblingClasses) {
+        for (const sib of siblingClasses) {
+          let sibMeta: any = {}
+          if (sib.recording_url && typeof sib.recording_url === 'string' && sib.recording_url.trim().startsWith('{')) {
+            try { sibMeta = JSON.parse(sib.recording_url) } catch {}
+          }
+          if (sibMeta.group_id && sibMeta.group_id === existingMeta.group_id) {
+            targetClasses.push({ id: sib.id, student_id: sib.student_id })
+          }
+        }
+      }
+    }
+
+    const nowIso = new Date().toISOString()
+
+    for (const target of targetClasses) {
+      if (target.id !== classId) {
+        await supabaseAdmin
+          .from('classes')
+          .update({
+            status: 'completed',
+            recording_url: metaPayload,
+          })
+          .eq('id', target.id)
+      }
+
+      const { data: existingAttendance } = await supabaseAdmin
         .from('attendance')
-        .update({
-          status: dbAttendanceStatus,
-          marked_at: new Date().toISOString(),
-        })
-        .eq('id', existingAttendance.id)
+        .select('id')
+        .eq('class_id', target.id)
+        .maybeSingle()
 
-      if (attUpdateErr) throw attUpdateErr
-    } else {
-      const { error: attendanceError } = await supabaseAdmin
-        .from('attendance')
-        .insert({
-          class_id: classId,
-          student_id: studentId,
-          teacher_id: classRecord.teacher_id,
-          status: dbAttendanceStatus,
-          marked_at: new Date().toISOString(),
-        })
+      if (existingAttendance) {
+        const { error: attUpdateErr } = await supabaseAdmin
+          .from('attendance')
+          .update({
+            status: dbAttendanceStatus,
+            marked_at: nowIso,
+          })
+          .eq('id', existingAttendance.id)
 
-      if (attendanceError && attendanceError.code !== '23505') {
-        throw attendanceError
+        if (attUpdateErr) throw attUpdateErr
+      } else {
+        const { error: attendanceError } = await supabaseAdmin
+          .from('attendance')
+          .insert({
+            class_id: target.id,
+            student_id: target.student_id,
+            teacher_id: classRecord.teacher_id,
+            status: dbAttendanceStatus,
+            marked_at: nowIso,
+          })
+
+        if (attendanceError && attendanceError.code !== '23505') {
+          throw attendanceError
+        }
       }
     }
 

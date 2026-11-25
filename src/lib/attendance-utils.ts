@@ -28,6 +28,9 @@ export interface ParsedClassRecord {
   duration_minutes?: number | null
   homework?: string | null
   is_under_threshold?: boolean
+  is_group?: boolean
+  group_id?: string | null
+  group_name?: string | null
 }
 
 export interface AttendanceSummary {
@@ -151,6 +154,9 @@ export function parseClassMetadata(
   let title = c.title || 'Moral Class Alihsan Academy'
   let duration_minutes: number | null = null
   let homework: string | null = null
+  let is_group = false
+  let group_id: string | null = null
+  let group_name: string | null = null
 
   if (c.recording_url) {
     if (typeof c.recording_url === 'string' && c.recording_url.trim().startsWith('{')) {
@@ -161,6 +167,9 @@ export function parseClassMetadata(
         statusDetail = parsed.status_detail || parsed.reason || ''
         duration_minutes = parsed.duration_minutes || parsed.duration || null
         homework = parsed.homework || null
+        is_group = !!parsed.is_group
+        group_id = parsed.group_id || null
+        group_name = parsed.group_name || null
         if (parsed.title) {
           title = parsed.title
         }
@@ -261,6 +270,9 @@ export function parseClassMetadata(
     duration_minutes,
     homework,
     is_under_threshold: isClassCompleted && duration_minutes !== null && duration_minutes < 20,
+    is_group,
+    group_id,
+    group_name,
   }
 }
 

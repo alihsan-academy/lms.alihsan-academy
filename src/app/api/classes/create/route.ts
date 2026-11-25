@@ -21,10 +21,14 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { studentId, title, meetLink, date, time, repeatWeekly } = body
+    const { studentId, studentIds, groupId, groupName, title, meetLink, date, time, repeatWeekly } = body
 
-    if (!studentId || !date || !time) {
-      return NextResponse.json({ error: 'studentId, date, and time are required' }, { status: 400 })
+    const targetStudentIds: string[] = Array.isArray(studentIds) && studentIds.length > 0
+      ? studentIds
+      : (studentId ? [studentId] : [])
+
+    if (targetStudentIds.length === 0 || !date || !time) {
+      return NextResponse.json({ error: 'studentId (or studentIds), date, and time are required' }, { status: 400 })
     }
 
     const sessionTitle = (title && typeof title === 'string' && title.trim()) ? title.trim() : 'Moral Class Alihsan Academy'
@@ -42,20 +46,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Forbidden: Only teachers and admins can schedule classes' }, { status: 403 })
     }
 
-    // If teacher, ensure the student is assigned to this teacher
+    // If teacher, ensure all students are assigned to this teacher and not stopped
     if (profile.role === 'teacher') {
-      const { data: studentProfile, error: studentError } = await supabaseAdmin
+      const { data: studentProfiles, error: studentError } = await supabaseAdmin
         .from('student_profiles')
-        .select('teacher_id, enrolment_status')
-        .eq('user_id', studentId)
-        .maybeSingle()
+        .select('user_id, teacher_id, enrolment_status, name')
+        .in('user_id', targetStudentIds)
 
-      if (studentError || !studentProfile || studentProfile.teacher_id !== user.id) {
+      if (studentError || !studentProfiles) {
+        return NextResponse.json({ error: 'Failed to verify students' }, { status: 500 })
+      }
+
+      const unauthorized = studentProfiles.some(sp => sp.teacher_id !== user.id)
+      if (unauthorized || studentProfiles.length !== targetStudentIds.length) {
         return NextResponse.json({ error: 'Forbidden: You can only schedule classes for your assigned students' }, { status: 403 })
       }
 
-      if (studentProfile.enrolment_status === 'stopped') {
-        return NextResponse.json({ error: 'Cannot schedule class: This student has stopped / quit their enrolment.' }, { status: 400 })
+      const stopped = studentProfiles.some(sp => sp.enrolment_status === 'stopped')
+      if (stopped) {
+        return NextResponse.json({ error: 'Cannot schedule class: One or more selected students have stopped enrolment.' }, { status: 400 })
       }
     }
 
@@ -74,25 +83,32 @@ export async function POST(request: Request) {
 
     if (!effectiveMeetLink) {
       try {
-        const { data: studentRecord } = await supabaseAdmin
+        const { data: studentRecords } = await supabaseAdmin
           .from('student_profiles')
-          .select('name')
-          .eq('user_id', studentId)
-          .maybeSingle()
+          .select('user_id, name')
+          .in('user_id', targetStudentIds)
 
-        const { data: studentAuthProfile } = await supabaseAdmin
+        const { data: studentAuthProfiles } = await supabaseAdmin
           .from('profiles')
-          .select('email')
-          .eq('id', studentId)
-          .maybeSingle()
+          .select('id, email')
+          .in('id', targetStudentIds)
 
-        const studentEmail = studentAuthProfile?.email || null
+        const studentNames = studentRecords?.map(s => s.name).filter(Boolean).join(', ') || 'Students'
+        const isGroup = targetStudentIds.length > 1
+        const meetSummary = isGroup
+          ? `${sessionTitle} (${groupName || 'Group Session'} - ${targetStudentIds.length} students)`
+          : `${sessionTitle} (${studentRecords?.[0]?.name || 'Student'})`
+
+        const primaryStudentEmail = studentAuthProfiles?.[0]?.email || undefined
 
         const meetResult = await createGoogleMeetRoom({
           teacherEmail: profile.email || user.email || '',
-          studentEmail: studentEmail || undefined,
-          studentName: studentRecord?.name || 'Student',
-          summary: `${sessionTitle} (${studentRecord?.name || 'Student'})`,
+          studentEmail: primaryStudentEmail,
+          studentName: isGroup ? (groupName || 'Group Class') : (studentRecords?.[0]?.name || 'Student'),
+          summary: meetSummary,
+          description: isGroup
+            ? `Group class: ${groupName || 'Group Class'} with students: ${studentNames}`
+            : 'Online interactive lesson conducted via Al-Ihsan Academy LMS.',
           startTime: scheduledUTC,
           endTime: new Date(scheduledUTC.getTime() + 45 * 60 * 1000)
         })
@@ -106,41 +122,50 @@ export async function POST(request: Request) {
       }
     }
 
+    const isGroup = targetStudentIds.length > 1
+    const sharedGroupId = isGroup ? (groupId || `grp_sess_${Date.now()}`) : null
+
     const metaPayload = JSON.stringify({
       title: sessionTitle,
       recording_url: null,
       google_event_id: googleEventId,
-      auto_generated_meet: !!googleEventId
+      auto_generated_meet: !!googleEventId,
+      is_group: isGroup,
+      group_id: sharedGroupId,
+      group_name: groupName || (isGroup ? 'Group Class' : null),
+      group_student_ids: isGroup ? targetStudentIds : undefined
     })
 
     const classesToCreate = []
 
-    if (repeatWeekly) {
-      for (let i = 0; i < 4; i++) {
+    for (const sId of targetStudentIds) {
+      if (repeatWeekly) {
+        for (let i = 0; i < 4; i++) {
+          classesToCreate.push({
+            teacher_id: user.id,
+            student_id: sId,
+            meet_link: effectiveMeetLink || null,
+            scheduled_at: addWeeks(scheduledUTC, i).toISOString(),
+            status: 'scheduled',
+            recording_url: metaPayload
+          })
+        }
+      } else {
         classesToCreate.push({
           teacher_id: user.id,
-          student_id: studentId,
+          student_id: sId,
           meet_link: effectiveMeetLink || null,
-          scheduled_at: addWeeks(scheduledUTC, i).toISOString(),
+          scheduled_at: scheduledUTC.toISOString(),
           status: 'scheduled',
           recording_url: metaPayload
         })
       }
-    } else {
-      classesToCreate.push({
-        teacher_id: user.id,
-        student_id: studentId,
-        meet_link: effectiveMeetLink || null,
-        scheduled_at: scheduledUTC.toISOString(),
-        status: 'scheduled',
-        recording_url: metaPayload
-      })
     }
 
     const { error } = await supabaseAdmin.from('classes').insert(classesToCreate)
     if (error) throw error
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, count: classesToCreate.length })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

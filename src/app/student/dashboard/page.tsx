@@ -227,9 +227,9 @@ export default function StudentDashboard() {
           </div>
 
           {/* Navigation Items */}
-          <div className="flex-1 py-3 px-2 space-y-1 overflow-y-auto custom-scrollbar text-xs">
+          <div className="flex-1 py-3 px-2 space-y-1.5 overflow-y-auto custom-scrollbar text-sm">
             {!isSidebarCollapsed && (
-              <span className="px-2 mb-1.5 text-[9px] font-bold uppercase tracking-wider text-teal-400/70 block">
+              <span className="px-2.5 mb-1.5 text-[11px] font-bold uppercase tracking-wider text-teal-400/80 block">
                 Student Learning
               </span>
             )}
@@ -238,16 +238,16 @@ export default function StudentDashboard() {
                 type="button"
                 onClick={() => setActiveTab('home')}
                 title="Home & Classes"
-                className={`w-full text-left px-2.5 py-2 rounded-lg font-semibold text-xs flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                className={`w-full text-left px-3 py-2.5 rounded-xl font-semibold text-sm flex items-center transition-all active:scale-[0.98] cursor-pointer ${
                   isSidebarCollapsed ? 'justify-center' : 'justify-between'
                 } ${
                   activeTab === 'home'
                     ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
-                    : 'text-slate-400 hover:text-white hover:bg-teal-950/60'
+                    : 'text-slate-300 hover:text-white hover:bg-teal-950/60'
                 }`}
               >
-                <div className="flex items-center gap-2.5 truncate">
-                  <Home className="h-4 w-4 shrink-0" />
+                <div className="flex items-center gap-3 truncate">
+                  <Home className="h-4.5 w-4.5 shrink-0" />
                   {!isSidebarCollapsed && <span className="truncate">Home & Classes</span>}
                 </div>
               </button>
@@ -256,16 +256,16 @@ export default function StudentDashboard() {
                 type="button"
                 onClick={() => setActiveTab('attendance')}
                 title="Attendance"
-                className={`w-full text-left px-2.5 py-2 rounded-lg font-semibold text-xs flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                className={`w-full text-left px-3 py-2.5 rounded-xl font-semibold text-sm flex items-center transition-all active:scale-[0.98] cursor-pointer ${
                   isSidebarCollapsed ? 'justify-center' : 'justify-between'
                 } ${
                   activeTab === 'attendance'
                     ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
-                    : 'text-slate-400 hover:text-white hover:bg-teal-950/60'
+                    : 'text-slate-300 hover:text-white hover:bg-teal-950/60'
                 }`}
               >
-                <div className="flex items-center gap-2.5 truncate">
-                  <BarChart3 className="h-4 w-4 shrink-0" />
+                <div className="flex items-center gap-3 truncate">
+                  <BarChart3 className="h-4.5 w-4.5 shrink-0" />
                   {!isSidebarCollapsed && <span className="truncate">Attendance</span>}
                 </div>
               </button>
@@ -274,16 +274,16 @@ export default function StudentDashboard() {
                 type="button"
                 onClick={() => setActiveTab('profile')}
                 title="Profile"
-                className={`w-full text-left px-2.5 py-2 rounded-lg font-semibold text-xs flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                className={`w-full text-left px-3 py-2.5 rounded-xl font-semibold text-sm flex items-center transition-all active:scale-[0.98] cursor-pointer ${
                   isSidebarCollapsed ? 'justify-center' : 'justify-between'
                 } ${
                   activeTab === 'profile'
                     ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
-                    : 'text-slate-400 hover:text-white hover:bg-teal-950/60'
+                    : 'text-slate-300 hover:text-white hover:bg-teal-950/60'
                 }`}
               >
-                <div className="flex items-center gap-2.5 truncate">
-                  <User className="h-4 w-4 shrink-0" />
+                <div className="flex items-center gap-3 truncate">
+                  <User className="h-4.5 w-4.5 shrink-0" />
                   {!isSidebarCollapsed && <span className="truncate">Profile</span>}
                 </div>
               </button>
@@ -291,15 +291,15 @@ export default function StudentDashboard() {
           </div>
 
           {/* Compact User Footer */}
-          <div className="p-2.5 border-t border-teal-900/40 bg-[#041512] shrink-0">
-            <div className={`flex items-center gap-2 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-              <div className="w-7 h-7 rounded-full bg-teal-800 text-white flex items-center justify-center font-bold text-xs shrink-0 border border-teal-600/40">
+          <div className="p-3 border-t border-teal-900/40 bg-[#041512] shrink-0">
+            <div className={`flex items-center gap-2.5 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
+              <div className="w-8 h-8 rounded-full bg-teal-800 text-white flex items-center justify-center font-bold text-xs shrink-0 border border-teal-600/40">
                 {studentName ? studentName.slice(0, 2).toUpperCase() : 'ST'}
               </div>
               {!isSidebarCollapsed && (
                 <div className="truncate">
-                  <p className="text-xs font-bold text-white leading-tight truncate">{studentName || 'Student'}</p>
-                  <p className="text-[9px] text-teal-400/80 truncate font-mono">#{registrationNumber || 'N/A'}</p>
+                  <p className="text-sm font-bold text-white leading-tight truncate">{studentName || 'Student'}</p>
+                  <p className="text-[10px] text-teal-400/80 truncate font-mono">#{registrationNumber || 'N/A'}</p>
                 </div>
               )}
             </div>
