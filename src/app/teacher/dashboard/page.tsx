@@ -60,6 +60,8 @@ export default function TeacherDashboard() {
   const [allAttendance, setAllAttendance] = useState<any[]>([])
   const [currentTime, setCurrentTime] = useState<number>(() => Date.now())
   const [scheduleFilter, setScheduleFilter] = useState<'upcoming' | 'pending' | 'completed' | 'all'>('upcoming')
+  const [scheduleDatePreset, setScheduleDatePreset] = useState<'all' | 'today' | '7d' | '30d' | 'custom'>('all')
+  const [scheduleDateFilter, setScheduleDateFilter] = useState<string>('')
 
   // Permanent Student Groups state
   const [groups, setGroups] = useState<any[]>([])
@@ -869,6 +871,52 @@ export default function TeacherDashboard() {
                       >
                         <span>All ({classes.length})</span>
                       </button>
+
+                      {/* Date Filter Controls */}
+                      <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto lg:ml-auto pt-1 lg:pt-0 border-t lg:border-t-0 border-border/60">
+                        <select
+                          aria-label="Filter schedule by date range"
+                          value={scheduleDatePreset}
+                          onChange={(e) => {
+                            const val = e.target.value as 'all' | 'today' | '7d' | '30d' | 'custom'
+                            setScheduleDatePreset(val)
+                            if (val !== 'custom') setScheduleDateFilter('')
+                          }}
+                          className="min-h-[44px] px-3 py-2 rounded-lg border border-border bg-muted/40 text-base sm:text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
+                        >
+                          <option value="all">All Dates</option>
+                          <option value="today">Today</option>
+                          <option value="7d">Last 7 Days</option>
+                          <option value="30d">Last 30 Days</option>
+                          {scheduleDateFilter && <option value="custom">Specific Date</option>}
+                        </select>
+
+                        <input
+                          type="date"
+                          aria-label="Filter schedule by specific date"
+                          value={scheduleDateFilter}
+                          onChange={(e) => {
+                            setScheduleDateFilter(e.target.value)
+                            setScheduleDatePreset(e.target.value ? 'custom' : 'all')
+                          }}
+                          className="min-h-[44px] px-3 py-2 rounded-lg border border-border bg-muted/40 text-base sm:text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
+                        />
+
+                        {(scheduleDatePreset !== 'all' || scheduleDateFilter) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setScheduleDatePreset('all')
+                              setScheduleDateFilter('')
+                            }}
+                            title="Clear date filter"
+                            className="min-h-[44px] px-3 py-2 rounded-lg border border-border bg-muted/60 hover:bg-muted text-xs font-bold text-foreground flex items-center gap-1 cursor-pointer"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                            <span>Clear</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )
                 })()}
@@ -883,12 +931,26 @@ export default function TeacherDashboard() {
                   </AnimatedCard>
                 ) : (() => {
                   const pastCutoff = currentTime - 60 * 60 * 1000
+                  const todayUK = new Date(currentTime).toLocaleDateString('en-CA', { timeZone: 'Europe/London' })
                   const filteredClasses = classes
                     .filter(c => {
                       const t = new Date(c.scheduled_at).getTime()
-                      if (scheduleFilter === 'upcoming') return c.status !== 'completed' && t >= pastCutoff
-                      if (scheduleFilter === 'pending') return c.status !== 'completed' && t < pastCutoff
-                      if (scheduleFilter === 'completed') return c.status === 'completed'
+                      if (scheduleFilter === 'upcoming' && !(c.status !== 'completed' && t >= pastCutoff)) return false
+                      if (scheduleFilter === 'pending' && !(c.status !== 'completed' && t < pastCutoff)) return false
+                      if (scheduleFilter === 'completed' && c.status !== 'completed') return false
+
+                      if (scheduleDatePreset === 'custom' && scheduleDateFilter) {
+                        const classUKDate = new Date(c.scheduled_at).toLocaleDateString('en-CA', { timeZone: 'Europe/London' })
+                        if (classUKDate !== scheduleDateFilter) return false
+                      } else if (scheduleDatePreset === 'today') {
+                        const classUKDate = new Date(c.scheduled_at).toLocaleDateString('en-CA', { timeZone: 'Europe/London' })
+                        if (classUKDate !== todayUK) return false
+                      } else if (scheduleDatePreset === '7d') {
+                        if (t < currentTime - 7 * 24 * 60 * 60 * 1000) return false
+                      } else if (scheduleDatePreset === '30d') {
+                        if (t < currentTime - 30 * 24 * 60 * 60 * 1000) return false
+                      }
+
                       return true
                     })
                     .sort((a, b) => {
