@@ -25,8 +25,9 @@ import { StudentSelectDropdown } from '@/components/student-select-dropdown'
 
 import TeacherProfilePage from '@/app/teacher/profile/page'
 import SyllabusBank from '@/components/syllabus-bank'
+import { TeacherQuranManager } from '@/components/quran/TeacherQuranManager'
 
-type Tab = 'classes' | 'create' | 'groups' | 'stats' | 'profile' | 'syllabus'
+type Tab = 'classes' | 'create' | 'groups' | 'stats' | 'profile' | 'syllabus' | 'quran'
 
 export default function TeacherDashboard() {
   const formatUKTime = (scheduledAt: string) => {
@@ -704,6 +705,24 @@ export default function TeacherDashboard() {
 
               <button
                 type="button"
+                onClick={() => setActiveTab('quran')}
+                title="Quran & Hifz"
+                className={`w-full text-left px-3 py-2.5 rounded-xl font-bold text-[15px] flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                  isSidebarCollapsed ? 'justify-center' : 'justify-between'
+                } ${
+                  activeTab === 'quran'
+                    ? 'bg-[#1A6B4A] text-white shadow-md font-extrabold ring-1 ring-emerald-400/50'
+                    : 'text-slate-100 bg-emerald-950/35 hover:text-white hover:bg-emerald-900/70'
+                }`}
+              >
+                <div className="flex items-center gap-3 truncate">
+                  <BookOpen className="h-5 w-5 shrink-0 text-emerald-400" />
+                  {!isSidebarCollapsed && <span className="truncate">Quran & Hifz</span>}
+                </div>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setActiveTab('profile')}
                 title="Profile"
                 className={`w-full text-left px-3 py-2.5 rounded-xl font-bold text-[15px] flex items-center transition-all active:scale-[0.98] cursor-pointer ${
@@ -1175,6 +1194,12 @@ export default function TeacherDashboard() {
               </div>
             </PageTransition>
           )}
+
+          {activeTab === 'quran' && (
+            <PageTransition key="quran" className="flex-1 min-h-0 flex flex-col">
+              <TeacherQuranManager students={students} teacherId={teacherId} />
+            </PageTransition>
+          )}
         </AnimatePresence>
 
         {/* Modal: Mark Attendance / Complete Class */}
@@ -1583,6 +1608,7 @@ export default function TeacherDashboard() {
         <NavBtn active={activeTab === 'groups'} onClick={() => setActiveTab('groups')} icon={<Users className={activeTab === 'groups' ? 'fill-primary/20' : ''} />} label="Groups" />
         <NavBtn active={activeTab === 'stats'} onClick={() => setActiveTab('stats')} icon={<BarChart3 className={activeTab === 'stats' ? 'fill-primary/20' : ''} />} label="Stats" />
         <NavBtn active={activeTab === 'syllabus'} onClick={() => setActiveTab('syllabus')} icon={<BookOpen className={activeTab === 'syllabus' ? 'fill-primary/20' : ''} />} label="Syllabus" />
+        <NavBtn active={activeTab === 'quran'} onClick={() => setActiveTab('quran')} icon={<BookOpen className={activeTab === 'quran' ? 'fill-primary/20 text-emerald-600' : ''} />} label="Quran" />
         <NavBtn active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<User className={activeTab === 'profile' ? 'fill-primary/20' : ''} />} label="Profile" />
       </nav>
 
