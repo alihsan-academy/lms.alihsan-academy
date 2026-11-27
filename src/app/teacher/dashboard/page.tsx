@@ -288,7 +288,6 @@ export default function TeacherDashboard() {
           recordingUrl: recordingUrl.trim() || null,
           remarks: classRemarks.trim() || null,
           homework: classHomework.trim() || null,
-          durationMinutes: typeof classDuration === 'number' && classDuration > 0 ? classDuration : null,
         })
       })
 
@@ -1175,9 +1174,9 @@ export default function TeacherDashboard() {
                               ) : null}
 
                               {parsed.recording_url && (
-                                <a href={parsed.recording_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded hover:bg-teal-100 transition-colors">
-                                  <Video className="h-3 w-3" />
-                                  <span>Recording</span>
+                                <a href={parsed.recording_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] font-bold text-teal-800 bg-teal-50 border border-teal-300 px-2.5 py-0.5 rounded-full hover:bg-teal-100 transition-colors shadow-2xs">
+                                  <Video className="h-3.5 w-3.5 text-teal-700" />
+                                  <span>View Recording</span>
                                 </a>
                               )}
                             </div>
@@ -1674,27 +1673,28 @@ export default function TeacherDashboard() {
                     />
                   </div>
 
-                  {/* Real Class Duration */}
+                  {/* Real Class Duration (Read-Only, Auto-Verified) */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <Label className="text-foreground font-bold text-xs uppercase tracking-wider">
                         Real Class Duration (Minutes)
                       </Label>
-                      <span className="text-[10px] font-bold text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-full">
-                        Threshold: 20m min
+                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                        Auto-Verified • Read-Only
                       </span>
                     </div>
-                    <div className="relative">
-                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        type="number"
-                        min={1}
-                        max={180}
-                        placeholder="Auto-detected from Google Meet (or enter exact minutes e.g. 5)"
-                        value={classDuration}
-                        onChange={(e) => setClassDuration(e.target.value === '' ? '' : parseInt(e.target.value) || 0)}
-                        className="pl-9 h-11 rounded-xl border-2 font-medium"
-                      />
+                    <div className="flex items-center justify-between px-3.5 h-11 rounded-xl border-2 border-border/80 bg-muted/40 text-sm font-bold text-foreground select-none">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-emerald-700 shrink-0" />
+                        <span>
+                          {typeof classDuration === 'number' && classDuration > 0
+                            ? `${classDuration} mins`
+                            : 'Auto-counted via Google Meet'}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-semibold text-muted-foreground">
+                        Threshold: 20m min
+                      </span>
                     </div>
                     {typeof classDuration === 'number' && classDuration < 20 && classDuration > 0 && (
                       <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 p-2 rounded-lg font-medium flex items-center gap-1.5">

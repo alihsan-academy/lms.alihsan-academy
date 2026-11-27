@@ -159,32 +159,37 @@ export async function createGoogleMeetRoom(params: CreateMeetRoomParams): Promis
   }
 }
 
+export interface MeetSessionDetails {
+  durationMinutes: number | null
+  recordingUrl: string | null
+}
+
 /**
  * Queries Google Meet API v2 to retrieve actual meeting duration in minutes
- * by matching conference records for the given Google Meet link or meeting code.
+ * and any generated Google Drive recording URL for the given Meet link.
  */
-export async function getGoogleMeetActualDuration(
+export async function getGoogleMeetSessionDetails(
   meetLink?: string | null,
   teacherEmail?: string | null
-): Promise<number | null> {
-  if (!meetLink) return null
+): Promise<MeetSessionDetails> {
+  if (!meetLink) return { durationMinutes: null, recordingUrl: null }
 
   const match = meetLink.match(/meet\.google\.com\/([a-z0-9-]+)/i)
   const meetingCode = match ? match[1].toLowerCase().replace(/[^a-z]/g, '') : null
-  if (!meetingCode) return null
+  if (!meetingCode) return { durationMinutes: null, recordingUrl: null }
 
   const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
   const privateKey = getCleanPrivateKey(process.env.GOOGLE_PRIVATE_KEY)
   const adminEmail = process.env.GOOGLE_ADMIN_EMAIL || 'academy@alihsan.co.uk'
 
-  if (!serviceAccountEmail || !privateKey) return null
+  if (!serviceAccountEmail || !privateKey) return { durationMinutes: null, recordingUrl: null }
 
   const targetSubject =
     teacherEmail && (teacherEmail.endsWith('@alihsan.co.uk') || teacherEmail.endsWith('@alihsan.academy'))
       ? teacherEmail.trim().toLowerCase()
       : adminEmail
 
-  const attemptFetch = async (subject: string): Promise<number | null> => {
+  const attemptFetch = async (subject: string): Promise<MeetSessionDetails | null> => {
     try {
       const auth = new google.auth.JWT({
         email: serviceAccountEmail,
@@ -209,7 +214,24 @@ export async function getGoogleMeetActualDuration(
             const start = new Date(rec.startTime).getTime()
             const end = new Date(rec.endTime).getTime()
             const durationMinutes = Math.max(1, Math.round((end - start) / 60000))
-            return durationMinutes
+
+            let recordingUrl: string | null = null
+            if (rec.name) {
+              try {
+                const recRes = await meet.conferenceRecords.recordings.list({ parent: rec.name })
+                const recordings = recRes.data.recordings || []
+                for (const r of recordings) {
+                  if (r.driveDestination?.exportUri) {
+                    recordingUrl = r.driveDestination.exportUri
+                    break
+                  }
+                }
+              } catch {
+                // Recording may not be available or scope not enabled yet
+              }
+            }
+
+            return { durationMinutes, recordingUrl }
           }
         } catch {
           // Check next conference record
@@ -221,13 +243,26 @@ export async function getGoogleMeetActualDuration(
     return null
   }
 
-  const duration = await attemptFetch(targetSubject)
-  if (duration !== null) return duration
+  const details = await attemptFetch(targetSubject)
+  if (details !== null) return details
 
   if (targetSubject !== adminEmail) {
-    return await attemptFetch(adminEmail)
+    const fallbackDetails = await attemptFetch(adminEmail)
+    if (fallbackDetails !== null) return fallbackDetails
   }
 
-  return null
+  return { durationMinutes: null, recordingUrl: null }
+}
+
+/**
+ * Queries Google Meet API v2 to retrieve actual meeting duration in minutes
+ * by matching conference records for the given Google Meet link or meeting code.
+ */
+export async function getGoogleMeetActualDuration(
+  meetLink?: string | null,
+  teacherEmail?: string | null
+): Promise<number | null> {
+  const details = await getGoogleMeetSessionDetails(meetLink, teacherEmail)
+  return details.durationMinutes
 }
 

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAdminClient } from '@/lib/supabase/admin'
 import { createClient as createServerSupabaseClient } from '@/lib/supabase/server'
-import { getGoogleMeetActualDuration } from '@/lib/google-meet'
+import { getGoogleMeetSessionDetails } from '@/lib/google-meet'
 
 export async function POST(request: Request) {
   try {
@@ -69,9 +69,12 @@ export async function POST(request: Request) {
     }
     const sessionTitle = existingMeta.title || 'Moral Class Alihsan Academy'
 
-    // Resolve real duration: prefer explicit duration if passed, else auto-detect from Google Meet
-    let finalDuration: number | null = null
-    if (typeof durationMinutes === 'number' && durationMinutes > 0) {
+    // Resolve real duration & recording URL:
+    // Teachers cannot manually override duration; it is always auto-detected via Google Meet API.
+    let finalDuration: number | null = existingMeta.duration_minutes || null
+    let detectedRecordingUrl: string | null = null
+
+    if (isPrivileged && typeof durationMinutes === 'number' && durationMinutes > 0) {
       finalDuration = Math.round(durationMinutes)
     } else if (classRecord.meet_link) {
       const { data: teacherProfile } = await supabaseAdmin
@@ -79,25 +82,27 @@ export async function POST(request: Request) {
         .select('email')
         .eq('id', classRecord.teacher_id)
         .maybeSingle()
-      
-      const detectedMinutes = await getGoogleMeetActualDuration(
+
+      const sessionDetails = await getGoogleMeetSessionDetails(
         classRecord.meet_link,
         teacherProfile?.email || user.email
       )
-      if (detectedMinutes !== null && detectedMinutes > 0) {
-        finalDuration = detectedMinutes
-      } else {
-        finalDuration = existingMeta.duration_minutes || null
+
+      if (sessionDetails.durationMinutes !== null && sessionDetails.durationMinutes > 0) {
+        finalDuration = sessionDetails.durationMinutes
       }
-    } else {
-      finalDuration = existingMeta.duration_minutes || null
+      if (sessionDetails.recordingUrl) {
+        detectedRecordingUrl = sessionDetails.recordingUrl
+      }
     }
+
+    const finalRecordingUrl = detectedRecordingUrl || recordingUrl || existingMeta.recording_url || null
 
     // Prepare JSON metadata for recording_url column
     const metaPayload = JSON.stringify({
       ...existingMeta,
       title: sessionTitle,
-      recording_url: recordingUrl || null,
+      recording_url: finalRecordingUrl,
       status_detail: status || 'present',
       reason: status || 'present',
       remarks: remarks || '',
