@@ -20,10 +20,11 @@ import { toast } from 'sonner'
 
 import StudentProfilePage from '@/app/student/profile/page'
 import { StudentQuranSpace } from '@/components/quran/StudentQuranSpace'
+import HomeworkPanel from '@/components/homework-panel'
 
 export default function StudentDashboard() {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'home' | 'attendance' | 'profile' | 'quran'>('home')
+  const [activeTab, setActiveTab] = useState<'home' | 'attendance' | 'homework' | 'profile' | 'quran'>('home')
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [studentName, setStudentName] = useState<string>('')
@@ -291,6 +292,24 @@ export default function StudentDashboard() {
 
               <button
                 type="button"
+                onClick={() => setActiveTab('homework')}
+                title="Homework"
+                className={`w-full text-left px-3 py-2.5 rounded-xl font-bold text-[15px] flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                  isSidebarCollapsed ? 'justify-center' : 'justify-between'
+                } ${
+                  activeTab === 'homework'
+                    ? 'bg-[#1A6B4A] text-white shadow-md font-extrabold ring-1 ring-emerald-400/50'
+                    : 'text-slate-100 bg-teal-950/35 hover:text-white hover:bg-teal-900/70'
+                }`}
+              >
+                <div className="flex items-center gap-3 truncate">
+                  <FileText className="h-5 w-5 shrink-0 text-amber-300" />
+                  {!isSidebarCollapsed && <span className="truncate">Homework</span>}
+                </div>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setActiveTab('profile')}
                 title="Profile"
                 className={`w-full text-left px-3 py-2.5 rounded-xl font-bold text-[15px] flex items-center transition-all active:scale-[0.98] cursor-pointer ${
@@ -354,6 +373,11 @@ export default function StudentDashboard() {
               <StudentQuranSpace />
             </PageTransition>
           )}
+          {activeTab === 'homework' && (
+            <PageTransition key="homework">
+              <HomeworkPanel mode="student" />
+            </PageTransition>
+          )}
         </AnimatePresence>
       </main>
       </div>
@@ -386,6 +410,15 @@ export default function StudentDashboard() {
             <BookOpen className="h-5 w-5" />
           </div>
           <span className="text-[10px]">Quran</span>
+        </button>
+        <button 
+          onClick={() => setActiveTab('homework')} 
+          className={`flex flex-col items-center justify-center min-h-[48px] py-1 px-2 w-full transition-colors ${activeTab === 'homework' ? 'text-primary font-bold' : 'text-muted-foreground'}`}
+        >
+          <div className={`p-1 rounded-md mb-0.5 ${activeTab === 'homework' ? 'bg-primary/10 text-amber-600' : ''}`}>
+            <FileText className="h-5 w-5" />
+          </div>
+          <span className="text-[10px]">Homework</span>
         </button>
         <button 
           onClick={() => setActiveTab('profile')} 

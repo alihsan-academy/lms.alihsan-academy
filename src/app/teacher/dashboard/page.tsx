@@ -26,8 +26,9 @@ import { StudentSelectDropdown } from '@/components/student-select-dropdown'
 import TeacherProfilePage from '@/app/teacher/profile/page'
 import SyllabusBank from '@/components/syllabus-bank'
 import { TeacherQuranManager } from '@/components/quran/TeacherQuranManager'
+import HomeworkPanel from '@/components/homework-panel'
 
-type Tab = 'classes' | 'create' | 'groups' | 'stats' | 'profile' | 'syllabus' | 'quran'
+type Tab = 'classes' | 'create' | 'groups' | 'stats' | 'profile' | 'syllabus' | 'quran' | 'homework'
 
 export default function TeacherDashboard() {
   const formatUKTime = (scheduledAt: string) => {
@@ -91,6 +92,10 @@ export default function TeacherDashboard() {
   const [recordingUrl, setRecordingUrl] = useState('')
   const [classRemarks, setClassRemarks] = useState('')
   const [classHomework, setClassHomework] = useState('')
+  const [homeworkDueDate, setHomeworkDueDate] = useState('')
+  const [homeworkAssignMode, setHomeworkAssignMode] = useState<'all' | 'specific'>('all')
+  const [homeworkTargetStudentIds, setHomeworkTargetStudentIds] = useState<string[]>([])
+  const [homeworkAttachmentFile, setHomeworkAttachmentFile] = useState<File | null>(null)
   const [classDuration, setClassDuration] = useState<number | ''>('')
   const [isCompleting, setIsCompleting] = useState(false)
   
@@ -290,11 +295,103 @@ export default function TeacherDashboard() {
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || "Failed to save class notes")
 
+      // Also create structured Homework Assignment(s) for submission & evaluation workflow
+      if (classHomework.trim()) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession()
+          const authHeaders: Record<string, string> = {
+            'Content-Type': 'application/json',
+            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          }
+
+          const meta = parseClassMetadata(pendingCompleteClass, undefined)
+          let targets: { classId: string; studentId: string }[] = [
+            { classId: pendingCompleteClass.id, studentId: pendingCompleteClass.student_id },
+          ]
+
+          if (meta.is_group && meta.group_id) {
+            const siblingClasses = allTeacherClasses.filter((cls: any) => {
+              const clsMeta = parseClassMetadata(cls, undefined)
+              return (
+                clsMeta.is_group &&
+                clsMeta.group_id === meta.group_id &&
+                cls.scheduled_at === pendingCompleteClass.scheduled_at
+              )
+            })
+            const allGroupTargets = siblingClasses.length > 0
+              ? siblingClasses.map((cls: any) => ({ classId: cls.id, studentId: cls.student_id }))
+              : targets
+
+            if (homeworkAssignMode === 'specific') {
+              if (homeworkTargetStudentIds.length === 0) {
+                toast.error('Please select at least one student for the group homework, or choose All Students.')
+                setIsCompleting(false)
+                return
+              }
+              targets = allGroupTargets.filter((t) => homeworkTargetStudentIds.includes(t.studentId))
+              if (targets.length === 0) {
+                targets = homeworkTargetStudentIds.map((sid) => ({
+                  classId: pendingCompleteClass.id,
+                  studentId: sid,
+                }))
+              }
+            } else {
+              targets = allGroupTargets
+            }
+          }
+
+          let attachmentUrl: string | null = null
+          let attachmentName: string | null = null
+          if (homeworkAttachmentFile) {
+            const urlRes = await fetch('/api/homework/upload-url', {
+              method: 'POST',
+              headers: authHeaders,
+              body: JSON.stringify({ fileName: homeworkAttachmentFile.name, folder: 'assignments' }),
+            })
+            const urlData = await urlRes.json()
+            if (urlRes.ok && urlData.signedUrl) {
+              const putRes = await fetch(urlData.signedUrl, {
+                method: 'PUT',
+                headers: { 'Content-Type': homeworkAttachmentFile.type || 'application/octet-stream' },
+                body: homeworkAttachmentFile,
+              })
+              if (putRes.ok) {
+                attachmentUrl = urlData.publicUrl
+                attachmentName = homeworkAttachmentFile.name
+              }
+            }
+          }
+
+          const hwText = classHomework.trim()
+          const hwTitle = hwText.length > 80 ? `${hwText.slice(0, 77)}...` : hwText
+          await fetch('/api/homework', {
+            method: 'POST',
+            headers: authHeaders,
+            body: JSON.stringify({
+              targets,
+              groupId: meta.is_group ? meta.group_id : null,
+              classTitle: meta.title || 'Moral Class Alihsan Academy',
+              title: hwTitle,
+              instructions: hwText,
+              dueDate: homeworkDueDate || null,
+              attachmentUrl,
+              attachmentName,
+            }),
+          })
+        } catch (hwErr) {
+          console.error('Failed to create structured homework assignment:', hwErr)
+        }
+      }
+
       toast.success("Class notes & homework saved successfully.")
       setPendingCompleteClass(null)
       setRecordingUrl('')
       setClassRemarks('')
       setClassHomework('')
+      setHomeworkDueDate('')
+      setHomeworkAssignMode('all')
+      setHomeworkTargetStudentIds([])
+      setHomeworkAttachmentFile(null)
       setClassDuration('')
       setCompletionStatus('present')
       
@@ -721,6 +818,24 @@ export default function TeacherDashboard() {
                 <div className="flex items-center gap-3 truncate">
                   <BookOpen className="h-5 w-5 shrink-0 text-emerald-400" />
                   {!isSidebarCollapsed && <span className="truncate">Quran & Hifz</span>}
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('homework')}
+                title="Homework"
+                className={`w-full text-left px-3 py-2.5 rounded-xl font-bold text-[15px] flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                  isSidebarCollapsed ? 'justify-center' : 'justify-between'
+                } ${
+                  activeTab === 'homework'
+                    ? 'bg-[#1A6B4A] text-white shadow-md font-extrabold ring-1 ring-emerald-400/50'
+                    : 'text-slate-100 bg-emerald-950/35 hover:text-white hover:bg-emerald-900/70'
+                }`}
+              >
+                <div className="flex items-center gap-3 truncate">
+                  <FileText className="h-5 w-5 shrink-0 text-amber-300" />
+                  {!isSidebarCollapsed && <span className="truncate">Homework</span>}
                 </div>
               </button>
 
@@ -1377,6 +1492,12 @@ export default function TeacherDashboard() {
               <TeacherQuranManager students={students} teacherId={teacherId} />
             </PageTransition>
           )}
+
+          {activeTab === 'homework' && (
+            <PageTransition key="homework">
+              <HomeworkPanel mode="teacher" />
+            </PageTransition>
+          )}
         </AnimatePresence>
 
         {/* Modal: Mark Attendance / Complete Class */}
@@ -1431,6 +1552,107 @@ export default function TeacherDashboard() {
                       onChange={(e) => setClassHomework(e.target.value)}
                       className="w-full rounded-xl border-2 border-border p-3 text-base md:text-sm font-medium placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors resize-none"
                     />
+
+                    {/* Due Date & Optional Attachment */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                      <div>
+                        <Label className="text-[11px] font-bold text-muted-foreground block mb-1">
+                          Due Date (Optional)
+                        </Label>
+                        <input
+                          type="date"
+                          value={homeworkDueDate}
+                          onChange={(e) => setHomeworkDueDate(e.target.value)}
+                          className="w-full min-h-[40px] rounded-xl border border-border px-3 py-1.5 text-base sm:text-xs font-semibold bg-muted/30"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[11px] font-bold text-muted-foreground block mb-1">
+                          Worksheet / Reference File (Optional)
+                        </Label>
+                        <input
+                          type="file"
+                          onChange={(e) => setHomeworkAttachmentFile(e.target.files?.[0] || null)}
+                          className="w-full text-xs file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-muted file:text-foreground cursor-pointer"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Group Class Assignment Target Selector */}
+                    {(() => {
+                      const meta = parseClassMetadata(pendingCompleteClass, undefined)
+                      if (!meta.is_group || !meta.group_id) return null
+                      const groupPeers = Array.from(
+                        new Map(
+                          allTeacherClasses
+                            .filter((cls: any) => {
+                              const cm = parseClassMetadata(cls, undefined)
+                              return cm.is_group && cm.group_id === meta.group_id && cls.scheduled_at === pendingCompleteClass.scheduled_at
+                            })
+                            .map((cls: any) => [cls.student_id, students.find((s) => s.id === cls.student_id)])
+                        ).entries()
+                      ).map(([id, s]) => ({ id, name: s?.name || 'Student' }))
+
+                      if (groupPeers.length === 0) return null
+
+                      return (
+                        <div className="mt-2 p-3 rounded-xl bg-purple-50/70 border border-purple-200 space-y-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-xs font-extrabold text-purple-900">Assign Group Homework To:</span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setHomeworkAssignMode('all')}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer ${
+                                  homeworkAssignMode === 'all' ? 'bg-purple-700 text-white' : 'bg-white text-purple-900 border border-purple-200'
+                                }`}
+                              >
+                                All Students ({groupPeers.length})
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setHomeworkAssignMode('specific')}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer ${
+                                  homeworkAssignMode === 'specific' ? 'bg-purple-700 text-white' : 'bg-white text-purple-900 border border-purple-200'
+                                }`}
+                              >
+                                Specific Student(s)
+                              </button>
+                            </div>
+                          </div>
+
+                          {homeworkAssignMode === 'specific' && (
+                            <div className="flex flex-wrap gap-2 pt-1">
+                              {groupPeers.map((peer) => {
+                                const checked = homeworkTargetStudentIds.includes(peer.id)
+                                return (
+                                  <label
+                                    key={peer.id}
+                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold border cursor-pointer ${
+                                      checked ? 'bg-purple-700 text-white border-purple-700' : 'bg-white text-foreground border-purple-200'
+                                    }`}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={checked}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setHomeworkTargetStudentIds((prev) => [...prev, peer.id])
+                                        } else {
+                                          setHomeworkTargetStudentIds((prev) => prev.filter((id) => id !== peer.id))
+                                        }
+                                      }}
+                                      className="accent-purple-700"
+                                    />
+                                    <span>{peer.name}</span>
+                                  </label>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })()}
                   </div>
 
                   {/* Teacher Remarks */}
@@ -1786,6 +2008,7 @@ export default function TeacherDashboard() {
         <NavBtn active={activeTab === 'stats'} onClick={() => setActiveTab('stats')} icon={<BarChart3 className={activeTab === 'stats' ? 'fill-primary/20' : ''} />} label="Stats" />
         <NavBtn active={activeTab === 'syllabus'} onClick={() => setActiveTab('syllabus')} icon={<BookOpen className={activeTab === 'syllabus' ? 'fill-primary/20' : ''} />} label="Syllabus" />
         <NavBtn active={activeTab === 'quran'} onClick={() => setActiveTab('quran')} icon={<BookOpen className={activeTab === 'quran' ? 'fill-primary/20 text-emerald-600' : ''} />} label="Quran" />
+        <NavBtn active={activeTab === 'homework'} onClick={() => setActiveTab('homework')} icon={<FileText className={activeTab === 'homework' ? 'fill-primary/20 text-amber-600' : ''} />} label="Homework" />
         <NavBtn active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<User className={activeTab === 'profile' ? 'fill-primary/20' : ''} />} label="Profile" />
       </nav>
 
