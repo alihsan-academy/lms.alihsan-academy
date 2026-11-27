@@ -59,6 +59,7 @@ export default function TeacherDashboard() {
   const [allTeacherClasses, setAllTeacherClasses] = useState<any[]>([])
   const [allAttendance, setAllAttendance] = useState<any[]>([])
   const [currentTime, setCurrentTime] = useState<number>(() => Date.now())
+  const [scheduleFilter, setScheduleFilter] = useState<'upcoming' | 'pending' | 'completed' | 'all'>('upcoming')
 
   // Permanent Student Groups state
   const [groups, setGroups] = useState<any[]>([])
@@ -802,6 +803,76 @@ export default function TeacherDashboard() {
               </div>
 
               <div className="space-y-4">
+                {students.length > 0 && classes.length > 0 && (() => {
+                  const pastCutoff = currentTime - 60 * 60 * 1000 // 1 hour grace window for ongoing classes
+                  const upcomingCount = classes.filter(c => c.status !== 'completed' && new Date(c.scheduled_at).getTime() >= pastCutoff).length
+                  const pendingCount = classes.filter(c => c.status !== 'completed' && new Date(c.scheduled_at).getTime() < pastCutoff).length
+                  const completedCount = classes.filter(c => c.status === 'completed').length
+
+                  return (
+                    <div className="flex flex-wrap items-center gap-2 bg-white p-2 rounded-xl border border-border shadow-xs">
+                      <button
+                        type="button"
+                        onClick={() => setScheduleFilter('upcoming')}
+                        className={`px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all min-h-[44px] flex items-center gap-1.5 cursor-pointer ${
+                          scheduleFilter === 'upcoming'
+                            ? 'bg-[#1A6B4A] text-white shadow-xs'
+                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                        }`}
+                      >
+                        <span>Upcoming</span>
+                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-extrabold ${scheduleFilter === 'upcoming' ? 'bg-white/20 text-white' : 'bg-muted text-foreground'}`}>
+                          {upcomingCount}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setScheduleFilter('pending')}
+                        className={`px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all min-h-[44px] flex items-center gap-1.5 cursor-pointer ${
+                          scheduleFilter === 'pending'
+                            ? 'bg-amber-600 text-white shadow-xs'
+                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                        }`}
+                      >
+                        <span>Needs Marking</span>
+                        {pendingCount > 0 && (
+                          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-extrabold ${scheduleFilter === 'pending' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'}`}>
+                            {pendingCount}
+                          </span>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setScheduleFilter('completed')}
+                        className={`px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all min-h-[44px] flex items-center gap-1.5 cursor-pointer ${
+                          scheduleFilter === 'completed'
+                            ? 'bg-slate-800 text-white shadow-xs'
+                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                        }`}
+                      >
+                        <span>Completed</span>
+                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-extrabold ${scheduleFilter === 'completed' ? 'bg-white/20 text-white' : 'bg-muted text-foreground'}`}>
+                          {completedCount}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setScheduleFilter('all')}
+                        className={`px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all min-h-[44px] flex items-center gap-1.5 cursor-pointer ${
+                          scheduleFilter === 'all'
+                            ? 'bg-primary text-white shadow-xs'
+                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                        }`}
+                      >
+                        <span>All ({classes.length})</span>
+                      </button>
+                    </div>
+                  )
+                })()}
+
                 {students.length === 0 ? (
                   <AnimatedCard delay={0.1} className="text-center p-12 border-dashed shadow-none bg-transparent flex flex-col items-center">
                     <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4">
@@ -810,11 +881,61 @@ export default function TeacherDashboard() {
                     <h4 className="text-xl font-black text-foreground mb-1">No Students Assigned</h4>
                     <p className="text-muted-foreground font-medium">Please contact the administration to assign students to you.</p>
                   </AnimatedCard>
-                ) : classes.length > 0 ? (
-                  classes.map((c, index) => {
+                ) : (() => {
+                  const pastCutoff = currentTime - 60 * 60 * 1000
+                  const filteredClasses = classes
+                    .filter(c => {
+                      const t = new Date(c.scheduled_at).getTime()
+                      if (scheduleFilter === 'upcoming') return c.status !== 'completed' && t >= pastCutoff
+                      if (scheduleFilter === 'pending') return c.status !== 'completed' && t < pastCutoff
+                      if (scheduleFilter === 'completed') return c.status === 'completed'
+                      return true
+                    })
+                    .sort((a, b) => {
+                      const ta = new Date(a.scheduled_at).getTime()
+                      const tb = new Date(b.scheduled_at).getTime()
+                      // Upcoming: soonest first; others: most recent first
+                      return scheduleFilter === 'upcoming' ? ta - tb : tb - ta
+                    })
+
+                  if (classes.length === 0) {
+                    return (
+                      <AnimatedCard delay={0.1} className="text-center p-12 border-dashed shadow-none bg-transparent flex flex-col items-center">
+                        <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4">
+                          <Calendar className="h-10 w-10 text-muted-foreground" />
+                        </div>
+                        <h4 className="text-xl font-black text-foreground mb-1">Clear Schedule!</h4>
+                        <p className="text-muted-foreground font-medium">No classes found for this student. Time to schedule one!</p>
+                      </AnimatedCard>
+                    )
+                  }
+
+                  if (filteredClasses.length === 0) {
+                    return (
+                      <AnimatedCard delay={0.1} className="text-center p-10 border-dashed shadow-none bg-transparent flex flex-col items-center">
+                        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-3">
+                          <Calendar className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                        <h4 className="text-lg font-black text-foreground mb-1">
+                          {scheduleFilter === 'upcoming' ? 'No Upcoming Classes' : scheduleFilter === 'pending' ? 'No Pending Attendance' : 'No Completed Classes'}
+                        </h4>
+                        <p className="text-sm text-muted-foreground font-medium">
+                          {scheduleFilter === 'upcoming'
+                            ? 'All scheduled classes for this student are in the past or completed. Check "Needs Marking" or "Completed".'
+                            : scheduleFilter === 'pending'
+                            ? 'Great job! All past classes have been marked.'
+                            : 'No completed classes recorded yet.'}
+                        </p>
+                      </AnimatedCard>
+                    )
+                  }
+
+                  return filteredClasses.map((c, index) => {
                     const parsed = parseClassMetadata(c, allAttendance.find(a => a.class_id === c.id), students.find(s => s.id === c.student_id))
                     const student = students.find(s => s.id === c.student_id)
-                    const isClassTimeReached = new Date(c.scheduled_at).getTime() <= currentTime
+                    const scheduledMs = new Date(c.scheduled_at).getTime()
+                    const isClassTimeReached = scheduledMs <= currentTime
+                    const isPastUnmarked = c.status !== 'completed' && scheduledMs < currentTime - 2 * 60 * 60 * 1000
                     return (
                       <AnimatedCard key={c.id} delay={index * 0.03} className="p-0 overflow-hidden hover:border-primary/40 transition-colors rounded-xl border border-border shadow-sm">
                         <div className="p-3.5 md:p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
@@ -847,7 +968,9 @@ export default function TeacherDashboard() {
                           <div className="flex flex-col md:items-end gap-2 w-full md:w-auto self-end md:self-center">
                             <div className="flex flex-wrap items-center gap-2 md:justify-end">
                               <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                                parsed.status === 'present'
+                                isPastUnmarked
+                                  ? 'bg-amber-50 text-amber-800 border-amber-300'
+                                  : parsed.status === 'present'
                                   ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                                   : parsed.status === 'teacher_unavailable' || parsed.status === 'student_unavailable' || parsed.status === 'absent'
                                   ? 'bg-rose-50 text-rose-800 border-rose-200'
@@ -855,7 +978,7 @@ export default function TeacherDashboard() {
                                   ? 'bg-amber-50 text-amber-800 border-amber-200'
                                   : 'bg-blue-50 text-blue-800 border-blue-200'
                               }`}>
-                                {parsed.statusLabel}
+                                {isPastUnmarked ? 'Past · Attendance Pending' : parsed.statusLabel}
                               </span>
 
                               {/* Group Class Badge */}
@@ -883,7 +1006,7 @@ export default function TeacherDashboard() {
                             </div>
 
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto mt-1">
-                              {c.meet_link && (
+                              {c.meet_link && c.status !== 'completed' && !isPastUnmarked && (
                                 <a
                                   href={c.meet_link}
                                   target="_blank"
@@ -922,15 +1045,7 @@ export default function TeacherDashboard() {
                       </AnimatedCard>
                     )
                   })
-                ) : (
-                  <AnimatedCard delay={0.1} className="text-center p-12 border-dashed shadow-none bg-transparent flex flex-col items-center">
-                    <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4">
-                      <Calendar className="h-10 w-10 text-muted-foreground" />
-                    </div>
-                    <h4 className="text-xl font-black text-foreground mb-1">Clear Schedule!</h4>
-                    <p className="text-muted-foreground font-medium">No classes found for this student. Time to schedule one!</p>
-                  </AnimatedCard>
-                )}
+                })()}
               </div>
             </PageTransition>
           )}
