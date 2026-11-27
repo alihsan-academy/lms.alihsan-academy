@@ -686,24 +686,6 @@ export default function TeacherDashboard() {
 
               <button
                 type="button"
-                onClick={() => setActiveTab('profile')}
-                title="Profile"
-                className={`w-full text-left px-3 py-2.5 rounded-xl font-semibold text-sm flex items-center transition-all active:scale-[0.98] cursor-pointer ${
-                  isSidebarCollapsed ? 'justify-center' : 'justify-between'
-                } ${
-                  activeTab === 'profile'
-                    ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
-                    : 'text-slate-300 hover:text-white hover:bg-emerald-950/60'
-                }`}
-              >
-                <div className="flex items-center gap-3 truncate">
-                  <User className="h-4.5 w-4.5 shrink-0" />
-                  {!isSidebarCollapsed && <span className="truncate">Profile</span>}
-                </div>
-              </button>
-
-              <button
-                type="button"
                 onClick={() => setActiveTab('syllabus')}
                 title="Syllabus Bank"
                 className={`w-full text-left px-3 py-2.5 rounded-xl font-semibold text-sm flex items-center transition-all active:scale-[0.98] cursor-pointer ${
@@ -717,6 +699,24 @@ export default function TeacherDashboard() {
                 <div className="flex items-center gap-3 truncate">
                   <BookOpen className="h-4.5 w-4.5 shrink-0" />
                   {!isSidebarCollapsed && <span className="truncate">Syllabus Bank</span>}
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('profile')}
+                title="Profile"
+                className={`w-full text-left px-3 py-2.5 rounded-xl font-semibold text-sm flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                  isSidebarCollapsed ? 'justify-center' : 'justify-between'
+                } ${
+                  activeTab === 'profile'
+                    ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
+                    : 'text-slate-300 hover:text-white hover:bg-emerald-950/60'
+                }`}
+              >
+                <div className="flex items-center gap-3 truncate">
+                  <User className="h-4.5 w-4.5 shrink-0" />
+                  {!isSidebarCollapsed && <span className="truncate">Profile</span>}
                 </div>
               </button>
             </nav>
