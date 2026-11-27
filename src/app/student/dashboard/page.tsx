@@ -227,27 +227,27 @@ export default function StudentDashboard() {
           </div>
 
           {/* Navigation Items */}
-          <div className="flex-1 py-3 px-2 space-y-1.5 overflow-y-auto custom-scrollbar text-sm">
+          <div className="flex-1 py-3 px-2 space-y-2 overflow-y-auto custom-scrollbar text-[15px]">
             {!isSidebarCollapsed && (
-              <span className="px-2.5 mb-1.5 text-[11px] font-bold uppercase tracking-wider text-teal-400/80 block">
+              <span className="px-2.5 mb-1.5 text-xs font-extrabold uppercase tracking-wider text-teal-300 block">
                 Student Learning
               </span>
             )}
-            <nav className="space-y-1">
+            <nav className="space-y-1.5">
               <button
                 type="button"
                 onClick={() => setActiveTab('home')}
                 title="Home & Classes"
-                className={`w-full text-left px-3 py-2.5 rounded-xl font-semibold text-sm flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                className={`w-full text-left px-3 py-2.5 rounded-xl font-bold text-[15px] flex items-center transition-all active:scale-[0.98] cursor-pointer ${
                   isSidebarCollapsed ? 'justify-center' : 'justify-between'
                 } ${
                   activeTab === 'home'
-                    ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
-                    : 'text-slate-300 hover:text-white hover:bg-teal-950/60'
+                    ? 'bg-[#1A6B4A] text-white shadow-md font-extrabold ring-1 ring-emerald-400/50'
+                    : 'text-slate-100 bg-teal-950/35 hover:text-white hover:bg-teal-900/70'
                 }`}
               >
                 <div className="flex items-center gap-3 truncate">
-                  <Home className="h-4.5 w-4.5 shrink-0" />
+                  <Home className="h-5 w-5 shrink-0" />
                   {!isSidebarCollapsed && <span className="truncate">Home & Classes</span>}
                 </div>
               </button>
@@ -256,16 +256,16 @@ export default function StudentDashboard() {
                 type="button"
                 onClick={() => setActiveTab('attendance')}
                 title="Attendance"
-                className={`w-full text-left px-3 py-2.5 rounded-xl font-semibold text-sm flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                className={`w-full text-left px-3 py-2.5 rounded-xl font-bold text-[15px] flex items-center transition-all active:scale-[0.98] cursor-pointer ${
                   isSidebarCollapsed ? 'justify-center' : 'justify-between'
                 } ${
                   activeTab === 'attendance'
-                    ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
-                    : 'text-slate-300 hover:text-white hover:bg-teal-950/60'
+                    ? 'bg-[#1A6B4A] text-white shadow-md font-extrabold ring-1 ring-emerald-400/50'
+                    : 'text-slate-100 bg-teal-950/35 hover:text-white hover:bg-teal-900/70'
                 }`}
               >
                 <div className="flex items-center gap-3 truncate">
-                  <BarChart3 className="h-4.5 w-4.5 shrink-0" />
+                  <BarChart3 className="h-5 w-5 shrink-0" />
                   {!isSidebarCollapsed && <span className="truncate">Attendance</span>}
                 </div>
               </button>
@@ -274,16 +274,16 @@ export default function StudentDashboard() {
                 type="button"
                 onClick={() => setActiveTab('profile')}
                 title="Profile"
-                className={`w-full text-left px-3 py-2.5 rounded-xl font-semibold text-sm flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                className={`w-full text-left px-3 py-2.5 rounded-xl font-bold text-[15px] flex items-center transition-all active:scale-[0.98] cursor-pointer ${
                   isSidebarCollapsed ? 'justify-center' : 'justify-between'
                 } ${
                   activeTab === 'profile'
-                    ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
-                    : 'text-slate-300 hover:text-white hover:bg-teal-950/60'
+                    ? 'bg-[#1A6B4A] text-white shadow-md font-extrabold ring-1 ring-emerald-400/50'
+                    : 'text-slate-100 bg-teal-950/35 hover:text-white hover:bg-teal-900/70'
                 }`}
               >
                 <div className="flex items-center gap-3 truncate">
-                  <User className="h-4.5 w-4.5 shrink-0" />
+                  <User className="h-5 w-5 shrink-0" />
                   {!isSidebarCollapsed && <span className="truncate">Profile</span>}
                 </div>
               </button>

@@ -593,27 +593,27 @@ export default function TeacherDashboard() {
           </div>
 
           {/* Navigation Items */}
-          <div className="flex-1 py-3 px-2 space-y-1.5 overflow-y-auto custom-scrollbar text-sm">
+          <div className="flex-1 py-3 px-2 space-y-2 overflow-y-auto custom-scrollbar text-[15px]">
             {!isSidebarCollapsed && (
-              <span className="px-2.5 mb-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-400/80 block">
+              <span className="px-2.5 mb-1.5 text-xs font-extrabold uppercase tracking-wider text-emerald-300 block">
                 Teaching Workspace
               </span>
             )}
-            <nav className="space-y-1">
+            <nav className="space-y-1.5">
               <button
                 type="button"
                 onClick={() => setActiveTab('classes')}
                 title="Schedule"
-                className={`w-full text-left px-3 py-2.5 rounded-xl font-semibold text-sm flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                className={`w-full text-left px-3 py-2.5 rounded-xl font-bold text-[15px] flex items-center transition-all active:scale-[0.98] cursor-pointer ${
                   isSidebarCollapsed ? 'justify-center' : 'justify-between'
                 } ${
                   activeTab === 'classes'
-                    ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
-                    : 'text-slate-300 hover:text-white hover:bg-emerald-950/60'
+                    ? 'bg-[#1A6B4A] text-white shadow-md font-extrabold ring-1 ring-emerald-400/50'
+                    : 'text-slate-100 bg-emerald-950/35 hover:text-white hover:bg-emerald-900/70'
                 }`}
               >
                 <div className="flex items-center gap-3 truncate">
-                  <Calendar className="h-4.5 w-4.5 shrink-0" />
+                  <Calendar className="h-5 w-5 shrink-0" />
                   {!isSidebarCollapsed && <span className="truncate">Schedule</span>}
                 </div>
               </button>
@@ -625,16 +625,16 @@ export default function TeacherDashboard() {
                   setActiveTab('create')
                 }}
                 title="New Class"
-                className={`w-full text-left px-3 py-2.5 rounded-xl font-semibold text-sm flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                className={`w-full text-left px-3 py-2.5 rounded-xl font-bold text-[15px] flex items-center transition-all active:scale-[0.98] cursor-pointer ${
                   isSidebarCollapsed ? 'justify-center' : 'justify-between'
                 } ${
                   activeTab === 'create'
-                    ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
-                    : 'text-slate-300 hover:text-white hover:bg-emerald-950/60'
+                    ? 'bg-[#1A6B4A] text-white shadow-md font-extrabold ring-1 ring-emerald-400/50'
+                    : 'text-slate-100 bg-emerald-950/35 hover:text-white hover:bg-emerald-900/70'
                 }`}
               >
                 <div className="flex items-center gap-3 truncate">
-                  <Plus className="h-4.5 w-4.5 shrink-0" />
+                  <Plus className="h-5 w-5 shrink-0" />
                   {!isSidebarCollapsed && <span className="truncate">New Class</span>}
                 </div>
               </button>
@@ -643,21 +643,21 @@ export default function TeacherDashboard() {
                 type="button"
                 onClick={() => setActiveTab('groups')}
                 title="Permanent Student Groups"
-                className={`w-full text-left px-3 py-2.5 rounded-xl font-semibold text-sm flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                className={`w-full text-left px-3 py-2.5 rounded-xl font-bold text-[15px] flex items-center transition-all active:scale-[0.98] cursor-pointer ${
                   isSidebarCollapsed ? 'justify-center' : 'justify-between'
                 } ${
                   activeTab === 'groups'
-                    ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
-                    : 'text-slate-300 hover:text-white hover:bg-emerald-950/60'
+                    ? 'bg-[#1A6B4A] text-white shadow-md font-extrabold ring-1 ring-emerald-400/50'
+                    : 'text-slate-100 bg-emerald-950/35 hover:text-white hover:bg-emerald-900/70'
                 }`}
               >
                 <div className="flex items-center gap-3 truncate w-full">
-                  <Users className="h-4.5 w-4.5 shrink-0" />
+                  <Users className="h-5 w-5 shrink-0" />
                   {!isSidebarCollapsed && (
                     <div className="flex items-center justify-between w-full">
                       <span className="truncate">Groups / Batches</span>
                       {groups.length > 0 && (
-                        <span className="ml-1.5 px-1.5 py-0.2 bg-emerald-800 text-emerald-200 text-[10px] font-bold rounded-full border border-emerald-600/50">
+                        <span className="ml-1.5 px-1.5 py-0.5 bg-emerald-800 text-emerald-100 text-[11px] font-extrabold rounded-full border border-emerald-500/50">
                           {groups.length}
                         </span>
                       )}
@@ -670,16 +670,16 @@ export default function TeacherDashboard() {
                 type="button"
                 onClick={() => setActiveTab('stats')}
                 title="Attendance & Stats"
-                className={`w-full text-left px-3 py-2.5 rounded-xl font-semibold text-sm flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                className={`w-full text-left px-3 py-2.5 rounded-xl font-bold text-[15px] flex items-center transition-all active:scale-[0.98] cursor-pointer ${
                   isSidebarCollapsed ? 'justify-center' : 'justify-between'
                 } ${
                   activeTab === 'stats'
-                    ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
-                    : 'text-slate-300 hover:text-white hover:bg-emerald-950/60'
+                    ? 'bg-[#1A6B4A] text-white shadow-md font-extrabold ring-1 ring-emerald-400/50'
+                    : 'text-slate-100 bg-emerald-950/35 hover:text-white hover:bg-emerald-900/70'
                 }`}
               >
                 <div className="flex items-center gap-3 truncate">
-                  <BarChart3 className="h-4.5 w-4.5 shrink-0" />
+                  <BarChart3 className="h-5 w-5 shrink-0" />
                   {!isSidebarCollapsed && <span className="truncate">Attendance & Stats</span>}
                 </div>
               </button>
@@ -688,16 +688,16 @@ export default function TeacherDashboard() {
                 type="button"
                 onClick={() => setActiveTab('syllabus')}
                 title="Syllabus Bank"
-                className={`w-full text-left px-3 py-2.5 rounded-xl font-semibold text-sm flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                className={`w-full text-left px-3 py-2.5 rounded-xl font-bold text-[15px] flex items-center transition-all active:scale-[0.98] cursor-pointer ${
                   isSidebarCollapsed ? 'justify-center' : 'justify-between'
                 } ${
                   activeTab === 'syllabus'
-                    ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
-                    : 'text-slate-300 hover:text-white hover:bg-emerald-950/60'
+                    ? 'bg-[#1A6B4A] text-white shadow-md font-extrabold ring-1 ring-emerald-400/50'
+                    : 'text-slate-100 bg-emerald-950/35 hover:text-white hover:bg-emerald-900/70'
                 }`}
               >
                 <div className="flex items-center gap-3 truncate">
-                  <BookOpen className="h-4.5 w-4.5 shrink-0" />
+                  <BookOpen className="h-5 w-5 shrink-0" />
                   {!isSidebarCollapsed && <span className="truncate">Syllabus Bank</span>}
                 </div>
               </button>
@@ -706,16 +706,16 @@ export default function TeacherDashboard() {
                 type="button"
                 onClick={() => setActiveTab('profile')}
                 title="Profile"
-                className={`w-full text-left px-3 py-2.5 rounded-xl font-semibold text-sm flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                className={`w-full text-left px-3 py-2.5 rounded-xl font-bold text-[15px] flex items-center transition-all active:scale-[0.98] cursor-pointer ${
                   isSidebarCollapsed ? 'justify-center' : 'justify-between'
                 } ${
                   activeTab === 'profile'
-                    ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
-                    : 'text-slate-300 hover:text-white hover:bg-emerald-950/60'
+                    ? 'bg-[#1A6B4A] text-white shadow-md font-extrabold ring-1 ring-emerald-400/50'
+                    : 'text-slate-100 bg-emerald-950/35 hover:text-white hover:bg-emerald-900/70'
                 }`}
               >
                 <div className="flex items-center gap-3 truncate">
-                  <User className="h-4.5 w-4.5 shrink-0" />
+                  <User className="h-5 w-5 shrink-0" />
                   {!isSidebarCollapsed && <span className="truncate">Profile</span>}
                 </div>
               </button>
