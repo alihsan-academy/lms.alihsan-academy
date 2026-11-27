@@ -26,7 +26,9 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const groups: StudentGroup[] = user.user_metadata?.student_groups || []
+    const supabaseAdmin = getAdminClient()
+    const { data: freshUserData } = await supabaseAdmin.auth.admin.getUserById(user.id)
+    const groups: StudentGroup[] = freshUserData?.user?.user_metadata?.student_groups || user.user_metadata?.student_groups || []
     return NextResponse.json({ groups })
   } catch (error: any) {
     console.error('Error in GET /api/teacher/groups:', error)
@@ -59,7 +61,11 @@ export async function POST(request: Request) {
 
     if (action === 'create') {
       const name = (group?.name || '').trim()
-      const studentIds: string[] = Array.isArray(group?.studentIds) ? group.studentIds : []
+      const studentIds: string[] = Array.isArray(group?.studentIds)
+        ? group.studentIds
+        : Array.isArray(group?.student_ids)
+          ? group.student_ids
+          : []
 
       if (!name) {
         return NextResponse.json({ error: 'Group name is required' }, { status: 400 })
@@ -79,7 +85,11 @@ export async function POST(request: Request) {
     } else if (action === 'update') {
       const id = group?.id || groupId
       const name = (group?.name || '').trim()
-      const studentIds: string[] = Array.isArray(group?.studentIds) ? group.studentIds : []
+      const studentIds: string[] = Array.isArray(group?.studentIds)
+        ? group.studentIds
+        : Array.isArray(group?.student_ids)
+          ? group.student_ids
+          : []
 
       if (!id) {
         return NextResponse.json({ error: 'groupId is required for update' }, { status: 400 })

@@ -76,14 +76,17 @@ function request(urlPath, options = {}) {
 
 async function runLiveProductionAudit() {
   console.log('====================================================================');
-  console.log('🚀 LIVE PRODUCTION PIN-TO-PIN SYSTEM & CONCURRENCY AUDIT');
+  console.log('🚀 LIVE PRODUCTION PIN-TO-PIN SYSTEM & RECENT FEATURES AUDIT');
   console.log(`Target: ${BASE_URL}`);
   console.log('====================================================================\n');
 
   // 1. ROUTE PROTECTION & PORTAL SWITCHER RULES
-  console.log('--- 1. Testing Route Protection & Portal Rules on Vercel Live ---');
+  console.log('--- 1. Testing Route Protection, PWA & Portal Rules on Vercel Live ---');
   const homeRes = await request('/');
   logTest('Public Home Page loads (200 OK)', homeRes.status === 200);
+
+  const pwaRes = await request('/manifest.webmanifest');
+  logTest('PWA Webmanifest loads (200 OK)', pwaRes.status === 200 && pwaRes.json?.name?.includes('Al IHSAN'));
 
   const loginRes = await request('/login');
   logTest('Public Login Page loads or redirects (200/307)', loginRes.status === 200 || loginRes.status === 307);
@@ -106,7 +109,7 @@ async function runLiveProductionAudit() {
   logTest('Unauthenticated /student/dashboard protected (redirect/blocked)',
     studentDashLoggedOut.status === 307 || studentDashLoggedOut.status === 401 || studentDashLoggedOut.status === 200);
 
-  // 2. API SECURITY CHECKS (OWASP)
+  // 2. API SECURITY CHECKS (OWASP TOP 10)
   console.log('\n--- 2. Testing API Security & Access Controls (OWASP) ---');
   const unauthAdminData = await request('/api/admin/data');
   logTest('Unauthenticated GET /api/admin/data rejected (401 Unauthorized)', unauthAdminData.status === 401);
@@ -132,7 +135,16 @@ async function runLiveProductionAudit() {
   });
   logTest('Unauthenticated POST /api/classes/complete rejected (401 Unauthorized)', unauthCompleteClass.status === 401);
 
-  // 3. SUPERADMIN AUTHENTICATION & PARALLELIZED DATA PERFORMANCE
+  const unauthGroups = await request('/api/teacher/groups');
+  logTest('Unauthenticated GET /api/teacher/groups rejected (401 Unauthorized)', unauthGroups.status === 401);
+
+  const unauthSyllabus = await request('/api/syllabus');
+  logTest('Unauthenticated GET /api/syllabus rejected (401 Unauthorized)', unauthSyllabus.status === 401);
+
+  const unauthQuran = await request('/api/quran/assignments');
+  logTest('Unauthenticated GET /api/quran/assignments rejected (401 Unauthorized)', unauthQuran.status === 401);
+
+  // 3. SUPERADMIN AUTHENTICATION & CENTRAL DATA PERFORMANCE
   console.log('\n--- 3. Testing Superadmin Authentication & API Latency ---');
   const t0 = Date.now();
   const { data: superadminAuth, error: saAuthError } = await supabaseAnon.auth.signInWithPassword({
@@ -196,7 +208,8 @@ async function runLiveProductionAudit() {
       role: 'student',
       teacherId: teacherUserId,
       registrationNumber: testStudentReg,
-      className: 'Tahfeez Grade 1'
+      className: 'Year 1',
+      year: 'Year 1'
     }
   });
 
@@ -205,8 +218,8 @@ async function runLiveProductionAudit() {
     createStudentRes.status === 200 && !!studentUserId,
     `Student ID: ${studentUserId}`);
 
-  // 5. TEACHER WORKFLOW & CLASS SCHEDULING
-  console.log('\n--- 5. Testing Teacher Live Workflow & Scheduling ---');
+  // 5. TEACHER WORKFLOW, GROUPS & SCHEDULING
+  console.log('\n--- 5. Testing Teacher Live Workflow, Groups & Class Scheduling ---');
   const { data: teacherAuth } = await supabaseAnon.auth.signInWithPassword({
     email: testTeacherEmail,
     password: testTeacherPass
@@ -224,7 +237,27 @@ async function runLiveProductionAudit() {
   logTest('Teacher GET /api/teacher/students verifies assigned student in roster',
     teacherStudentsRes.status === 200 && seesAssignedStudent);
 
-  // Teacher schedules class
+  // Test Groups API (New Feature)
+  const createGroupRes = await request('/api/teacher/groups', {
+    method: 'POST',
+    headers: teachHeaders,
+    body: {
+      action: 'create',
+      group: {
+        name: 'Hifz Group Alpha',
+        studentIds: [studentUserId]
+      }
+    }
+  });
+  logTest('Teacher POST /api/teacher/groups creates permanent student group',
+    createGroupRes.status === 200 && createGroupRes.json?.groups?.some(g => g.name === 'Hifz Group Alpha'),
+    `Group count: ${createGroupRes.json?.groups?.length}`);
+
+  const fetchGroupsRes = await request('/api/teacher/groups', { headers: teachHeaders });
+  logTest('Teacher GET /api/teacher/groups retrieves created groups',
+    fetchGroupsRes.status === 200 && fetchGroupsRes.json?.groups?.length > 0);
+
+  // Teacher schedules class for assigned student
   const classDate = new Date().toISOString().split('T')[0];
   const scheduleClassRes = await request('/api/classes/create', {
     method: 'POST',
@@ -264,10 +297,11 @@ async function runLiveProductionAudit() {
       studentId: studentUserId,
       status: 'present',
       recordingUrl: 'https://youtube.com/watch?v=sample-recording',
-      remarks: 'Full recitation completed cleanly'
+      remarks: 'Full recitation completed cleanly',
+      homework: 'Practice Surah Al-Fatiha verses 1-7'
     }
   });
-  logTest('Teacher marks attendance (Present) -> transitions status to completed',
+  logTest('Teacher marks attendance (Present) with Homework & Remarks',
     completeClassRes.status === 200 && completeClassRes.json?.success);
 
   // 6. STUDENT WORKFLOW & DATA VERIFICATION
