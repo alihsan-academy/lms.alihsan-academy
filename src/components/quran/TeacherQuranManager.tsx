@@ -36,7 +36,6 @@ export function TeacherQuranManager({ students, teacherId }: TeacherQuranManager
   // Assignments list state
   const [assignments, setAssignments] = useState<QuranAssignment[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
-  const [tablePendingMigration, setTablePendingMigration] = useState<boolean>(false)
 
   // Filters
   const [filterStudentId, setFilterStudentId] = useState<string>('all')
@@ -70,7 +69,6 @@ export function TeacherQuranManager({ students, teacherId }: TeacherQuranManager
       if (!res.ok) throw new Error(data.error || 'Failed to fetch assignments')
 
       setAssignments(data.assignments || [])
-      setTablePendingMigration(!!data.tablePendingMigration)
     } catch (err: any) {
       console.error(err)
       toast.error(err.message || 'Could not load Quran assignments')
@@ -219,19 +217,6 @@ export function TeacherQuranManager({ students, teacherId }: TeacherQuranManager
           Assign New Portion
         </button>
       </div>
-
-      {/* Migration Notice if table is pending */}
-      {tablePendingMigration && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-          <div className="text-xs sm:text-sm space-y-1 text-amber-800 dark:text-amber-300">
-            <p className="font-semibold">Supabase Migration Notice</p>
-            <p>
-              Please run the provided <code className="px-1.5 py-0.5 rounded bg-amber-500/20 font-mono text-xs">quran_assignments_migration.sql</code> script in your Supabase Dashboard SQL Editor to enable persistent database storage.
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
