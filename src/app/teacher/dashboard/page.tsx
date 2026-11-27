@@ -24,8 +24,9 @@ import { StudentPreviewModal } from '@/components/StudentPreviewModal'
 import { StudentSelectDropdown } from '@/components/student-select-dropdown'
 
 import TeacherProfilePage from '@/app/teacher/profile/page'
+import SyllabusBank from '@/components/syllabus-bank'
 
-type Tab = 'classes' | 'create' | 'groups' | 'stats' | 'profile'
+type Tab = 'classes' | 'create' | 'groups' | 'stats' | 'profile' | 'syllabus'
 
 export default function TeacherDashboard() {
   const formatUKTime = (scheduledAt: string) => {
@@ -700,6 +701,24 @@ export default function TeacherDashboard() {
                   {!isSidebarCollapsed && <span className="truncate">Profile</span>}
                 </div>
               </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('syllabus')}
+                title="Syllabus Bank"
+                className={`w-full text-left px-3 py-2.5 rounded-xl font-semibold text-sm flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                  isSidebarCollapsed ? 'justify-center' : 'justify-between'
+                } ${
+                  activeTab === 'syllabus'
+                    ? 'bg-[#1A6B4A] text-white shadow-xs font-bold'
+                    : 'text-slate-300 hover:text-white hover:bg-emerald-950/60'
+                }`}
+              >
+                <div className="flex items-center gap-3 truncate">
+                  <BookOpen className="h-4.5 w-4.5 shrink-0" />
+                  {!isSidebarCollapsed && <span className="truncate">Syllabus Bank</span>}
+                </div>
+              </button>
             </nav>
           </div>
 
@@ -1148,6 +1167,14 @@ export default function TeacherDashboard() {
               <TeacherProfilePage />
             </PageTransition>
           )}
+
+          {activeTab === 'syllabus' && (
+            <PageTransition key="syllabus" className="flex-1 min-h-0 flex flex-col">
+              <div className="flex-1 min-h-0 overflow-hidden rounded-xl border border-border/60">
+                <SyllabusBank mode="teacher" />
+              </div>
+            </PageTransition>
+          )}
         </AnimatePresence>
 
         {/* Modal: Mark Attendance / Complete Class */}
@@ -1555,6 +1582,7 @@ export default function TeacherDashboard() {
         <NavBtn active={activeTab === 'create'} onClick={() => { setPreselectedGroupId(null); setActiveTab('create') }} icon={<Plus className={activeTab === 'create' ? 'fill-primary/20' : ''} />} label="Create" />
         <NavBtn active={activeTab === 'groups'} onClick={() => setActiveTab('groups')} icon={<Users className={activeTab === 'groups' ? 'fill-primary/20' : ''} />} label="Groups" />
         <NavBtn active={activeTab === 'stats'} onClick={() => setActiveTab('stats')} icon={<BarChart3 className={activeTab === 'stats' ? 'fill-primary/20' : ''} />} label="Stats" />
+        <NavBtn active={activeTab === 'syllabus'} onClick={() => setActiveTab('syllabus')} icon={<BookOpen className={activeTab === 'syllabus' ? 'fill-primary/20' : ''} />} label="Syllabus" />
         <NavBtn active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<User className={activeTab === 'profile' ? 'fill-primary/20' : ''} />} label="Profile" />
       </nav>
 

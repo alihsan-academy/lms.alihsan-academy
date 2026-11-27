@@ -23,8 +23,9 @@ import { AcademicDistributionCard, normalizeTerm, normalizeYear } from '@/compon
 import { UnifiedAdminAnalyticsWidget } from '@/components/unified-admin-analytics-widget'
 import { DateFilterType, getDateRange, isDateWithinRange, parseClassMetadata } from '@/lib/attendance-utils'
 import { SecurityPasswordCard } from '@/components/security-password-card'
+import SyllabusBank from '@/components/syllabus-bank'
 
-type Tab = 'statistics' | 'students' | 'teachers' | 'attendance' | 'manage'
+type Tab = 'statistics' | 'students' | 'teachers' | 'attendance' | 'manage' | 'syllabus'
 
 export default function SuperAdminDashboard() {
   const formatUKTime = (dateStr: string) => {
@@ -1209,6 +1210,23 @@ export default function SuperAdminDashboard() {
                   <div className="flex items-center gap-2.5 truncate">
                     <Users className="h-4 w-4 shrink-0" />
                     {!isSidebarCollapsed && <span className="truncate">Manage Users</span>}
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('syllabus')}
+                  title="Syllabus Bank"
+                  className={`w-full text-left px-2.5 py-2 rounded-lg font-medium text-xs flex items-center transition-all active:scale-[0.98] cursor-pointer ${
+                    isSidebarCollapsed ? 'justify-center' : 'justify-between'
+                  } ${
+                    activeTab === 'syllabus'
+                      ? 'bg-[#1A6B4A] text-white font-semibold shadow-xs'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 truncate">
+                    <BookOpen className="h-4 w-4 shrink-0" />
+                    {!isSidebarCollapsed && <span className="truncate">Syllabus Bank</span>}
                   </div>
                 </button>
               </nav>
@@ -2529,6 +2547,14 @@ export default function SuperAdminDashboard() {
 
             </PageTransition>
           )}
+
+          {activeTab === 'syllabus' && (
+            <PageTransition key="syllabus" className="flex-1 min-h-0 flex flex-col">
+              <div className="flex-1 min-h-0 overflow-hidden rounded-xl border border-border/60">
+                <SyllabusBank mode="admin" />
+              </div>
+            </PageTransition>
+          )}
         </AnimatePresence>
       </main>
       </div>
@@ -3205,6 +3231,7 @@ export default function SuperAdminDashboard() {
         <NavBtn active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<GraduationCap className="size-4" />} label="Students" />
         <NavBtn active={activeTab === 'teachers'} onClick={() => setActiveTab('teachers')} icon={<BookOpen className="size-4" />} label="Educator" />
         <NavBtn active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={<CheckCircle className="size-4" />} label="Attendance" />
+        <NavBtn active={activeTab === 'syllabus'} onClick={() => setActiveTab('syllabus')} icon={<BookOpen className="size-4" />} label="Syllabus" />
         <NavBtn active={activeTab === 'manage'} onClick={() => setActiveTab('manage')} icon={<Users className="size-4" />} label="Users" />
       </nav>
     </div>
