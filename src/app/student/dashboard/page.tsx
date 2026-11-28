@@ -382,8 +382,8 @@ export default function StudentDashboard() {
       </main>
       </div>
 
-      {/* Bottom Navigation for Mobile */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-border flex justify-around p-1 sm:p-2 z-50 md:hidden pb-safe shadow-md">
+      {/* Bottom Navigation for Mobile (5 core items) */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-border grid grid-cols-5 p-1 sm:p-2 z-50 md:hidden pb-safe shadow-md">
         <button 
           onClick={() => setActiveTab('home')} 
           className={`flex flex-col items-center justify-center min-h-[48px] py-1 px-2 w-full transition-colors ${activeTab === 'home' ? 'text-primary font-bold' : 'text-muted-foreground'}`}

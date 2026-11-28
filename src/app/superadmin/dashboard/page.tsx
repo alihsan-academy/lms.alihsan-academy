@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
 import { AcademyHeader } from '@/components/academy-header'
-import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, CheckCircle2, Search, AlertCircle, X, RefreshCw, Trash, Pencil, Save, ChevronDown, UserCheck, Clock, XCircle, Lock, Key, Calendar, Filter, Copy, Mail, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Users, GraduationCap, BookOpen, BarChart3, Loader2, UserPlus, UserMinus, ShieldAlert, CheckCircle, CheckCircle2, Search, AlertCircle, X, RefreshCw, Trash, Pencil, Save, ChevronDown, UserCheck, Clock, XCircle, Lock, Key, Calendar, Filter, Copy, Mail, ChevronLeft, ChevronRight, Menu } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -42,6 +42,7 @@ export default function SuperAdminDashboard() {
 
   const [activeTab, setActiveTab] = useState<Tab>('statistics')
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const supabase = createClient()
 
@@ -3225,14 +3226,68 @@ export default function SuperAdminDashboard() {
         )}
       </AnimatePresence>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-border flex justify-around p-1 z-40 md:hidden pb-safe shadow-lg">
-        <NavBtn active={activeTab === 'statistics'} onClick={() => setActiveTab('statistics')} icon={<BarChart3 className="size-4" />} label="Stats" />
-        <NavBtn active={activeTab === 'students'} onClick={() => setActiveTab('students')} icon={<GraduationCap className="size-4" />} label="Students" />
-        <NavBtn active={activeTab === 'teachers'} onClick={() => setActiveTab('teachers')} icon={<BookOpen className="size-4" />} label="Educator" />
-        <NavBtn active={activeTab === 'attendance'} onClick={() => setActiveTab('attendance')} icon={<CheckCircle className="size-4" />} label="Attendance" />
-        <NavBtn active={activeTab === 'syllabus'} onClick={() => setActiveTab('syllabus')} icon={<BookOpen className="size-4" />} label="Syllabus" />
-        <NavBtn active={activeTab === 'manage'} onClick={() => setActiveTab('manage')} icon={<Users className="size-4" />} label="Users" />
+      {/* Mobile "More" Drawer */}
+      <AnimatePresence>
+        {isMobileMoreOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsMobileMoreOpen(false)}
+            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px] md:hidden"
+          >
+            <motion.div
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 40, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="fixed bottom-[64px] left-3 right-3 bg-white rounded-2xl border border-border shadow-2xl p-3 space-y-1.5 z-50"
+            >
+              <div className="flex items-center justify-between px-2 pb-1.5 border-b border-border/70">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">More Governance</span>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileMoreOpen(false)}
+                  className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground cursor-pointer"
+                  aria-label="Close menu"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => { setActiveTab('syllabus'); setIsMobileMoreOpen(false) }}
+                className={`w-full min-h-[48px] px-3 py-2.5 rounded-xl text-sm font-bold flex items-center gap-3 cursor-pointer ${
+                  activeTab === 'syllabus' ? 'bg-[#1A6B4A] text-white' : 'text-foreground hover:bg-muted'
+                }`}
+              >
+                <BookOpen className="h-5 w-5 shrink-0" />
+                <span>Syllabus Bank</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setActiveTab('manage'); setIsMobileMoreOpen(false) }}
+                className={`w-full min-h-[48px] px-3 py-2.5 rounded-xl text-sm font-bold flex items-center gap-3 cursor-pointer ${
+                  activeTab === 'manage' ? 'bg-[#1A6B4A] text-white' : 'text-foreground hover:bg-muted'
+                }`}
+              >
+                <Users className="h-5 w-5 shrink-0" />
+                <span>Manage Users</span>
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Bottom Navigation (5 core items) */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-border grid grid-cols-5 p-1 z-40 md:hidden pb-safe shadow-lg">
+        <NavBtn active={activeTab === 'statistics'} onClick={() => { setActiveTab('statistics'); setIsMobileMoreOpen(false) }} icon={<BarChart3 className="size-4" />} label="Stats" />
+        <NavBtn active={activeTab === 'students'} onClick={() => { setActiveTab('students'); setIsMobileMoreOpen(false) }} icon={<GraduationCap className="size-4" />} label="Students" />
+        <NavBtn active={activeTab === 'teachers'} onClick={() => { setActiveTab('teachers'); setIsMobileMoreOpen(false) }} icon={<BookOpen className="size-4" />} label="Educator" />
+        <NavBtn active={activeTab === 'attendance'} onClick={() => { setActiveTab('attendance'); setIsMobileMoreOpen(false) }} icon={<CheckCircle className="size-4" />} label="Attendance" />
+        <NavBtn active={isMobileMoreOpen || ['syllabus', 'manage'].includes(activeTab)} onClick={() => setIsMobileMoreOpen((prev) => !prev)} icon={<Menu className="size-4" />} label="More" />
       </nav>
     </div>
   )

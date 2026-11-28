@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LogoutButton } from '@/components/logout-button'
 import { AcademyHeader } from '@/components/academy-header'
-import { Calendar, Plus, BarChart3, Loader2, Video, CheckCircle, Clock, User, Globe, AlertCircle, ChevronDown, Users, Copy, Sparkles, Pencil, X, Download, FileText, CheckCircle2, XCircle, Search, BookOpen, Eye, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Calendar, Plus, BarChart3, Loader2, Video, CheckCircle, Clock, User, Globe, AlertCircle, ChevronDown, Users, Copy, Sparkles, Pencil, X, Download, FileText, CheckCircle2, XCircle, Search, BookOpen, Eye, ChevronLeft, ChevronRight, Menu, RefreshCw } from 'lucide-react'
 import { format, parseISO, addWeeks, isAfter, startOfToday } from 'date-fns'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -47,6 +47,7 @@ export default function TeacherDashboard() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<Tab>('classes')
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [teacherId, setTeacherId] = useState<string | null>(null)
   const [teacherName, setTeacherName] = useState<string>('')
@@ -98,6 +99,7 @@ export default function TeacherDashboard() {
   const [homeworkAttachmentFile, setHomeworkAttachmentFile] = useState<File | null>(null)
   const [classDuration, setClassDuration] = useState<number | ''>('')
   const [isCompleting, setIsCompleting] = useState(false)
+  const [syncingRecordingId, setSyncingRecordingId] = useState<string | null>(null)
   
   // Modal for editing student details & enrolment status
   const [statusEditTarget, setStatusEditTarget] = useState<string | null>(null)
@@ -242,7 +244,7 @@ export default function TeacherDashboard() {
     }
   }, [teacherId, activeTab])
 
-  async function fetchClasses(studentId: string) {
+  async function fetchClasses(studentId: string, skipAutoSync = false) {
     if (!studentId) return
     const response = await fetch(`/api/classes/teacher?studentId=${encodeURIComponent(studentId)}`)
     const result = await response.json()
@@ -250,7 +252,59 @@ export default function TeacherDashboard() {
       setClasses([])
       return
     }
-    setClasses(result.classes || [])
+    const loadedClasses = result.classes || []
+    setClasses(loadedClasses)
+
+    // Silent background auto-sync for recent completed classes (last 48h) missing recording_url
+    if (!skipAutoSync && loadedClasses.length > 0) {
+      const cutoff = Date.now() - 48 * 60 * 60 * 1000
+      const pendingIds = loadedClasses
+        .filter((c: any) => {
+          if (c.status !== 'completed' || !c.meet_link) return false
+          if (new Date(c.scheduled_at).getTime() < cutoff) return false
+          const parsed = parseClassMetadata(c, null, null)
+          return !parsed.recording_url
+        })
+        .map((c: any) => c.id)
+
+      if (pendingIds.length > 0) {
+        fetch('/api/classes/sync-recordings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ classIds: pendingIds }),
+        })
+          .then((res) => (res.ok ? res.json() : null))
+          .then((syncRes) => {
+            if (syncRes && syncRes.updatedCount > 0) {
+              fetchClasses(studentId, true)
+            }
+          })
+          .catch(() => {})
+      }
+    }
+  }
+
+  async function handleManualSyncRecording(classId: string) {
+    setSyncingRecordingId(classId)
+    try {
+      const res = await fetch('/api/classes/sync-recordings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ classIds: [classId] }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to sync recording')
+      if (data.updatedCount > 0) {
+        toast.success('Recording synced from Google Drive!')
+        await fetchClasses(selectedStudentId, true)
+      } else {
+        toast.info('Recording is not ready yet. Google Drive usually takes 2–5 minutes after class ends.')
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Could not sync recording')
+    } finally {
+      setSyncingRecordingId(null)
+    }
   }
 
   async function fetchAllTeacherData() {
@@ -1173,12 +1227,28 @@ export default function TeacherDashboard() {
                                 </span>
                               ) : null}
 
-                              {parsed.recording_url && (
+                              {parsed.recording_url ? (
                                 <a href={parsed.recording_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] font-bold text-teal-800 bg-teal-50 border border-teal-300 px-2.5 py-0.5 rounded-full hover:bg-teal-100 transition-colors shadow-2xs">
                                   <Video className="h-3.5 w-3.5 text-teal-700" />
                                   <span>View Recording</span>
                                 </a>
-                              )}
+                              ) : (c.status === 'completed' && c.meet_link && (currentTime - new Date(c.scheduled_at).getTime() < 48 * 60 * 60 * 1000) ? (
+                                <div className="inline-flex items-center gap-1">
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                                    <Clock className="h-3 w-3 text-amber-700" />
+                                    <span>Recording Processing</span>
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleManualSyncRecording(c.id)}
+                                    disabled={syncingRecordingId === c.id}
+                                    title="Check Google Drive for finalized recording"
+                                    className="inline-flex items-center justify-center w-6 h-6 rounded-full border border-border bg-white hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors cursor-pointer disabled:opacity-50"
+                                  >
+                                    <RefreshCw className={`h-3 w-3 ${syncingRecordingId === c.id ? 'animate-spin text-primary' : ''}`} />
+                                  </button>
+                                </div>
+                              ) : null)}
                             </div>
 
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto mt-1">
@@ -2000,16 +2070,99 @@ export default function TeacherDashboard() {
       </main>
       </div>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-border flex justify-around p-2.5 z-50 md:hidden pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.08)] rounded-t-3xl">
-        <NavBtn active={activeTab === 'classes'} onClick={() => setActiveTab('classes')} icon={<Calendar className={activeTab === 'classes' ? 'fill-primary/20' : ''} />} label="Schedule" />
-        <NavBtn active={activeTab === 'create'} onClick={() => { setPreselectedGroupId(null); setActiveTab('create') }} icon={<Plus className={activeTab === 'create' ? 'fill-primary/20' : ''} />} label="Create" />
-        <NavBtn active={activeTab === 'groups'} onClick={() => setActiveTab('groups')} icon={<Users className={activeTab === 'groups' ? 'fill-primary/20' : ''} />} label="Groups" />
-        <NavBtn active={activeTab === 'stats'} onClick={() => setActiveTab('stats')} icon={<BarChart3 className={activeTab === 'stats' ? 'fill-primary/20' : ''} />} label="Stats" />
-        <NavBtn active={activeTab === 'syllabus'} onClick={() => setActiveTab('syllabus')} icon={<BookOpen className={activeTab === 'syllabus' ? 'fill-primary/20' : ''} />} label="Syllabus" />
-        <NavBtn active={activeTab === 'quran'} onClick={() => setActiveTab('quran')} icon={<BookOpen className={activeTab === 'quran' ? 'fill-primary/20 text-emerald-600' : ''} />} label="Quran" />
-        <NavBtn active={activeTab === 'homework'} onClick={() => setActiveTab('homework')} icon={<FileText className={activeTab === 'homework' ? 'fill-primary/20 text-amber-600' : ''} />} label="Homework" />
-        <NavBtn active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<User className={activeTab === 'profile' ? 'fill-primary/20' : ''} />} label="Profile" />
+      {/* Mobile "More" Drawer */}
+      <AnimatePresence>
+        {isMobileMoreOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsMobileMoreOpen(false)}
+            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px] md:hidden"
+          >
+            <motion.div
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 40, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="fixed bottom-[72px] left-3 right-3 bg-white rounded-2xl border border-border shadow-2xl p-3 space-y-1.5 z-50"
+            >
+              <div className="flex items-center justify-between px-2 pb-1.5 border-b border-border/70">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">More Features</span>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileMoreOpen(false)}
+                  className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground cursor-pointer"
+                  aria-label="Close menu"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => { setActiveTab('groups'); setIsMobileMoreOpen(false) }}
+                className={`w-full min-h-[48px] px-3 py-2.5 rounded-xl text-sm font-bold flex items-center justify-between cursor-pointer ${
+                  activeTab === 'groups' ? 'bg-[#1A6B4A] text-white' : 'text-foreground hover:bg-muted'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Users className="h-5 w-5 shrink-0" />
+                  <span>Groups / Batches</span>
+                </div>
+                {groups.length > 0 && (
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-extrabold ${activeTab === 'groups' ? 'bg-white/20 text-white' : 'bg-muted text-foreground'}`}>
+                    {groups.length}
+                  </span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setActiveTab('syllabus'); setIsMobileMoreOpen(false) }}
+                className={`w-full min-h-[48px] px-3 py-2.5 rounded-xl text-sm font-bold flex items-center gap-3 cursor-pointer ${
+                  activeTab === 'syllabus' ? 'bg-[#1A6B4A] text-white' : 'text-foreground hover:bg-muted'
+                }`}
+              >
+                <BookOpen className="h-5 w-5 shrink-0" />
+                <span>Syllabus Bank</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setActiveTab('quran'); setIsMobileMoreOpen(false) }}
+                className={`w-full min-h-[48px] px-3 py-2.5 rounded-xl text-sm font-bold flex items-center gap-3 cursor-pointer ${
+                  activeTab === 'quran' ? 'bg-[#1A6B4A] text-white' : 'text-foreground hover:bg-muted'
+                }`}
+              >
+                <BookOpen className={`h-5 w-5 shrink-0 ${activeTab === 'quran' ? 'text-white' : 'text-emerald-600'}`} />
+                <span>Quran &amp; Hifz</span>
+              </button>
+
+              <div className="pt-1 border-t border-border/70">
+                <button
+                  type="button"
+                  onClick={() => { setActiveTab('profile'); setIsMobileMoreOpen(false) }}
+                  className={`w-full min-h-[48px] px-3 py-2.5 rounded-xl text-sm font-bold flex items-center gap-3 cursor-pointer ${
+                    activeTab === 'profile' ? 'bg-[#1A6B4A] text-white' : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <User className="h-5 w-5 shrink-0" />
+                  <span>Profile</span>
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Bottom Navigation (5 core items) */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-border grid grid-cols-5 p-1.5 z-50 md:hidden pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.08)] rounded-t-3xl">
+        <NavBtn active={activeTab === 'classes'} onClick={() => { setActiveTab('classes'); setIsMobileMoreOpen(false) }} icon={<Calendar className={activeTab === 'classes' ? 'fill-primary/20' : ''} />} label="Schedule" />
+        <NavBtn active={activeTab === 'create'} onClick={() => { setPreselectedGroupId(null); setActiveTab('create'); setIsMobileMoreOpen(false) }} icon={<Plus className={activeTab === 'create' ? 'fill-primary/20' : ''} />} label="Create" />
+        <NavBtn active={activeTab === 'homework'} onClick={() => { setActiveTab('homework'); setIsMobileMoreOpen(false) }} icon={<FileText className={activeTab === 'homework' ? 'fill-primary/20 text-amber-600' : ''} />} label="Homework" />
+        <NavBtn active={activeTab === 'stats'} onClick={() => { setActiveTab('stats'); setIsMobileMoreOpen(false) }} icon={<BarChart3 className={activeTab === 'stats' ? 'fill-primary/20' : ''} />} label="Stats" />
+        <NavBtn active={isMobileMoreOpen || ['groups', 'syllabus', 'quran', 'profile'].includes(activeTab)} onClick={() => setIsMobileMoreOpen((prev) => !prev)} icon={<Menu />} label="More" />
       </nav>
 
       {/* Student Preview Modal */}
