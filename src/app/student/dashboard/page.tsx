@@ -40,8 +40,8 @@ export default function StudentDashboard() {
   const [profileData, setProfileData] = useState<any>(null)
   const [teachers, setTeachers] = useState<any[]>([])
 
-  const fetchClasses = async () => {
-    setIsLoading(true)
+  const fetchClasses = async (skipAutoSync = false) => {
+    if (!skipAutoSync) setIsLoading(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/student/login'); return }
@@ -94,6 +94,34 @@ export default function StudentDashboard() {
       setAllClasses(classesData)
       setAttendanceRecords(attendance)
       setTeachers(teacherProfiles)
+
+      // Silent background auto-sync for recent completed classes (last 48h) missing recording_url
+      if (!skipAutoSync && classesData.length > 0) {
+        const cutoff = Date.now() - 48 * 60 * 60 * 1000
+        const pendingIds = classesData
+          .filter((c: any) =>
+            c.status === 'completed' &&
+            !!c.meet_link &&
+            new Date(c.scheduled_at).getTime() >= cutoff &&
+            !c.actual_recording_url
+          )
+          .map((c: any) => c.id)
+
+        if (pendingIds.length > 0) {
+          fetch('/api/classes/sync-recordings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ classIds: pendingIds }),
+          })
+            .then((res) => (res.ok ? res.json() : null))
+            .then((syncRes) => {
+              if (syncRes && syncRes.updatedCount > 0) {
+                fetchClasses(true)
+              }
+            })
+            .catch(() => {})
+        }
+      }
 
       const resolvedName = sp?.name || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Student'
       const resolvedReg = sp?.registration_number || ''
